@@ -18,15 +18,39 @@ class ReactorGauge extends StatelessWidget {
           Image.asset('lib/assets/reactorempty.png', fit: BoxFit.contain),
 
           // Layer 2: Filling Foreground with ShaderMask
-          // This ensures the image is exactly the same size/position as the background
-          // but revealed from left to right based on fillPercent.
+          // Masks out the caps (approx 21% each side) so they don't fill.
           ShaderMask(
             shaderCallback: (rect) {
+              const double startOffset = 0.26; // Adjusted to match blue plasma start
+              const double endOffset = 0.26;   // Adjusted to match blue plasma end
+              
+              // Calculate where the fill should stop in the 0.0-1.0 range
+              // It starts at startOffset and covers the remaining space (1 - start - end)
+              final double currentStop = startOffset + 
+                  (fillPercent.clamp(0.0, 1.0) * (1.0 - startOffset - endOffset));
+
               return LinearGradient(
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
-                stops: [fillPercent.clamp(0.0, 1.0), fillPercent.clamp(0.0, 1.0)],
-                colors: const [Colors.white, Colors.transparent],
+                // Transparent before startOffset (Left Cap hidden)
+                // White from startOffset to currentStop (Tube revealed)
+                // Transparent from currentStop to end (Empty space + Right Cap hidden)
+                stops: [
+                  0.0, 
+                  startOffset, 
+                  startOffset, 
+                  currentStop, 
+                  currentStop, 
+                  1.0
+                ],
+                colors: const [
+                  Colors.transparent, 
+                  Colors.transparent, 
+                  Colors.white, 
+                  Colors.white, 
+                  Colors.transparent, 
+                  Colors.transparent
+                ],
               ).createShader(rect);
             },
             blendMode: BlendMode.dstIn,

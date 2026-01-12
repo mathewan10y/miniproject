@@ -63,7 +63,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
             final totalSavings = refineryState.totalSavings;
             
             // Calculate ore level for reactor gauge (0-1 based on raw ore)
-            double oreLevel = (rawOre / 1000.0).clamp(0.0, 1.0); // Max 1000 ore for full reactor
+            double oreLevel = (rawOre / 10000.0).clamp(0.0, 1.0); // Max 10000 ore for full reactor
 
             return Stack(
               fit: StackFit.expand,
