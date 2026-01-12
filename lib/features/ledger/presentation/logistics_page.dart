@@ -108,7 +108,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
         // Action buttons - both in bottom right corner
         Positioned(
           bottom: 30,
-          right: 160, // Position next to expense button with spacing (30 + 120 + 10)
+          right: 240, // Expanded spacing: Expense(200) + Spacing(10) + margin(30) = 240
           child: _buildActionButton(
             onPressed: () => _openAddIncomeSheet(context),
             icon: Icons.download,
@@ -124,6 +124,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
             icon: Icons.upload,
             label: 'EXPENSE',
             color: Colors.orange,
+            showGlow: false,
           ),
         ),
       ],
@@ -930,6 +931,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
     required IconData icon,
     required String label,
     required Color color,
+    bool showGlow = true,
   }) {
     return GestureDetector(
       onTap: onPressed,
@@ -942,13 +944,15 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
             image: AssetImage('lib/assets/button.png'),
             fit: BoxFit.cover,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.3),
-              blurRadius: 10,
-              spreadRadius: 2,
-            ),
-          ],
+          boxShadow: showGlow
+              ? [
+                  BoxShadow(
+                    color: color.withOpacity(0.3),
+                    blurRadius: 10,
+                    spreadRadius: 2,
+                  ),
+                ]
+              : [],
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,

@@ -228,18 +228,22 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
 
   // Refinery Methods
   void _startRefining() {
-    if (_isRefining) return;
+    if (_refineryTimer != null) return;
     
-    setState(() {
-      _isRefining = true;
-    });
-    
-    // STRICT HOLD: No immediate tick. Timer only.
+    // STRICT HOLD: No immediate state change. Timer only.
     _refineryTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
       if (!mounted) {
         timer.cancel();
         return;
       }
+      
+      // Update UI state on first tick
+      if (!_isRefining) {
+        setState(() {
+          _isRefining = true;
+        });
+      }
+      
       _processRefinementTick();
     });
   }
