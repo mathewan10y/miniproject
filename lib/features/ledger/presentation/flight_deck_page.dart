@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:ui' as ui;
+import 'dart:math' as math;
+import 'dart:async';
 import '../../../core/providers/refinery_provider.dart';
 
 class FlightDeckPage extends ConsumerStatefulWidget {
@@ -17,6 +19,10 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
   double _previousFuelAmount = 0.0;
   bool _shouldAnimate = false;
 
+  // Particle System
+  final List<Particle> _particles = [];
+  Timer? _particleTimer;
+
   @override
   void initState() {
     super.initState();
@@ -32,12 +38,41 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
       parent: _fuelAnimationController,
       curve: Curves.easeOutCubic,
     ));
+
+    // Start particle loop
+    _particleTimer = Timer.periodic(const Duration(milliseconds: 32), (_) {
+      _updateParticles();
+    });
   }
 
   @override
   void dispose() {
     _fuelAnimationController.dispose();
+    _particleTimer?.cancel();
     super.dispose();
+  }
+  
+  void _updateParticles() {
+    if (!mounted || _particles.isEmpty) return;
+    
+    final now = DateTime.now().millisecondsSinceEpoch / 1000.0;
+    setState(() {
+      _particles.removeWhere((p) => now - p.createdAt > p.lifetime);
+    });
+  }
+
+  void _spawnIncomingParticles() {
+    // Spawn particles from left edge flowing to center
+    for (int i = 0; i < 15; i++) {
+       final startY = 150.0 + (math.Random().nextDouble() - 0.5) * 100; // Near Trading Power card height
+       _particles.add(Particle(
+         position: Offset(-20, startY), // Start off-screen left
+         velocity: Offset(400 + math.Random().nextDouble() * 200, (math.Random().nextDouble() - 0.5) * 50),
+         color: Colors.cyan.withOpacity(0.8),
+         size: 8.0 + math.Random().nextDouble() * 8.0,
+         lifetime: 1.5,
+       ));
+    }
   }
 
   @override
@@ -49,6 +84,14 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
     if (currentFuel > _previousFuelAmount && _previousFuelAmount > 0) {
       _shouldAnimate = true;
       _fuelAnimationController.forward(from: 0.0);
+      _spawnIncomingParticles(); // Trigger particles
+    } else if (currentFuel > 0 && _previousFuelAmount == 0) {
+       // Initial load with fuel - show effect too
+       WidgetsBinding.instance.addPostFrameCallback((_) {
+         if (mounted && _particles.isEmpty) {
+            _spawnIncomingParticles();
+         }
+       });
     }
     
     // Update previous amount after checking
@@ -62,6 +105,8 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
         Image.asset('lib/assets/bg_right.jpg', fit: BoxFit.cover),
         // Dark overlay
         Container(color: Colors.black.withOpacity(0.5)),
+        // Particles Layer (behind content)
+        ..._particles.map((p) => _buildParticle(p)),
         // Main content
         SafeArea(
           child: Column(
@@ -360,6 +405,45 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
     buffer.write(' FUEL');
     return buffer.toString();
   }
+
+
+  Widget _buildParticle(Particle particle) {
+    final now = DateTime.now().millisecondsSinceEpoch / 1000.0;
+    final age = now - particle.createdAt;
+    final progress = age / particle.lifetime;
+    
+    final currentPosition = Offset(
+      particle.position.dx + particle.velocity.dx * age,
+      particle.position.dy + particle.velocity.dy * age,
+    );
+    
+    return Positioned(
+      left: currentPosition.dx,
+      top: currentPosition.dy,
+      child: Opacity(
+        opacity: (1.0 - progress).clamp(0.0, 1.0),
+        child: Transform.rotate(
+          angle: particle.rotation * age,
+          child: Container(
+            width: particle.size,
+            height: particle.size,
+            decoration: BoxDecoration(
+              color: particle.color,
+              shape: BoxShape.rectangle,
+              borderRadius: BorderRadius.circular(2),
+              boxShadow: [
+                BoxShadow(
+                  color: particle.color,
+                  blurRadius: 4,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _StockChartPainter extends CustomPainter {
@@ -403,4 +487,25 @@ class _StockChartPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_StockChartPainter oldDelegate) => false;
+}
+
+// Reuse Particle class definition
+// (We could move this to a shared file, but for now duplicate to keep file self-contained as requested by previous patterns)
+class Particle {
+  final Offset position;
+  final Offset velocity;
+  final Color color;
+  final double size;
+  final double lifetime;
+  final double createdAt;
+  final double rotation;
+
+  Particle({
+    required this.position,
+    required this.velocity,
+    required this.color,
+    required this.size,
+    required this.lifetime,
+  }) : createdAt = DateTime.now().millisecondsSinceEpoch / 1000.0,
+       rotation = (math.Random().nextDouble() - 0.5) * 5;
 }

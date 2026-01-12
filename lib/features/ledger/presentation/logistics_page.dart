@@ -108,7 +108,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
         // Action buttons - both in bottom right corner
         Positioned(
           bottom: 30,
-          right: 240, // Expanded spacing: Expense(200) + Spacing(10) + margin(30) = 240
+          right: 260, // Expanded spacing: Expense(220) + Spacing(10) + margin(30) = 260
           child: _buildActionButton(
             onPressed: () => _openAddIncomeSheet(context),
             icon: Icons.download,
@@ -264,7 +264,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
                         _showAnalytics = !_showAnalytics;
                       });
                     },
-                    size: 60,
+                    size: 80,
                     label: 'SHOW ANALYTICS',
                   ),
                   const SizedBox(height: 12),
@@ -494,7 +494,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
                         _showAnalytics = !_showAnalytics;
                       });
                     },
-                    size: 60,
+                    size: 80,
                     label: 'HIDE ANALYTICS',
                   ),
                   const SizedBox(height: 12),
@@ -764,7 +764,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
               borderRadius: BorderRadius.circular(size / 2),
               image: DecorationImage(
                 image: AssetImage('lib/assets/button.png'),
-                fit: BoxFit.cover,
+                fit: BoxFit.fill,
               ),
             ),
           ),
@@ -936,13 +936,13 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
     return GestureDetector(
       onTap: onPressed,
       child: Container(
-        width: 200, // Increased width from 180 to 200
-        height: 50,
+        width: 220, // Increased width from 200 to 220
+        height: 85,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(25),
           image: const DecorationImage(
             image: AssetImage('lib/assets/button.png'),
-            fit: BoxFit.cover,
+            fit: BoxFit.fill,
           ),
           boxShadow: showGlow
               ? [

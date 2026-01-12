@@ -311,27 +311,36 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
   void _spawnParticles(bool isCritical) {
     if (!mounted) return;
     final screenSize = MediaQuery.of(context).size;
-    final buttonPosition = Offset(screenSize.width / 2, screenSize.height - 100);
+    // Spawn from Center (Reactor) instead of bottom
+    final reactorPosition = Offset(screenSize.width / 2, screenSize.height / 2);
     
-    // Spawn cyan/gold particles moving right
-    for (int i = 0; i < 3; i++) {
+    // Spawn cyan/gold particles flowing to the right side tab
+    for (int i = 0; i < 4; i++) { // Increased count slightly
+      // Strong positive X velocity (300 to 600) to ensure they fly off screen
+      final velocityX = 300 + math.Random().nextDouble() * 300;
+      // Spread vertical velocity (-100 to 100)
+      final velocityY = (math.Random().nextDouble() - 0.5) * 200;
+
       _particles.add(Particle(
-        position: buttonPosition,
-        velocity: Offset(200 + math.Random().nextDouble() * 100, -50 + math.Random().nextDouble() * 100),
-        color: isCritical ? Colors.yellow : Colors.cyan,
-        size: isCritical ? 8.0 : 6.0,
-        lifetime: 2.0,
+        position: reactorPosition,
+        velocity: Offset(velocityX, velocityY),
+        color: isCritical ? Colors.yellow : Colors.cyan.withOpacity(0.8),
+        size: isCritical ? 12.0 : 8.0 + math.Random().nextDouble() * 8.0, // Bigger size (8-16)
+        lifetime: 2.5, // Increased lifetime to reach edge
       ));
     }
     
-    // Spawn waste smoke particles drifting down (only for non-critical)
+    // Spawn waste smoke particles drifting down/right (only for non-critical)
     if (!isCritical) {
       for (int i = 0; i < 2; i++) {
+        final velocityX = 50 + math.Random().nextDouble() * 50;
+        final velocityY = 50 + math.Random().nextDouble() * 50;
+
         _particles.add(Particle(
-          position: buttonPosition,
-          velocity: Offset(-20 + math.Random().nextDouble() * 40, 50 + math.Random().nextDouble() * 50),
-          color: Colors.grey.withOpacity(0.6), // Fixed opacity within bounds
-          size: 10.0,
+          position: reactorPosition,
+          velocity: Offset(velocityX, velocityY),
+          color: Colors.grey.withOpacity(0.4),
+          size: 15.0, // Bigger smoke
           lifetime: 3.0,
         ));
       }
@@ -370,13 +379,13 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
       onTapUp: (_) => _stopRefining(),
       onTapCancel: () => _stopRefining(),
       child: Container(
-        width: 300, // Increased width from 280 to 300
-        height: 60,
+        width: 320, // Increased width from 300 to 320
+        height: 100,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(30),
           image: const DecorationImage(
             image: AssetImage('lib/assets/button.png'),
-            fit: BoxFit.cover,
+            fit: BoxFit.fill,
           ),
           boxShadow: [
             BoxShadow(
@@ -424,20 +433,24 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
       left: currentPosition.dx,
       top: currentPosition.dy,
       child: Opacity(
-        opacity: 1.0 - progress,
-        child: Container(
-          width: particle.size,
-          height: particle.size,
-          decoration: BoxDecoration(
-            color: particle.color,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: particle.color,
-                blurRadius: 4,
-                spreadRadius: 1,
-              ),
-            ],
+        opacity: (1.0 - progress).clamp(0.0, 1.0),
+        child: Transform.rotate(
+          angle: particle.rotation * age, // Rotate over time
+          child: Container(
+            width: particle.size,
+            height: particle.size,
+            decoration: BoxDecoration(
+              color: particle.color,
+              shape: BoxShape.rectangle, // Flaky look (square)
+              borderRadius: BorderRadius.circular(2), // Slightly rounded corners
+              boxShadow: [
+                BoxShadow(
+                  color: particle.color,
+                  blurRadius: 4,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -454,7 +467,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
       left: text.position.dx - 40,
       top: text.position.dy - (age * 100),
       child: Opacity(
-        opacity: 1.0 - progress,
+        opacity: (1.0 - progress).clamp(0.0, 1.0),
         child: Text(
           text.text,
           style: const TextStyle(
@@ -482,6 +495,7 @@ class Particle {
   final double size;
   final double lifetime;
   final double createdAt;
+  final double rotation; // Added rotation speed
 
   Particle({
     required this.position,
@@ -489,7 +503,8 @@ class Particle {
     required this.color,
     required this.size,
     required this.lifetime,
-  }) : createdAt = DateTime.now().millisecondsSinceEpoch / 1000.0;
+  }) : createdAt = DateTime.now().millisecondsSinceEpoch / 1000.0,
+       rotation = (math.Random().nextDouble() - 0.5) * 5; // Random rotation speed
 }
 
 class CriticalText {
