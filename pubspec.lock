@@ -345,7 +345,7 @@ packages:
     source: hosted
     version: "2.1.0"
   http:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: http
       sha256: "87721a4a50b19c7f1d49001e51409bddc46303966ce89a65af4f4e6004896412"
@@ -368,6 +368,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.2"
+  interactive_chart:
+    dependency: "direct main"
+    description:
+      name: interactive_chart
+      sha256: fe72d3b3bf0482978d7aa483e0e78cab605217ffcabd0b0b0d530f3cb673d324
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.3.6"
   intl:
     dependency: "direct main"
     description:
