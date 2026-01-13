@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:interactive_chart/interactive_chart.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/providers/refinery_provider.dart';
 import '../../trading/data/market_service.dart';
 import '../../trading/domain/models/market_asset.dart';
@@ -26,6 +27,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
   List<CandleData> _candles = [];
   bool _isLoadingHistory = false;
   String _selectedInterval = '1H';
+  bool _isChartMaximized = false;
 
   @override
   void initState() {
@@ -138,31 +140,39 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
       backgroundColor: Colors.black, 
       body: Stack(
         children: [
+          // Background Grid Painter
+          Positioned.fill(
+            child: CustomPaint(
+              painter: SciFiBackgroundPainter(),
+            ),
+          ),
+
           DefaultTabController(
             length: 3,
             child: Column(
               children: [
-                // ZONE 1: Telemetry Panel (Windshield) - 35%
+                // ZONE 1: Telemetry Panel (Windshield) - Flex 5
                 Expanded(
-                  flex: 35,
+                  flex: 5,
                   child: _buildTelemetryPanel(),
                 ),
 
-                // ZONE 2: Control Panel - 15%
+                // ZONE 2: Control Panel - Flex 2
                 Expanded(
-                  flex: 15,
+                  flex: 2,
                   child: _buildControlPanel(refinedFuel),
                 ),
 
-                // ZONE 3: Cargo Bay (Asset List) - 50%
-                Expanded(
-                  flex: 50,
-                  child: assetsAsync.when(
-                    data: (assets) => _buildCargoBay(assets),
-                    loading: () => const Center(child: CircularProgressIndicator(color: Colors.cyan)),
-                    error: (err, stack) => Center(child: Text('Telemetry Error: $err', style: const TextStyle(color: Colors.red))),
+                // ZONE 3: Cargo Bay (Asset List) - Flex 4
+                if (!_isChartMaximized)
+                  Expanded(
+                    flex: 4,
+                    child: assetsAsync.when(
+                      data: (assets) => _buildCargoBay(assets),
+                      loading: () => const Center(child: CircularProgressIndicator(color: Colors.cyan)),
+                      error: (err, stack) => Center(child: Text('Telemetry Error: $err', style: const TextStyle(color: Colors.red))),
+                    ),
                   ),
-                ),
               ],
             ),
           ),
@@ -173,6 +183,21 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
             top: p.position.dy + 100,
             child: _buildParticle(p),
           )),
+
+          // Maximize Button (Top Right of Screen)
+          Positioned(
+            top: 40, // Below status bar
+            right: 16,
+            child: IconButton(
+              icon: Icon(_isChartMaximized ? Icons.fullscreen_exit : Icons.fullscreen),
+              color: Colors.cyanAccent,
+              onPressed: () {
+                setState(() {
+                  _isChartMaximized = !_isChartMaximized;
+                });
+              },
+            ),
+          ),
         ],
       ),
     );
@@ -183,18 +208,28 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
   Widget _buildTelemetryPanel() {
     return Container(
       width: double.infinity,
-      decoration: const BoxDecoration(
-        color: Colors.black,
-        border: Border(bottom: BorderSide(color: Colors.white24, width: 2)),
+      margin: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.5),
+        border: Border.all(color: Colors.cyan.withOpacity(0.3)),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Colors.cyan.withOpacity(0.1), Colors.black.withOpacity(0.8)],
+        ),
       ),
       child: Stack(
         children: [
-          // Background Grid
-          CustomPaint(
-             size: Size.infinite,
-            painter: _GridPainter(),
+          // Tech Decorations
+          Positioned(
+            top: 8, left: 8,
+            child: Text("SYS.MONITOR // ONLINE", style: GoogleFonts.shareTechMono(color: Colors.cyan.withOpacity(0.5), fontSize: 10)),
           ),
-          
+          Positioned(
+            bottom: 8, right: 8,
+            child: Text("DATA.STREAM // ACTIVE", style: GoogleFonts.shareTechMono(color: Colors.cyan.withOpacity(0.5), fontSize: 10)),
+          ),
+
           if (_selectedAsset == null)
             _buildEmptyState()
           else
@@ -234,14 +269,14 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.cyan.withOpacity(0.5)),
             ),
-            child: const Column(
+            child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.radar, color: Colors.cyan, size: 32),
-                SizedBox(height: 8),
+                const Icon(Icons.radar, color: Colors.cyan, size: 32),
+                const SizedBox(height: 8),
                 Text(
                   "ACTIVE ASSET TELEMETRY",
-                  style: TextStyle(
+                  style: GoogleFonts.orbitron(
                     color: Colors.cyan,
                     letterSpacing: 2,
                     fontWeight: FontWeight.bold,
@@ -250,7 +285,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                 ),
                 Text(
                   "Scanning for signal...",
-                  style: TextStyle(color: Colors.white54, fontSize: 10),
+                  style: GoogleFonts.shareTechMono(color: Colors.white54, fontSize: 10),
                 ),
               ],
             ),
@@ -270,8 +305,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
       children: [
          // Minimal Header for Context
          Container(
-           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-           color: Colors.black54,
+           padding: const EdgeInsets.fromLTRB(16, 24, 48, 8),
            child: Row(
              mainAxisAlignment: MainAxisAlignment.spaceBetween,
              children: [
@@ -280,14 +314,14 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                  children: [
                    Text(
                      _selectedAsset!.symbol, 
-                     style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)
+                     style: GoogleFonts.orbitron(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)
                    ),
                    Text(
                       '\$${_selectedAsset!.currentPrice.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        color: _selectedAsset!.percentChange24h >= 0 ? Colors.greenAccent : Colors.redAccent,
-                        fontSize: 12,
-                        fontFamily: 'RobotoMono',
+                      style: GoogleFonts.shareTechMono(
+                        color: _selectedAsset!.percentChange24h >= 0 ? Colors.tealAccent : Colors.pinkAccent,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
                       ),
                    ),
                  ],
@@ -301,12 +335,12 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
            child: InteractiveChart(
             candles: _candles,
             style: ChartStyle(
-              priceGainColor: Colors.greenAccent,
-              priceLossColor: Colors.redAccent,
-              volumeColor: Colors.white.withOpacity(0.1),
+              priceGainColor: Colors.tealAccent,
+              priceLossColor: Colors.pinkAccent,
+              volumeColor: Colors.cyan.withOpacity(0.1),
               priceGridLineColor: Colors.white10,
-              timeLabelStyle: const TextStyle(color: Colors.white54, fontSize: 10),
-              priceLabelStyle: const TextStyle(color: Colors.white54, fontSize: 10),
+              timeLabelStyle: GoogleFonts.shareTechMono(color: Colors.white54, fontSize: 10),
+              priceLabelStyle: GoogleFonts.shareTechMono(color: Colors.white54, fontSize: 10),
               overlayBackgroundColor: Colors.black.withOpacity(0.8),
             ),
           ),
@@ -337,10 +371,10 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
             ),
             child: Text(
               interval,
-              style: TextStyle(
+              style: GoogleFonts.shareTechMono(
                 color: isSelected ? Colors.cyan : Colors.white54,
                 fontWeight: FontWeight.bold,
-                fontSize: 10,
+                fontSize: 12,
               ),
             ),
           ),
@@ -357,13 +391,6 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
     
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFF111111),
-        border: const Border(top: BorderSide(color: Colors.white10), bottom: BorderSide(color: Colors.white10)),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 10, offset: const Offset(0, 5))
-        ],
-      ),
       child: Row(
         children: [
           // Fuel Display
@@ -373,14 +400,14 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("FUEL RESERVES", style: TextStyle(color: Colors.white38, fontSize: 10, letterSpacing: 1)),
+                Text("FUEL RESERVES", style: GoogleFonts.shareTechMono(color: Colors.cyan.withOpacity(0.7), fontSize: 10, letterSpacing: 1)),
                 Text(
                   fuel.toStringAsFixed(2),
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: GoogleFonts.orbitron(
+                    color: Colors.cyanAccent,
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    fontFamily: 'RobotoMono',
+                    shadows: [BoxShadow(color: Colors.cyan.withOpacity(0.5), blurRadius: 10)],
                   ),
                 ),
               ],
@@ -393,8 +420,9 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
             child: Row(
               children: [
                 Expanded(
-                  child: _buildPanelButton(
-                    label: hasSelection ? "BUY ${_selectedAsset!.symbol}" : "SYSTEM IDLE",
+                  child: CyberButton(
+                    label: hasSelection ? "BUY" : "IDLE",
+                    subLabel: hasSelection ? _selectedAsset!.symbol : "--",
                     color: Colors.cyan,
                     isEnabled: hasSelection,
                     onTap: () {
@@ -404,11 +432,12 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                     }
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 12),
                 Expanded(
-                  child: _buildPanelButton(
-                    label: hasSelection ? "SELL ${_selectedAsset!.symbol}" : "STANDBY",
-                    color: Colors.orange,
+                  child: CyberButton(
+                    label: hasSelection ? "SELL" : "WAIT",
+                    subLabel: hasSelection ? _selectedAsset!.symbol : "--",
+                    color: Colors.pinkAccent, // Cyberpunk Red
                     isEnabled: hasSelection,
                     onTap: () {
                        if (hasSelection) {
@@ -421,41 +450,6 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildPanelButton({
-    required String label, 
-    required Color color, 
-    required bool isEnabled,
-    required VoidCallback onTap
-  }) {
-    return GestureDetector(
-      onTap: isEnabled ? onTap : null,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        height: 50,
-        decoration: BoxDecoration(
-          color: isEnabled ? color.withOpacity(0.1) : Colors.white.withOpacity(0.05),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isEnabled ? color.withOpacity(0.5) : Colors.white10, 
-            width: 1.5
-          ),
-        ),
-        child: Center(
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: isEnabled ? color : Colors.white24,
-              fontWeight: FontWeight.bold,
-              fontSize: 12, // slightly smaller to fit logic names
-              letterSpacing: 1,
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -473,13 +467,13 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
     return Column(
       children: [
         Container(
-          color: Colors.black,
-          child: const TabBar(
+          color: Colors.black.withOpacity(0.5),
+          child: TabBar(
             indicatorColor: Colors.cyan,
-            labelColor: Colors.white,
+            labelColor: Colors.cyanAccent,
             unselectedLabelColor: Colors.white38,
-            labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 10),
-            tabs: [
+            labelStyle: GoogleFonts.orbitron(fontWeight: FontWeight.bold, fontSize: 10),
+            tabs: const [
               Tab(text: "SECTOR A\n(Life Support)"),
               Tab(text: "SECTOR B\n(Thrusters/Fleet)"),
               Tab(text: "SECTOR C\n(Warp Drive)"),
@@ -525,10 +519,10 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: isSelected ? themeColor.withOpacity(0.2) : Colors.black54,
-            borderRadius: BorderRadius.circular(12),
+            color: isSelected ? themeColor.withOpacity(0.15) : Colors.black26,
+            borderRadius: BorderRadius.circular(4), // More angular for sci-fi
             border: Border.all(
-              color: isLocked ? Colors.grey : (isSelected ? themeColor : themeColor.withOpacity(0.3)),
+              color: isLocked ? Colors.grey : (isSelected ? themeColor : themeColor.withOpacity(0.2)),
               width: isSelected ? 2 : 1
             ),
           ),
@@ -538,7 +532,8 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                 width: 40, height: 40,
                 decoration: BoxDecoration(
                   color: isLocked ? Colors.white10 : themeColor.withOpacity(0.1),
-                  shape: BoxShape.circle,
+                  // shape: BoxShape.circle, // Changing to angled square
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
                   isLocked ? Icons.lock : _getAssetIcon(asset.type),
@@ -551,19 +546,19 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(asset.symbol, style: TextStyle(color: isLocked ? Colors.grey : Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                    Text(asset.name, style: const TextStyle(color: Colors.white38, fontSize: 12)),
+                    Text(asset.symbol, style: GoogleFonts.orbitron(color: isLocked ? Colors.grey : Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                    Text(asset.name, style: GoogleFonts.shareTechMono(color: Colors.white38, fontSize: 12)),
                   ],
                 ),
               ),
               if (isLocked)
-                const Text("RESTRICTED", style: TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold))
+                Text("RESTRICTED", style: GoogleFonts.shareTechMono(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold))
               else
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text('\$${asset.currentPrice.toStringAsFixed(asset.currentPrice < 1 ? 4 : 2)}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'RobotoMono',)),
-                    Text('${asset.percentChange24h.abs().toStringAsFixed(2)}%', style: TextStyle(color: isPositive ? Colors.green : Colors.red, fontSize: 12)),
+                    Text('\$${asset.currentPrice.toStringAsFixed(asset.currentPrice < 1 ? 4 : 2)}', style: GoogleFonts.orbitron(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                    Text('${asset.percentChange24h.abs().toStringAsFixed(2)}%', style: GoogleFonts.shareTechMono(color: isPositive ? Colors.tealAccent : Colors.pinkAccent, fontSize: 12)),
                   ],
                 ),
             ],
@@ -598,22 +593,112 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
   }
 }
 
-class _GridPainter extends CustomPainter {
+// --- Sci-Fi Painters & Widgets ---
+
+class SciFiBackgroundPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.cyan.withOpacity(0.05)
+      ..color = Colors.cyan.withOpacity(0.1)
       ..strokeWidth = 1;
 
-    for(double x = 0; x < size.width; x += 40) {
+    // Grid
+    double step = 40.0;
+    
+    // Vertical lines
+    for(double x = 0; x <= size.width; x += step) {
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
     }
-    for(double y = 0; y < size.height; y += 40) {
+    
+    // Horizontal lines (with fading opacity)
+    for(double y = 0; y <= size.height; y += step) {
+      double opacity = 0.05 + (y / size.height) * 0.1; // Darker at top, slightly brighter at bottom? Or reverse
+      paint.color = Colors.cyan.withOpacity(opacity);
       canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
     }
   }
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class CyberButton extends StatelessWidget {
+  final String label;
+  final String subLabel;
+  final Color color;
+  final bool isEnabled;
+  final VoidCallback onTap;
+
+  const CyberButton({
+    super.key,
+    required this.label,
+    required this.subLabel,
+    required this.color,
+    required this.isEnabled,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: isEnabled ? onTap : null,
+      child: ClipPath(
+        clipper: CutCornerClipper(),
+        child: Container(
+          height: 60,
+          color: isEnabled ? color.withOpacity(0.15) : Colors.grey.withOpacity(0.05),
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(color: isEnabled ? color : Colors.white10, width: 2),
+              ),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  label,
+                  style: GoogleFonts.orbitron(
+                    color: isEnabled ? color : Colors.white24,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    shadows: isEnabled ? [BoxShadow(color: color, blurRadius: 8)] : [],
+                  ),
+                ),
+                Text(
+                  subLabel,
+                  style: GoogleFonts.shareTechMono(
+                    color: isEnabled ? Colors.white70 : Colors.white12,
+                    fontSize: 10,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class CutCornerClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path();
+    double cut = 12.0;
+
+    path.moveTo(cut, 0);
+    path.lineTo(size.width, 0);
+    path.lineTo(size.width, size.height - cut);
+    path.lineTo(size.width - cut, size.height);
+    path.lineTo(0, size.height);
+    path.lineTo(0, cut);
+    path.close();
+
+    return path;
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }
 
 class Particle {
