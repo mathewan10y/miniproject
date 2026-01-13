@@ -6,6 +6,19 @@ enum AssetType {
   derivatives, // Placeholder (Options/Futures)
 }
 
+enum AssetSubType {
+  bond,
+  economy,
+  fund,
+  forex,
+  stock,
+  marketIndex, // Renamed from 'index' to avoid conflict with Enum.index
+  crypto,
+  future,
+  option,
+  none, // Default fallback
+}
+
 class MarketAsset {
   final String id;
   final String symbol;
@@ -13,6 +26,7 @@ class MarketAsset {
   final double currentPrice;
   final double percentChange24h;
   final AssetType type;
+  final AssetSubType subType;
   final int minLevelRequired;
 
   MarketAsset({
@@ -22,6 +36,7 @@ class MarketAsset {
     required this.currentPrice,
     required this.percentChange24h,
     required this.type,
+    required this.subType,
     required this.minLevelRequired,
   });
 
@@ -39,6 +54,7 @@ class MarketAsset {
       currentPrice: (json['current_price'] as num?)?.toDouble() ?? 0.0,
       percentChange24h: (json['price_change_percentage_24h'] as num?)?.toDouble() ?? 0.0,
       type: AssetType.warpDrive, // Default to High Risk for Crypto API
+      subType: AssetSubType.crypto, // API returns crypto
       minLevelRequired: 1, 
     );
   }

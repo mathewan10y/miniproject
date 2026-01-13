@@ -51,6 +51,7 @@ class MixedMarketService implements MarketRepository {
             currentPrice: asset.currentPrice,
             percentChange24h: asset.percentChange24h,
             type: AssetType.warpDrive, // Crypto is Warp Drive (High Risk)
+            subType: AssetSubType.crypto,
             minLevelRequired: level,
           );
         }));
@@ -133,9 +134,9 @@ class MixedMarketService implements MarketRepository {
 
   List<MarketAsset> _getMockSectorC() {
     return [
-      MarketAsset(id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', currentPrice: 42000.0, percentChange24h: 2.5, type: AssetType.warpDrive, minLevelRequired: 5),
-      MarketAsset(id: 'ethereum', symbol: 'ETH', name: 'Ethereum', currentPrice: 2200.0, percentChange24h: -1.2, type: AssetType.warpDrive, minLevelRequired: 3),
-      MarketAsset(id: 'dogecoin', symbol: 'DOGE', name: 'Dogecoin', currentPrice: 0.15, percentChange24h: 5.0, type: AssetType.warpDrive, minLevelRequired: 1),
+      MarketAsset(id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', currentPrice: 42000.0, percentChange24h: 2.5, type: AssetType.warpDrive, subType: AssetSubType.crypto, minLevelRequired: 5),
+      MarketAsset(id: 'ethereum', symbol: 'ETH', name: 'Ethereum', currentPrice: 2200.0, percentChange24h: -1.2, type: AssetType.warpDrive, subType: AssetSubType.crypto, minLevelRequired: 3),
+      MarketAsset(id: 'dogecoin', symbol: 'DOGE', name: 'Dogecoin', currentPrice: 0.15, percentChange24h: 5.0, type: AssetType.warpDrive, subType: AssetSubType.crypto, minLevelRequired: 1),
     ];
   }
 
@@ -147,7 +148,8 @@ class MixedMarketService implements MarketRepository {
         name: 'S&P 500 Fleet', 
         currentPrice: 4800.0, 
         percentChange24h: 0.5, 
-        type: AssetType.fleet, 
+        type: AssetType.fleet,
+        subType: AssetSubType.marketIndex, 
         minLevelRequired: 4
       ),
       MarketAsset(
@@ -156,7 +158,8 @@ class MixedMarketService implements MarketRepository {
         name: 'NASDAQ Fleet', 
         currentPrice: 16800.0, 
         percentChange24h: 0.8, 
-        type: AssetType.fleet, 
+        type: AssetType.fleet,
+        subType: AssetSubType.marketIndex, 
         minLevelRequired: 4
       ),
     ];
@@ -175,7 +178,8 @@ class MixedMarketService implements MarketRepository {
         name: 'Apple Inc.', 
         currentPrice: AAPL_Price, 
         percentChange24h: (random.nextDouble() - 0.5) * 3.0, 
-        type: AssetType.thruster, 
+        type: AssetType.thruster,
+        subType: AssetSubType.stock, 
         minLevelRequired: 3
       ),
       MarketAsset(
@@ -184,7 +188,8 @@ class MixedMarketService implements MarketRepository {
         name: 'Reliance Ind.', 
         currentPrice: RELIANCE_Price, 
         percentChange24h: (random.nextDouble() - 0.5) * 4.0, 
-        type: AssetType.thruster, 
+        type: AssetType.thruster,
+        subType: AssetSubType.stock, 
         minLevelRequired: 3
       ),
     ];
@@ -200,6 +205,7 @@ class MixedMarketService implements MarketRepository {
       currentPrice: price,
       percentChange24h: (random.nextDouble() - 0.5) * 1.5,
       type: AssetType.lifeSupport,
+      subType: AssetSubType.forex, // Defaulting to forex for simplicity
       minLevelRequired: level,
     );
   }

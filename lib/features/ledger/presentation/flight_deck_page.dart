@@ -27,7 +27,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
   List<CandleData> _candles = [];
   bool _isLoadingHistory = false;
   String _selectedInterval = '1H';
-  bool _isChartMaximized = false;
+  // Note: TabController logic moved to Dock
 
   @override
   void initState() {
@@ -120,12 +120,31 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
     _loadHistory(asset);
   }
 
+  // --- Modal Logic ---
+
+  void _showSectorModal(BuildContext context, List<MarketAsset> allAssets, String sectorName, Color sectorColor, List<AssetSubType> allowedTypes) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _DataPadModal(
+        assets: allAssets.where((a) => allowedTypes.contains(a.subType) || (sectorName == "SECTOR B" && (a.type == AssetType.thruster || a.type == AssetType.fleet))).toList(), // Loose filter for Sector B due to type mix
+        sectorName: sectorName,
+        sectorColor: sectorColor,
+        allowedTypes: allowedTypes,
+        onAssetSelected: (asset) {
+          Navigator.pop(context);
+          _onAssetSelected(asset);
+        },
+      ),
+    );
+  }
+
   // --- Build ---
 
   @override
   Widget build(BuildContext context) {
     final system = ref.watch(refineryProvider);
-    final refinedFuel = system.refinedFuel;
     final assetsAsync = ref.watch(marketAssetsProvider);
 
     // Listen to fuel changes for animation
@@ -147,34 +166,32 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
             ),
           ),
 
-          DefaultTabController(
-            length: 3,
-            child: Column(
-              children: [
-                // ZONE 1: Telemetry Panel (Windshield) - Flex 5
-                Expanded(
-                  flex: 5,
-                  child: _buildTelemetryPanel(),
-                ),
+          Column(
+            children: [
+              // ZONE 1: Telemetry Panel (Hero Chart) - Flex 8
+              Expanded(
+                flex: 8,
+                child: _buildTelemetryPanel(),
+              ),
 
-                // ZONE 2: Control Panel - Flex 2
-                Expanded(
-                  flex: 2,
-                  child: _buildControlPanel(refinedFuel),
-                ),
+              // ZONE 2, Part A: Fuel & Controls - Integrated into Telemetry or Dock?
+              // User requested Dock at bottom. Let's put limited controls in Telemetry or a small bar.
+              // Actually, user spec says: "Top (Flex 8): The Chart & Telemetry Display... Bottom (Flex 1): A custom 'Control Dock'"
+              // "Control Dock" has 3 buttons for Sectors.
+              // Where do BUY/SELL buttons go? 
+              // Assumption: BUY/SELL controls should be Overlay or part of the Telemetry panel now to fit the "Chart Area".
+              // Let's integrate simple BUY/SELL into the Chart Header for now to respect layout.
 
-                // ZONE 3: Cargo Bay (Asset List) - Flex 4
-                if (!_isChartMaximized)
-                  Expanded(
-                    flex: 4,
-                    child: assetsAsync.when(
-                      data: (assets) => _buildCargoBay(assets),
-                      loading: () => const Center(child: CircularProgressIndicator(color: Colors.cyan)),
-                      error: (err, stack) => Center(child: Text('Telemetry Error: $err', style: const TextStyle(color: Colors.red))),
-                    ),
-                  ),
-              ],
-            ),
+              // ZONE 3: Control Dock (The Nav) - Height ~80px (Flex 1ish)
+              SizedBox(
+                height: 80,
+                child: assetsAsync.when(
+                  data: (assets) => _buildControlDock(context, assets),
+                  loading: () => const Center(child: CircularProgressIndicator(color: Colors.cyan)),
+                  error: (_, __) => const SizedBox(),
+                ),
+              ),
+            ],
           ),
           
           // Particles Overlay
@@ -183,21 +200,6 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
             top: p.position.dy + 100,
             child: _buildParticle(p),
           )),
-
-          // Maximize Button (Top Right of Screen)
-          Positioned(
-            top: 40, // Below status bar
-            right: 16,
-            child: IconButton(
-              icon: Icon(_isChartMaximized ? Icons.fullscreen_exit : Icons.fullscreen),
-              color: Colors.cyanAccent,
-              onPressed: () {
-                setState(() {
-                  _isChartMaximized = !_isChartMaximized;
-                });
-              },
-            ),
-          ),
         ],
       ),
     );
@@ -225,11 +227,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
             top: 8, left: 8,
             child: Text("SYS.MONITOR // ONLINE", style: GoogleFonts.shareTechMono(color: Colors.cyan.withOpacity(0.5), fontSize: 10)),
           ),
-          Positioned(
-            bottom: 8, right: 8,
-            child: Text("DATA.STREAM // ACTIVE", style: GoogleFonts.shareTechMono(color: Colors.cyan.withOpacity(0.5), fontSize: 10)),
-          ),
-
+         
           if (_selectedAsset == null)
             _buildEmptyState()
           else
@@ -272,7 +270,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.radar, color: Colors.cyan, size: 32),
+                 const Icon(Icons.radar, color: Colors.cyan, size: 32),
                 const SizedBox(height: 8),
                 Text(
                   "ACTIVE ASSET TELEMETRY",
@@ -284,7 +282,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                   ),
                 ),
                 Text(
-                  "Scanning for signal...",
+                  "Select Sector to Initialize...",
                   style: GoogleFonts.shareTechMono(color: Colors.white54, fontSize: 10),
                 ),
               ],
@@ -303,9 +301,9 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
     // Chart
     return Column(
       children: [
-         // Minimal Header for Context
+         // Minimal Header for Context & Trade Controls
          Container(
-           padding: const EdgeInsets.fromLTRB(16, 24, 48, 8),
+           padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
            child: Row(
              mainAxisAlignment: MainAxisAlignment.spaceBetween,
              children: [
@@ -326,7 +324,13 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                    ),
                  ],
                ),
-               _buildIntervalSelector(),
+               Row(
+                 children: [
+                    _buildTradeButton("BUY", Colors.cyan),
+                    const SizedBox(width: 8),
+                    _buildTradeButton("SELL", Colors.pinkAccent),
+                 ],
+               )
              ],
            ),
          ),
@@ -345,13 +349,37 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
             ),
           ),
          ),
+         
+         // Interval Selector at bottom of chart
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: _buildIntervalSelector(),
+          ),
       ],
+    );
+  }
+  
+  Widget _buildTradeButton(String label, Color color) {
+    return GestureDetector(
+      onTap: () {
+         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$label ${_selectedAsset!.symbol}...')));
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+           color: color.withOpacity(0.2),
+           border: Border.all(color: color),
+           borderRadius: BorderRadius.circular(4),
+        ),
+        child: Text(label, style: GoogleFonts.orbitron(color: color, fontWeight: FontWeight.bold, fontSize: 12)),
+      ),
     );
   }
 
   Widget _buildIntervalSelector() {
     final intervals = ['1H', '4H', '1D', '1W'];
     return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: intervals.map((interval) {
         final isSelected = _selectedInterval == interval;
         return GestureDetector(
@@ -360,8 +388,8 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
             if (_selectedAsset != null) _loadHistory(_selectedAsset!);
           },
           child: Container(
-            margin: const EdgeInsets.only(left: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: isSelected ? Colors.cyan.withOpacity(0.2) : Colors.transparent,
               borderRadius: BorderRadius.circular(4),
@@ -384,199 +412,53 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
   }
 
 
-  // --- Zone 2: Control Panel ---
+  // --- Zone 3: Control Dock ---
 
-  Widget _buildControlPanel(double fuel) {
-    bool hasSelection = _selectedAsset != null;
-    
+  Widget _buildControlDock(BuildContext context, List<MarketAsset> assets) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF050505),
+        border: const Border(top: BorderSide(color: Colors.white10)),
+        boxShadow: [
+          BoxShadow(color: Colors.cyan.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, -5))
+        ],
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       child: Row(
         children: [
-          // Fuel Display
-          Expanded(
-            flex: 2,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text("FUEL RESERVES", style: GoogleFonts.shareTechMono(color: Colors.cyan.withOpacity(0.7), fontSize: 10, letterSpacing: 1)),
-                Text(
-                  fuel.toStringAsFixed(2),
-                  style: GoogleFonts.orbitron(
-                    color: Colors.cyanAccent,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    shadows: [BoxShadow(color: Colors.cyan.withOpacity(0.5), blurRadius: 10)],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          
-          // BUY / SELL Buttons
-          Expanded(
-            flex: 3,
-            child: Row(
-              children: [
-                Expanded(
-                  child: CyberButton(
-                    label: hasSelection ? "BUY" : "IDLE",
-                    subLabel: hasSelection ? _selectedAsset!.symbol : "--",
-                    color: Colors.cyan,
-                    isEnabled: hasSelection,
-                    onTap: () {
-                      if (hasSelection) {
-                         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Buying ${_selectedAsset!.symbol}...')));
-                      }
-                    }
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: CyberButton(
-                    label: hasSelection ? "SELL" : "WAIT",
-                    subLabel: hasSelection ? _selectedAsset!.symbol : "--",
-                    color: Colors.pinkAccent, // Cyberpunk Red
-                    isEnabled: hasSelection,
-                    onTap: () {
-                       if (hasSelection) {
-                         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Selling ${_selectedAsset!.symbol}...')));
-                      }
-                    }
-                  ),
-                ),
-              ],
-            ),
-          ),
+          Expanded(child: _buildDockButton(context, "SECTOR A", "LIFE SUPPORT", Colors.cyan, assets, [AssetSubType.bond, AssetSubType.economy, AssetSubType.fund, AssetSubType.forex])),
+          const SizedBox(width: 8),
+          Expanded(child: _buildDockButton(context, "SECTOR B", "THRUSTERS", Colors.amber, assets, [AssetSubType.stock, AssetSubType.marketIndex])),
+          const SizedBox(width: 8),
+          Expanded(child: _buildDockButton(context, "SECTOR C", "WARP DRIVE", Colors.redAccent, assets, [AssetSubType.crypto, AssetSubType.future, AssetSubType.option])),
         ],
       ),
     );
   }
 
-  // --- Zone 3: Cargo Bay ---
-
-  Widget _buildCargoBay(List<MarketAsset> assets) {
-    // Tab 1: Life Support
-    final sectorA = assets.where((a) => a.type == AssetType.lifeSupport).toList();
-    // Tab 2: Fleets & Thrusters
-    final sectorB = assets.where((a) => a.type == AssetType.thruster || a.type == AssetType.fleet).toList();
-    // Tab 3: Warp Drive
-    final sectorC = assets.where((a) => a.type == AssetType.warpDrive).toList();
-
-    return Column(
-      children: [
-        Container(
-          color: Colors.black.withOpacity(0.5),
-          child: TabBar(
-            indicatorColor: Colors.cyan,
-            labelColor: Colors.cyanAccent,
-            unselectedLabelColor: Colors.white38,
-            labelStyle: GoogleFonts.orbitron(fontWeight: FontWeight.bold, fontSize: 10),
-            tabs: const [
-              Tab(text: "SECTOR A\n(Life Support)"),
-              Tab(text: "SECTOR B\n(Thrusters/Fleet)"),
-              Tab(text: "SECTOR C\n(Warp Drive)"),
-            ],
-          ),
+  Widget _buildDockButton(BuildContext context, String label, String subLabel, Color color, List<MarketAsset> assets, List<AssetSubType> types) {
+    return GestureDetector(
+      onTap: () => _showSectorModal(context, assets, label, color, types),
+      child: Container(
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color.withOpacity(0.5)),
+          boxShadow: [
+            BoxShadow(color: color.withOpacity(0.2), blurRadius: 8, spreadRadius: 0)
+          ],
         ),
-        Expanded(
-          child: TabBarView(
-            children: [
-              _buildAssetList(sectorA, Colors.cyan),
-              _buildAssetList(sectorB, Colors.amber),
-              _buildAssetList(sectorC, Colors.redAccent),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAssetList(List<MarketAsset> assets, Color themeColor) {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: assets.length,
-      itemBuilder: (context, index) {
-        final asset = assets[index];
-        return _buildAssetTile(asset, themeColor);
-      },
-    );
-  }
-
-  Widget _buildAssetTile(MarketAsset asset, Color themeColor) {
-    final isLocked = asset.isLocked(1); 
-    final isPositive = asset.percentChange24h >= 0;
-    final isSelected = _selectedAsset?.id == asset.id;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0),
-      child: GestureDetector(
-        onTap: isLocked ? null : () {
-          _onAssetSelected(asset);
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: isSelected ? themeColor.withOpacity(0.15) : Colors.black26,
-            borderRadius: BorderRadius.circular(4), // More angular for sci-fi
-            border: Border.all(
-              color: isLocked ? Colors.grey : (isSelected ? themeColor : themeColor.withOpacity(0.2)),
-              width: isSelected ? 2 : 1
-            ),
-          ),
-          child: Row(
-            children: [
-             Container(
-                width: 40, height: 40,
-                decoration: BoxDecoration(
-                  color: isLocked ? Colors.white10 : themeColor.withOpacity(0.1),
-                  // shape: BoxShape.circle, // Changing to angled square
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  isLocked ? Icons.lock : _getAssetIcon(asset.type),
-                  color: isLocked ? Colors.grey : themeColor,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(asset.symbol, style: GoogleFonts.orbitron(color: isLocked ? Colors.grey : Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                    Text(asset.name, style: GoogleFonts.shareTechMono(color: Colors.white38, fontSize: 12)),
-                  ],
-                ),
-              ),
-              if (isLocked)
-                Text("RESTRICTED", style: GoogleFonts.shareTechMono(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold))
-              else
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text('\$${asset.currentPrice.toStringAsFixed(asset.currentPrice < 1 ? 4 : 2)}', style: GoogleFonts.orbitron(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                    Text('${asset.percentChange24h.abs().toStringAsFixed(2)}%', style: GoogleFonts.shareTechMono(color: isPositive ? Colors.tealAccent : Colors.pinkAccent, fontSize: 12)),
-                  ],
-                ),
-            ],
-          ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(label, style: GoogleFonts.orbitron(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
+            Text(subLabel, style: GoogleFonts.shareTechMono(color: Colors.white70, fontSize: 8)),
+          ],
         ),
       ),
     );
   }
 
-  IconData _getAssetIcon(AssetType type) {
-    switch (type) {
-      case AssetType.warpDrive: return Icons.rocket_launch;
-      case AssetType.thruster: return Icons.speed;
-      case AssetType.fleet: return Icons.group_work;
-      case AssetType.lifeSupport: return Icons.favorite;
-      case AssetType.derivatives: return Icons.account_tree;
-    }
-  }
 
   Widget _buildParticle(Particle p) {
     return Transform.rotate(
@@ -592,6 +474,153 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
     );
   }
 }
+
+// --- Data Pad Modal ---
+
+class _DataPadModal extends StatefulWidget {
+  final List<MarketAsset> assets;
+  final String sectorName;
+  final Color sectorColor;
+  final List<AssetSubType> allowedTypes;
+  final Function(MarketAsset) onAssetSelected;
+
+  const _DataPadModal({
+    required this.assets, 
+    required this.sectorName, 
+    required this.sectorColor, 
+    required this.allowedTypes, 
+    required this.onAssetSelected
+  });
+
+  @override
+  State<_DataPadModal> createState() => _DataPadModalState();
+}
+
+class _DataPadModalState extends State<_DataPadModal> {
+  String _searchQuery = "";
+  AssetSubType? _selectedFilter;
+
+  @override
+  Widget build(BuildContext context) {
+    // Filter logic
+    final filteredAssets = widget.assets.where((asset) {
+      bool matchesSearch = asset.symbol.contains(_searchQuery.toUpperCase()) || asset.id.contains(_searchQuery.toLowerCase());
+      bool matchesType = _selectedFilter == null || asset.subType == _selectedFilter;
+      return matchesSearch && matchesType;
+    }).toList();
+
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.7,
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.95),
+        border: Border(top: BorderSide(color: widget.sectorColor, width: 3)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        children: [
+          // Header
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              widget.sectorName,
+              style: GoogleFonts.orbitron(
+                color: widget.sectorColor,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                shadows: [BoxShadow(color: widget.sectorColor, blurRadius: 10)],
+              ),
+            ),
+          ),
+          
+          // Search Bar
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: TextField(
+              onChanged: (val) => setState(() => _searchQuery = val),
+              style: GoogleFonts.shareTechMono(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: "SEARCH ASSET ID...",
+                hintStyle: GoogleFonts.shareTechMono(color: Colors.white24),
+                filled: true,
+                fillColor: Colors.white.withOpacity(0.05),
+                border: OutlineInputBorder(borderSide: BorderSide(color: widget.sectorColor)),
+                focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: widget.sectorColor)),
+                prefixIcon: Icon(Icons.search, color: widget.sectorColor),
+              ),
+            ),
+          ),
+          
+          // Filter Chips
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: widget.allowedTypes.map((type) {
+                final isSelected = _selectedFilter == type;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: ChoiceChip(
+                    label: Text(type.name.toUpperCase()),
+                    selected: isSelected,
+                    onSelected: (selected) {
+                      setState(() {
+                         _selectedFilter = selected ? type : null;
+                      });
+                    },
+                    backgroundColor: Colors.white10,
+                    selectedColor: widget.sectorColor.withOpacity(0.3),
+                    labelStyle: GoogleFonts.shareTechMono(
+                      color: isSelected ? widget.sectorColor : Colors.white60,
+                      fontWeight: FontWeight.bold
+                    ),
+                    side: BorderSide(color: isSelected ? widget.sectorColor : Colors.white10),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          
+          // List
+          Expanded(
+            child: ListView.builder(
+              itemCount: filteredAssets.length,
+              itemBuilder: (context, index) {
+               final asset = filteredAssets[index];
+               final isPositive = asset.percentChange24h >= 0;
+               
+               return ListTile(
+                 onTap: () => widget.onAssetSelected(asset),
+                 leading: Icon(_getAssetIcon(asset.type), color: widget.sectorColor),
+                 title: Text(asset.symbol, style: GoogleFonts.orbitron(color: Colors.white)),
+                 subtitle: Text(asset.name, style: GoogleFonts.shareTechMono(color: Colors.white54)),
+                 trailing: Column(
+                   mainAxisAlignment: MainAxisAlignment.center,
+                   crossAxisAlignment: CrossAxisAlignment.end,
+                   children: [
+                     Text('\$${asset.currentPrice.toStringAsFixed(2)}', style: GoogleFonts.shareTechMono(color: Colors.white)),
+                     Text('${asset.percentChange24h.toStringAsFixed(2)}%', style: TextStyle(color: isPositive ? Colors.greenAccent : Colors.redAccent, fontSize: 12)),
+                   ],
+                 ),
+               );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  IconData _getAssetIcon(AssetType type) {
+    switch (type) {
+      case AssetType.warpDrive: return Icons.rocket_launch;
+      case AssetType.thruster: return Icons.speed;
+      case AssetType.fleet: return Icons.group_work;
+      case AssetType.lifeSupport: return Icons.favorite;
+      case AssetType.derivatives: return Icons.account_tree;
+    }
+  }
+}
+
 
 // --- Sci-Fi Painters & Widgets ---
 
@@ -619,86 +648,6 @@ class SciFiBackgroundPainter extends CustomPainter {
   }
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class CyberButton extends StatelessWidget {
-  final String label;
-  final String subLabel;
-  final Color color;
-  final bool isEnabled;
-  final VoidCallback onTap;
-
-  const CyberButton({
-    super.key,
-    required this.label,
-    required this.subLabel,
-    required this.color,
-    required this.isEnabled,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: isEnabled ? onTap : null,
-      child: ClipPath(
-        clipper: CutCornerClipper(),
-        child: Container(
-          height: 60,
-          color: isEnabled ? color.withOpacity(0.15) : Colors.grey.withOpacity(0.05),
-          child: Container(
-            decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: isEnabled ? color : Colors.white10, width: 2),
-              ),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  label,
-                  style: GoogleFonts.orbitron(
-                    color: isEnabled ? color : Colors.white24,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    shadows: isEnabled ? [BoxShadow(color: color, blurRadius: 8)] : [],
-                  ),
-                ),
-                Text(
-                  subLabel,
-                  style: GoogleFonts.shareTechMono(
-                    color: isEnabled ? Colors.white70 : Colors.white12,
-                    fontSize: 10,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class CutCornerClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    final path = Path();
-    double cut = 12.0;
-
-    path.moveTo(cut, 0);
-    path.lineTo(size.width, 0);
-    path.lineTo(size.width, size.height - cut);
-    path.lineTo(size.width - cut, size.height);
-    path.lineTo(0, size.height);
-    path.lineTo(0, cut);
-    path.close();
-
-    return path;
-  }
-
-  @override
-  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }
 
 class Particle {
