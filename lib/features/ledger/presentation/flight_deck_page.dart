@@ -2,10 +2,10 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:interactive_chart/interactive_chart.dart';
 import '../../../core/providers/refinery_provider.dart';
 import '../../trading/data/market_service.dart';
 import '../../trading/domain/models/market_asset.dart';
-import '../../trading/presentation/trading_page.dart';
 
 class FlightDeckPage extends ConsumerStatefulWidget {
   const FlightDeckPage({super.key});
@@ -15,13 +15,17 @@ class FlightDeckPage extends ConsumerStatefulWidget {
 }
 
 class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final AnimationController _fuelAnimationController;
+  late final AnimationController _radarController;
   final List<Particle> _particles = [];
   Timer? _particleTimer;
 
-  // For the TabBar
-  // No need for explicit tab controller if we use DefaultTabController in build
+  // Selection & Chart State
+  MarketAsset? _selectedAsset;
+  List<CandleData> _candles = [];
+  bool _isLoadingHistory = false;
+  String _selectedInterval = '1H';
 
   @override
   void initState() {
@@ -30,6 +34,11 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
       duration: const Duration(seconds: 2),
       vsync: this,
     );
+    
+    _radarController = AnimationController(
+      duration: const Duration(seconds: 4),
+      vsync: this,
+    )..repeat();
     
     // Particle system loop
     _particleTimer = Timer.periodic(const Duration(milliseconds: 32), (timer) {
@@ -40,6 +49,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
   @override
   void dispose() {
     _fuelAnimationController.dispose();
+    _radarController.dispose();
     _particleTimer?.cancel();
     super.dispose();
   }
@@ -49,7 +59,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
       for (int i = 0; i < _particles.length; i++) {
         _particles[i] = Particle(
           position: _particles[i].position + _particles[i].velocity,
-          velocity: _particles[i].velocity, // Constant velocity for now
+          velocity: _particles[i].velocity, 
           color: _particles[i].color.withOpacity(math.max(0, _particles[i].lifetime - 0.05)),
           size: _particles[i].size,
           lifetime: _particles[i].lifetime - 0.05,
@@ -60,11 +70,10 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
   }
 
   void _spawnIncomingParticles() {
-    // Spawn simple effect for fuel
     final random = math.Random();
     for (int i = 0; i < 20; i++) {
       _particles.add(Particle(
-        position: const Offset(150, 0), // Topish center
+        position: const Offset(150, 0),
         velocity: Offset((random.nextDouble() - 0.5) * 5, 2 + random.nextDouble() * 5),
         color: Colors.cyanAccent,
         size: 3 + random.nextDouble() * 3,
@@ -72,6 +81,44 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
       ));
     }
   }
+
+  // --- Selection Logic ---
+
+  Future<void> _loadHistory(MarketAsset asset) async {
+    setState(() {
+      _isLoadingHistory = true;
+      _candles = [];
+    });
+    try {
+      final service = ref.read(marketServiceProvider);
+      final history = await service.getAssetHistory(asset.id, _selectedInterval);
+      if (mounted) {
+         setState(() {
+          _candles = history.map((h) => CandleData(
+            timestamp: h.timestamp,
+            open: h.open,
+            close: h.close,
+            high: h.high,
+            low: h.low,
+            volume: h.volume,
+          )).toList();
+          _isLoadingHistory = false;
+        });
+      }
+    } catch (e) {
+       if (mounted) setState(() => _isLoadingHistory = false);
+    }
+  }
+
+  void _onAssetSelected(MarketAsset asset) {
+    if (_selectedAsset?.id == asset.id) return;
+    setState(() {
+      _selectedAsset = asset;
+    });
+    _loadHistory(asset);
+  }
+
+  // --- Build ---
 
   @override
   Widget build(BuildContext context) {
@@ -88,29 +135,26 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
     });
 
     return Scaffold(
-      backgroundColor: Colors.black, // Space
+      backgroundColor: Colors.black, 
       body: Stack(
         children: [
-          // Background Elements? (Stars etc could go here)
-          
-          // Main Cockpit Layout
           DefaultTabController(
             length: 3,
             child: Column(
               children: [
-                // ZONE 1: The Windshield (35%)
+                // ZONE 1: Telemetry Panel (Windshield) - 35%
                 Expanded(
                   flex: 35,
-                  child: _buildWindshield(),
+                  child: _buildTelemetryPanel(),
                 ),
 
-                // ZONE 2: Control Panel (15%)
+                // ZONE 2: Control Panel - 15%
                 Expanded(
                   flex: 15,
                   child: _buildControlPanel(refinedFuel),
                 ),
 
-                // ZONE 3: Cargo Bay (50%)
+                // ZONE 3: Cargo Bay (Asset List) - 50%
                 Expanded(
                   flex: 50,
                   child: assetsAsync.when(
@@ -125,7 +169,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
           
           // Particles Overlay
            ..._particles.map((p) => Positioned(
-            left: p.position.dx + MediaQuery.of(context).size.width / 2, // Center offset
+            left: p.position.dx + MediaQuery.of(context).size.width / 2, 
             top: p.position.dy + 100,
             child: _buildParticle(p),
           )),
@@ -134,7 +178,9 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
     );
   }
 
-  Widget _buildWindshield() {
+  // --- Zone 1: Telemetry Panel ---
+
+  Widget _buildTelemetryPanel() {
     return Container(
       width: double.infinity,
       decoration: const BoxDecoration(
@@ -143,38 +189,70 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
       ),
       child: Stack(
         children: [
-          // Simulated Grid/HUD
+          // Background Grid
           CustomPaint(
+             size: Size.infinite,
             painter: _GridPainter(),
-            child: Container(),
           ),
-          Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.black54,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.cyan.withOpacity(0.5)),
-              ),
-              child: const Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.monitor_heart_outlined, color: Colors.cyan, size: 48),
-                  SizedBox(height: 8),
-                  Text(
-                    "ACTIVE ASSET TELEMETRY",
-                    style: TextStyle(
-                      color: Colors.cyan,
-                      letterSpacing: 2,
-                      fontWeight: FontWeight.bold,
-                    ),
+          
+          if (_selectedAsset == null)
+            _buildEmptyState()
+          else
+            _buildChartState(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Radar Animation
+          AnimatedBuilder(
+            animation: _radarController,
+            builder: (context, child) {
+              return Container(
+                width: 100 + _radarController.value * 200,
+                height: 100 + _radarController.value * 200,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.cyan.withOpacity((1.0 - _radarController.value) * 0.5), 
+                    width: 2
                   ),
-                  Text(
-                    "Waiting for selection...",
-                    style: TextStyle(color: Colors.white54, fontSize: 10),
+                ),
+              );
+            },
+          ),
+          // Text
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.black54,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.cyan.withOpacity(0.5)),
+            ),
+            child: const Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.radar, color: Colors.cyan, size: 32),
+                SizedBox(height: 8),
+                Text(
+                  "ACTIVE ASSET TELEMETRY",
+                  style: TextStyle(
+                    color: Colors.cyan,
+                    letterSpacing: 2,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
                   ),
-                ],
-              ),
+                ),
+                Text(
+                  "Scanning for signal...",
+                  style: TextStyle(color: Colors.white54, fontSize: 10),
+                ),
+              ],
             ),
           ),
         ],
@@ -182,12 +260,106 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
     );
   }
 
+  Widget _buildChartState() {
+    if (_isLoadingHistory) {
+      return const Center(child: CircularProgressIndicator(color: Colors.cyan));
+    }
+
+    // Chart
+    return Column(
+      children: [
+         // Minimal Header for Context
+         Container(
+           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+           color: Colors.black54,
+           child: Row(
+             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+             children: [
+               Column(
+                 crossAxisAlignment: CrossAxisAlignment.start,
+                 children: [
+                   Text(
+                     _selectedAsset!.symbol, 
+                     style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)
+                   ),
+                   Text(
+                      '\$${_selectedAsset!.currentPrice.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        color: _selectedAsset!.percentChange24h >= 0 ? Colors.greenAccent : Colors.redAccent,
+                        fontSize: 12,
+                        fontFamily: 'RobotoMono',
+                      ),
+                   ),
+                 ],
+               ),
+               _buildIntervalSelector(),
+             ],
+           ),
+         ),
+         
+         Expanded(
+           child: InteractiveChart(
+            candles: _candles,
+            style: ChartStyle(
+              priceGainColor: Colors.greenAccent,
+              priceLossColor: Colors.redAccent,
+              volumeColor: Colors.white.withOpacity(0.1),
+              priceGridLineColor: Colors.white10,
+              timeLabelStyle: const TextStyle(color: Colors.white54, fontSize: 10),
+              priceLabelStyle: const TextStyle(color: Colors.white54, fontSize: 10),
+              overlayBackgroundColor: Colors.black.withOpacity(0.8),
+            ),
+          ),
+         ),
+      ],
+    );
+  }
+
+  Widget _buildIntervalSelector() {
+    final intervals = ['1H', '4H', '1D', '1W'];
+    return Row(
+      children: intervals.map((interval) {
+        final isSelected = _selectedInterval == interval;
+        return GestureDetector(
+          onTap: () {
+            setState(() => _selectedInterval = interval);
+            if (_selectedAsset != null) _loadHistory(_selectedAsset!);
+          },
+          child: Container(
+            margin: const EdgeInsets.only(left: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: isSelected ? Colors.cyan.withOpacity(0.2) : Colors.transparent,
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(
+                color: isSelected ? Colors.cyan : Colors.white10
+              ),
+            ),
+            child: Text(
+              interval,
+              style: TextStyle(
+                color: isSelected ? Colors.cyan : Colors.white54,
+                fontWeight: FontWeight.bold,
+                fontSize: 10,
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+
+  // --- Zone 2: Control Panel ---
+
   Widget _buildControlPanel(double fuel) {
+    bool hasSelection = _selectedAsset != null;
+    
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       decoration: BoxDecoration(
         color: const Color(0xFF111111),
-        border: Border(top: BorderSide(color: Colors.white10), bottom: BorderSide(color: Colors.white10)),
+        border: const Border(top: BorderSide(color: Colors.white10), bottom: BorderSide(color: Colors.white10)),
         boxShadow: [
           BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 10, offset: const Offset(0, 5))
         ],
@@ -221,15 +393,29 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
             child: Row(
               children: [
                 Expanded(
-                  child: _buildPanelButton("BUY", Colors.cyan, () {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Processing Buy Order...')));
-                  }),
+                  child: _buildPanelButton(
+                    label: hasSelection ? "BUY ${_selectedAsset!.symbol}" : "SYSTEM IDLE",
+                    color: Colors.cyan,
+                    isEnabled: hasSelection,
+                    onTap: () {
+                      if (hasSelection) {
+                         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Buying ${_selectedAsset!.symbol}...')));
+                      }
+                    }
+                  ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 8),
                 Expanded(
-                  child: _buildPanelButton("SELL", Colors.orange, () {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Processing Sell Order...')));
-                  }),
+                  child: _buildPanelButton(
+                    label: hasSelection ? "SELL ${_selectedAsset!.symbol}" : "STANDBY",
+                    color: Colors.orange,
+                    isEnabled: hasSelection,
+                    onTap: () {
+                       if (hasSelection) {
+                         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Selling ${_selectedAsset!.symbol}...')));
+                      }
+                    }
+                  ),
                 ),
               ],
             ),
@@ -239,24 +425,34 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
     );
   }
 
-  Widget _buildPanelButton(String label, Color color, VoidCallback onTap) {
+  Widget _buildPanelButton({
+    required String label, 
+    required Color color, 
+    required bool isEnabled,
+    required VoidCallback onTap
+  }) {
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
+      onTap: isEnabled ? onTap : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
         height: 50,
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: isEnabled ? color.withOpacity(0.1) : Colors.white.withOpacity(0.05),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: color.withOpacity(0.5), width: 1.5),
+          border: Border.all(
+            color: isEnabled ? color.withOpacity(0.5) : Colors.white10, 
+            width: 1.5
+          ),
         ),
         child: Center(
           child: Text(
             label,
+            textAlign: TextAlign.center,
             style: TextStyle(
-              color: color,
+              color: isEnabled ? color : Colors.white24,
               fontWeight: FontWeight.bold,
-              fontSize: 16,
-              letterSpacing: 1.5,
+              fontSize: 12, // slightly smaller to fit logic names
+              letterSpacing: 1,
             ),
           ),
         ),
@@ -264,27 +460,25 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
     );
   }
 
+  // --- Zone 3: Cargo Bay ---
+
   Widget _buildCargoBay(List<MarketAsset> assets) {
-    // Filter assets for tabs
-    // Tab 1: Life Support (Commodities/Forex)
+    // Tab 1: Life Support
     final sectorA = assets.where((a) => a.type == AssetType.lifeSupport).toList();
-    
-    // Tab 2: Fleets (Indices) & Thrusters (Stocks)
+    // Tab 2: Fleets & Thrusters
     final sectorB = assets.where((a) => a.type == AssetType.thruster || a.type == AssetType.fleet).toList();
-    
-    // Tab 3: Warp Drive (Crypto)
+    // Tab 3: Warp Drive
     final sectorC = assets.where((a) => a.type == AssetType.warpDrive).toList();
 
     return Column(
       children: [
-        // Tab Bar
         Container(
           color: Colors.black,
           child: const TabBar(
             indicatorColor: Colors.cyan,
             labelColor: Colors.white,
             unselectedLabelColor: Colors.white38,
-            labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 10), // Reduced font size slightly to fit
+            labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 10),
             tabs: [
               Tab(text: "SECTOR A\n(Life Support)"),
               Tab(text: "SECTOR B\n(Thrusters/Fleet)"),
@@ -292,8 +486,6 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
             ],
           ),
         ),
-        
-        // Tab Content
         Expanded(
           child: TabBarView(
             children: [
@@ -319,43 +511,31 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
   }
 
   Widget _buildAssetTile(MarketAsset asset, Color themeColor) {
-    final isLocked = asset.isLocked(1); // Should be false now per user request
+    final isLocked = asset.isLocked(1); 
     final isPositive = asset.percentChange24h >= 0;
+    final isSelected = _selectedAsset?.id == asset.id;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
       child: GestureDetector(
         onTap: isLocked ? null : () {
-          // Navigate to Trading Chart
-          Navigator.push(
-            context, 
-            MaterialPageRoute(builder: (_) => TradingPage(asset: asset)),
-          );
+          _onAssetSelected(asset);
         },
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.black54,
+            color: isSelected ? themeColor.withOpacity(0.2) : Colors.black54,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isLocked ? Colors.grey : themeColor.withOpacity(0.5),
-              width: 1
+              color: isLocked ? Colors.grey : (isSelected ? themeColor : themeColor.withOpacity(0.3)),
+              width: isSelected ? 2 : 1
             ),
-            boxShadow: [
-              if (!isLocked)
-                BoxShadow(
-                  color: themeColor.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                )
-            ],
           ),
           child: Row(
             children: [
-              // Icon
-              Container(
-                width: 40, 
-                height: 40,
+             Container(
+                width: 40, height: 40,
                 decoration: BoxDecoration(
                   color: isLocked ? Colors.white10 : themeColor.withOpacity(0.1),
                   shape: BoxShape.circle,
@@ -367,69 +547,23 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                 ),
               ),
               const SizedBox(width: 16),
-              
-              // Name & Details
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      asset.symbol,
-                      style: TextStyle(
-                        color: isLocked ? Colors.grey : Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    Text(
-                      asset.name,
-                      style: TextStyle(color: Colors.white38, fontSize: 12),
-                    ),
+                    Text(asset.symbol, style: TextStyle(color: isLocked ? Colors.grey : Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                    Text(asset.name, style: const TextStyle(color: Colors.white38, fontSize: 12)),
                   ],
                 ),
               ),
-              
-              // Price or Lock Status
               if (isLocked)
-                const Text(
-                  "RESTRICTED",
-                  style: TextStyle(
-                    color: Colors.red,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                    letterSpacing: 1,
-                  ),
-                )
+                const Text("RESTRICTED", style: TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold))
               else
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text(
-                      '\$${asset.currentPrice.toStringAsFixed(asset.currentPrice < 1 ? 4 : 2)}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        fontFamily: 'RobotoMono',
-                      ),
-                    ),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                         Icon(
-                          isPositive ? Icons.arrow_drop_up : Icons.arrow_drop_down,
-                          color: isPositive ? Colors.green : Colors.red,
-                          size: 16,
-                        ),
-                        Text(
-                          '${asset.percentChange24h.abs().toStringAsFixed(2)}%',
-                          style: TextStyle(
-                            color: isPositive ? Colors.green : Colors.red,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
+                    Text('\$${asset.currentPrice.toStringAsFixed(asset.currentPrice < 1 ? 4 : 2)}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'RobotoMono',)),
+                    Text('${asset.percentChange24h.abs().toStringAsFixed(2)}%', style: TextStyle(color: isPositive ? Colors.green : Colors.red, fontSize: 12)),
                   ],
                 ),
             ],
@@ -443,9 +577,9 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
     switch (type) {
       case AssetType.warpDrive: return Icons.rocket_launch;
       case AssetType.thruster: return Icons.speed;
-      case AssetType.fleet: return Icons.group_work; // Icon for Indices
+      case AssetType.fleet: return Icons.group_work;
       case AssetType.lifeSupport: return Icons.favorite;
-      case AssetType.derivatives: return Icons.account_tree; // Placeholder
+      case AssetType.derivatives: return Icons.account_tree;
     }
   }
 
@@ -457,7 +591,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
         height: p.size,
         decoration: BoxDecoration(
           color: p.color,
-          shape: BoxShape.rectangle, // Digital look
+          shape: BoxShape.rectangle,
         ),
       ),
     );
@@ -468,10 +602,9 @@ class _GridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.cyan.withOpacity(0.1)
+      ..color = Colors.cyan.withOpacity(0.05)
       ..strokeWidth = 1;
-      
-    // Draw simple grid
+
     for(double x = 0; x < size.width; x += 40) {
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
     }
@@ -479,12 +612,10 @@ class _GridPainter extends CustomPainter {
       canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
     }
   }
-
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-// Helper class for Particles (kept local for now)
 class Particle {
   final Offset position;
   final Offset velocity;
