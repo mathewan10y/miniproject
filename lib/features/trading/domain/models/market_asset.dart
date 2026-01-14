@@ -4,6 +4,12 @@ enum AssetType {
   fleet,       // Indices/ETFs - "Sector B"
   warpDrive,   // High Risk (Crypto) - "Sector C"
   derivatives, // Placeholder (Options/Futures)
+  commodity,   // Material Goods
+  currency,    // Credits/Fiat
+  technology,  // Tech components
+  luxury,      // High value goods
+  weaponry,    // Defense systems
+  terraforming,// Planet modification
 }
 
 enum AssetSubType {
