@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -41,9 +42,13 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
   Offset? _cursorPos; // Crosshair cursor position
 
   // Zoom/Pan State
-  int _visibleCandleCount = 30;
-  double _zoomBase = 30.0;
-  double _scrollOffset = 0.0; // Index based scroll
+  // Zoom/Pan State
+  double _candleWidth = 10.0;
+  double _baseCandleWidth = 10.0;
+  final double _minCandleWidth = 2.0;
+  final double _maxCandleWidth = 50.0;
+  double _scrollOffset = 0.0; // Index based scroll from RIGHT
+
   final DraggableScrollableController _sheetController = DraggableScrollableController();
 
 
@@ -294,6 +299,41 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
 
 
 
+  void _handleZoom(double scaleFactor, Offset focalPoint, double chartWidth) {
+      final double oldWidth = _candleWidth;
+      final double newWidth = (_baseCandleWidth * scaleFactor).clamp(_minCandleWidth, _maxCandleWidth);
+      
+      if (oldWidth == newWidth) return;
+      
+      // Focal Point Logic (Keep candle under mouse stationary)
+      // _scrollOffset is distance from RIGHT (end).
+      // Pixels from right = chartWidth - focalPoint.dx
+      final double pixelsFromRight = chartWidth - focalPoint.dx;
+      
+      // Math: _scrollOffset_new = _scrollOffset_old + (pixelsFromRight) * (1/old - 1/new)
+      final double scrollDelta = pixelsFromRight * (1/oldWidth - 1/newWidth);
+      
+      setState(() {
+         _candleWidth = newWidth;
+         _scrollOffset += scrollDelta;
+      });
+  }
+
+  void _handleScrollZoom(double delta, Offset focalPoint, double chartWidth) {
+      final double oldWidth = _candleWidth;
+      final double newWidth = (_candleWidth - delta / 20).clamp(_minCandleWidth, _maxCandleWidth);
+      
+      if (oldWidth == newWidth) return;
+      
+      final double pixelsFromRight = chartWidth - focalPoint.dx;
+      final double scrollDelta = pixelsFromRight * (1/oldWidth - 1/newWidth);
+
+      setState(() {
+         _candleWidth = newWidth;
+         _scrollOffset += scrollDelta;
+      });
+  }
+
   Widget _buildChartState() {
     if (_isLoadingHistory) {
       return const Center(child: CircularProgressIndicator(color: Colors.cyan));
@@ -334,21 +374,32 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
   }
 
   Widget _buildChartCanvas(BoxConstraints constraints) {
+          final double chartWidth = constraints.maxWidth;
+          final double chartHeight = constraints.maxHeight;
           final int totalCandles = _candles.length;
           
-          // 1. Zoom & Scroll Limits
-          _visibleCandleCount = _visibleCandleCount.clamp(10, 150);
-          final maxScroll = (totalCandles - _visibleCandleCount).toDouble();
+          // 4. Layout Constants
+          const double rightAxisWidth = 50.0;
+          const double bottomAxisHeight = 20.0;
+          
+          final double chartPlotWidth = math.max(0, chartWidth - rightAxisWidth);
+          final double chartPlotHeight = math.max(0, chartHeight - bottomAxisHeight);
+
+          // 1. Calculate Visible Count based on Candle Width
+          final double visibleCandleCount = chartPlotWidth / _candleWidth;
+          
+          // 2. Scroll Limits
+          final maxScroll = (totalCandles - visibleCandleCount).toDouble();
           // Allow scrolling into future (negative offset). Cap at 30% of screen width into future.
-          final minScroll = -_visibleCandleCount * 0.3; 
+          final minScroll = -visibleCandleCount * 0.3; 
           
           _scrollOffset = _scrollOffset.clamp(minScroll, maxScroll >= 0 ? maxScroll : 0.0);
           
-          // 2. Viewport Calculation
+          // 3. Viewport Calculation (Exact floating point indices)
           final double endX = totalCandles - _scrollOffset;
-          final double startX = endX - _visibleCandleCount;
+          final double startX = endX - visibleCandleCount;
           
-          // 3. Dynamic Price Scaling
+          // 4. Dynamic Price Scaling based on VISIBLE data
           int viewStartInt = math.max(0, startX.floor());
           int viewEndInt = math.min(totalCandles, endX.ceil());
           
@@ -379,7 +430,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
              maxPrice += range * 0.1;
           }
           
-          // Ensure Visible Trade Lines are included
+          // Ensure Visible Trade Lines are included (if active)
           if (_entryPrice != null) {
              double finalMin = minPrice;
              double finalMax = maxPrice;
@@ -396,13 +447,6 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                 maxPrice = finalMax + (finalMax - finalMin) * 0.05;
              }
           }
-
-          // 4. Layout Constants
-          const double rightAxisWidth = 50.0;
-          const double bottomAxisHeight = 20.0;
-          
-          final double chartPlotWidth = math.max(0, constraints.maxWidth - rightAxisWidth);
-          final double chartPlotHeight = math.max(0, constraints.maxHeight - bottomAxisHeight);
           
           final double drawingPriceRange = maxPrice - minPrice;
           final double pixelsPerPrice = chartPlotHeight / (drawingPriceRange == 0 ? 1 : drawingPriceRange);
@@ -415,26 +459,54 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
              return maxPrice - (y / pixelsPerPrice);
           }
 
-          return MouseRegion(
+          return Listener(
+            onPointerSignal: (event) {
+               if (event is PointerScrollEvent) {
+                  // Handle Mouse Zoom
+                  // Use localPosition relative to the Chart.
+                  // Need to account for the Axis width?
+                  // event.localPosition is relative to the Listener child? No, usually relative to widget.
+                  // Listener wraps GestureDetector.
+                  // Check if mouse is in plot area
+                  if (event.localPosition.dx < chartPlotWidth && event.localPosition.dy < chartPlotHeight) {
+                      _handleScrollZoom(event.scrollDelta.dy, event.localPosition, chartPlotWidth);
+                  }
+               }
+            },
+            child: MouseRegion(
                 onHover: (event) => setState(() => _cursorPos = event.localPosition),
                 onExit: (_) => setState(() => _cursorPos = null),
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onHorizontalDragUpdate: (details) {
                       setState(() {
-                        _scrollOffset -= details.primaryDelta! * 0.2; 
+                        // Pan Logic
+                        // Scroll Offset is in Candles.
+                        // Delta is px.
+                        // DeltaCandles = DeltaPx / CandleWidth.
+                        // Pan Left (Move right) => Delta > 0.
+                        // Moving right means looking at earlier candles?
+                        // If I drag mouse RIGHT, I expect chart to move RIGHT.
+                        // So Previous candles (Lower Index) come into view.
+                        // StartX should DECREASE.
+                        // EndX should DECREASE.
+                        // EndX = Total - Offset.
+                        // So Offset should INCREASE.
+                        // Logic: _scrollOffset += px / width.
+                        _scrollOffset += details.primaryDelta! / _candleWidth; 
                       });
                   },
-                  onScaleStart: (_) {
-                      _zoomBase = _visibleCandleCount.toDouble();
+                  onScaleStart: (details) {
+                      _baseCandleWidth = _candleWidth;
                   },
                   onScaleUpdate: (details) {
-                      setState(() {
-                        if (details.scale != 1.0) {
-                            final double newCount = _zoomBase / details.scale;
-                            _visibleCandleCount = newCount.toInt().clamp(10, 150);
-                        }
-                      });
+                      // Handle Pinch Zoom
+                      if (details.scale != 1.0) {
+                         // Use focalPoint of the pinch
+                         if (details.localFocalPoint.dx < chartPlotWidth) {
+                            _handleZoom(details.scale, details.localFocalPoint, chartPlotWidth);
+                         }
+                      }
                   },
                   child: Stack(
                     clipBehavior: Clip.none,
@@ -448,7 +520,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                                    size: Size(chartPlotWidth, chartPlotHeight),
                                    painter: _GridPainter(
                                       startX: startX, endX: endX, minPrice: minPrice, maxPrice: maxPrice,
-                                      visibleCount: _visibleCandleCount.toDouble(),
+                                      visibleCount: visibleCandleCount,
                                    ),
                                  ),
                                  RepaintBoundary(
@@ -492,10 +564,6 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                        if (_tradeMode != TradeMode.none && _entryPrice != null) ...[
                           _buildEntryControls(_entryPrice!, _tradeMode == TradeMode.long ? Colors.cyan : Colors.pinkAccent, priceToY(_entryPrice!), yToPrice),
                           
-                          // OLD DOC CALLS REMOVED.
-                          // Only call _buildLineControls if Active (price != null).
-                          // Docked versions are now INSIDE _buildEntryControls.
-                          
                           if (_slPrice != null)
                             _buildLineControls(
                                currentPrice: _entryPrice!,
@@ -523,6 +591,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                       ],
                   ),
                 ),
+            ),
           );
   }
 
