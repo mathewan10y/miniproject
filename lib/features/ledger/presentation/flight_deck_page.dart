@@ -293,11 +293,11 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
   }
 
 
+
   Widget _buildChartState() {
     if (_isLoadingHistory) {
       return const Center(child: CircularProgressIndicator(color: Colors.cyan));
     }
-    // FIX: Data Safety - Handle empty or null lists
     if (_candles.isEmpty) {
       return Center(
         child: Column(
@@ -311,222 +311,332 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
       );
     }
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-         final int totalCandles = _candles.length;
-         
-         // 1. Zoom & Scroll Limits
-         _visibleCandleCount = _visibleCandleCount.clamp(10, 150);
-         final maxScroll = (totalCandles - _visibleCandleCount).toDouble();
-         _scrollOffset = _scrollOffset.clamp(0.0, maxScroll >= 0 ? maxScroll : 0.0);
-         
-         // 2. Viewport Calculation (Exact floating point indices)
-         final double endX = totalCandles - _scrollOffset;
-         final double startX = endX - _visibleCandleCount;
-         
-         // 3. Dynamic Price Scaling based on VISIBLE data
-         int viewStartInt = math.max(0, startX.floor());
-         int viewEndInt = math.min(totalCandles, endX.ceil());
-         
-         double minPrice = double.infinity;
-         double maxPrice = double.negativeInfinity;
-         
-         // Safety: If view is invalid (shouldn't happen due to constraints), fallback
-         if (viewEndInt <= viewStartInt) {
-            minPrice = 0; maxPrice = 100;
-         } else {
-            for (int i = viewStartInt; i < viewEndInt; i++) {
-               if (_candles[i].low < minPrice) minPrice = _candles[i].low;
-               if (_candles[i].high > maxPrice) maxPrice = _candles[i].high;
-            }
-         }
-         
-         final double range = maxPrice - minPrice;
-         // Add padding (10%)
-         if (range == 0) {
-            minPrice -= 1; maxPrice += 1;
-         } else {
-            minPrice -= range * 0.1;
-            maxPrice += range * 0.1;
-         }
-         
-         // Ensure Trade Lines are visible if active
-         if (_entryPrice != null) {
-            double finalMin = minPrice;
-            double finalMax = maxPrice;
-            // Helper to expand range
-            void expand(double val) {
-               if (val < finalMin) finalMin = val;
-               if (val > finalMax) finalMax = val;
-            }
-            expand(_entryPrice!);
-            if (_slPrice != null) expand(_slPrice!);
-            if (_tpPrice != null) expand(_tpPrice!);
-
-            // Re-apply padding if we expanded
-            if (finalMin != minPrice || finalMax != maxPrice) {
-               minPrice = finalMin - (finalMax - finalMin) * 0.05;
-               maxPrice = finalMax + (finalMax - finalMin) * 0.05;
-            }
-         }
-
-         // 4. Layout Constants
-         const double rightAxisWidth = 50.0;
-         const double bottomAxisHeight = 20.0;
-         final double chartPlotWidth = constraints.maxWidth - rightAxisWidth;
-         final double chartPlotHeight = constraints.maxHeight - bottomAxisHeight;
-         
-         final double drawingPriceRange = maxPrice - minPrice;
-         final double pixelsPerPrice = chartPlotHeight / (drawingPriceRange == 0 ? 1 : drawingPriceRange);
-
-         // Y = 0 is TOP of chart area.
-         // Price Max = Y 0
-         // Price Min = Y chartPlotHeight
-         double priceToY(double price) {
-            return (maxPrice - price) * pixelsPerPrice;
-         }
-
-         // Function to reverse map Y pixel to Price (for dragging)
-         double yToPrice(double y) {
-            return maxPrice - (y / pixelsPerPrice);
-         }
-
-         return Stack(
+    return Stack(
+      children: [
+        Column(
            children: [
-             Column(
-               children: [
-                 _buildChartHeader(),
-                 Expanded(
-                   child: MouseRegion(
-                     onHover: (event) => setState(() => _cursorPos = event.localPosition),
-                     onExit: (_) => setState(() => _cursorPos = null),
-                     child: GestureDetector(
-                       // FIX: Gesture Handling
-                       // We use opaque behavior to catch all touches on the chart surface
-                       behavior: HitTestBehavior.opaque,
-                       onHorizontalDragUpdate: (details) {
-                          setState(() {
-                             _scrollOffset -= details.primaryDelta! * 0.2; 
-                          });
-                       },
-                       onScaleStart: (_) {
-                          _zoomBase = _visibleCandleCount.toDouble();
-                       },
-                       onScaleUpdate: (details) {
-                          setState(() {
-                             if (details.scale != 1.0) {
-                                final double newCount = _zoomBase / details.scale;
-                                _visibleCandleCount = newCount.toInt().clamp(10, 150);
-                             }
-                          });
-                       },
-                       child: Stack(
-                         clipBehavior: Clip.none,
-                          children: [
-                           // LAYER 1: CHART PLOT AREA (Wicks + Bodies)
-                           Positioned(
-                              left: 0, top: 0, 
-                              width: chartPlotWidth, height: chartPlotHeight,
-                              child: Stack(
-                                 children: [
-                                     // Grid
-                                     CustomPaint(
-                                       size: Size(chartPlotWidth, chartPlotHeight),
-                                       painter: _GridPainter(
-                                          startX: startX, 
-                                          endX: endX, 
-                                          minPrice: minPrice, 
-                                          maxPrice: maxPrice,
-                                          visibleCount: _visibleCandleCount.toDouble(),
-                                       ),
-                                     ),
-                                     
-                                     // Candles
-                                     RepaintBoundary(
-                                       child: CustomPaint(
-                                         size: Size(chartPlotWidth, chartPlotHeight),
-                                         painter: CandleStickPainter(
-                                           candles: _candles,
-                                           startX: startX,
-                                           endX: endX,
-                                           minPrice: minPrice,
-                                           maxPrice: maxPrice,
-                                         ),
-                                       ),
-                                     ),
-                                     
-                                     // Trade Lines
-                                     if (_tradeMode != TradeMode.none && _entryPrice != null)
-                                       CustomPaint(
-                                          size: Size(chartPlotWidth, chartPlotHeight),
-                                          painter: _TradeLinePainter(
-                                             entryPrice: _entryPrice!,
-                                             slPrice: _slPrice,
-                                             tpPrice: _tpPrice,
-                                             minPrice: minPrice,
-                                             maxPrice: maxPrice,
-                                             tradeMode: _tradeMode,
-                                          ),
-                                       ),
-                                 ]
-                              ),
-                           ),
-
-                           // LAYER 1.5: Manual Axes
-                           // Right Axis
-                           Positioned(
-                              right: 0, top: 0, bottom: bottomAxisHeight, width: rightAxisWidth,
-                              child: CustomPaint(
-                                 painter: _AxisPainter(
-                                    min: minPrice, max: maxPrice, 
-                                    isBottom: false,
-                                    textStyle: GoogleFonts.shareTechMono(color: Colors.white24, fontSize: 10)
-                                 )
-                              ),
-                           ),
-                           // Bottom Axis
-                           Positioned(
-                              left: 0, bottom: 0, height: bottomAxisHeight, width: chartPlotWidth,
-                              child: CustomPaint(
-                                 painter: _AxisPainter(
-                                    min: startX, max: endX, 
-                                    isBottom: true,
-                                    candles: _candles,
-                                    textStyle: GoogleFonts.shareTechMono(color: Colors.white54, fontSize: 10)
-                                 )
-                              ),
-                           ),
-
-
-                           // Layer 3: Crosshair
-                           if (_cursorPos != null)
-                             Positioned(
-                               left: 0, top: 0, width: chartPlotWidth, height: chartPlotHeight,
-                               child: IgnorePointer(
-                                 child: CustomPaint(
-                                   painter: _CrosshairPainter(position: _cursorPos!, lineColor: Colors.white24),
-                                 ),
-                               ),
-                             ),
-
-                           // Layer 4: Interactive Controls
-                           if (_tradeMode != TradeMode.none && _entryPrice != null) ...[
-                              _buildEntryControls(_entryPrice!, _tradeMode == TradeMode.long ? Colors.cyan : Colors.pinkAccent, priceToY(_entryPrice!), yToPrice),
-                              if (_slPrice != null) _buildLineControls(_slPrice!, Colors.redAccent, "SL", priceToY(_slPrice!), yToPrice, (v) => setState(() => _slPrice = v)),
-                              if (_tpPrice != null) _buildLineControls(_tpPrice!, const Color(0xFF00E676), "TP", priceToY(_tpPrice!), yToPrice, (v) => setState(() => _tpPrice = v)),
-                           ]
-                          ],
-                       ),
-                     ),
-                   ),
+              _buildChartHeader(),
+              Expanded(
+                 // COUPLED: LayoutBuilder gets the exact size for the chart painting
+                 child: LayoutBuilder(
+                    builder: (context, constraints) {
+                       return _buildChartCanvas(constraints);
+                    }
                  ),
-                 Padding(padding: const EdgeInsets.all(8.0), child: _buildIntervalSelector()),
-               ],
-             ),
-             _buildTradeManagerPanel(),
+              ),
+              // Increased spacer to 80 to fully clear the Trade Manager Panel's collapsed state + shadow
+              const SizedBox(height: 80),
            ],
-         );
-      }
+        ),
+        _buildTradeManagerPanel(),
+      ],
+    );
+  }
+
+  Widget _buildChartCanvas(BoxConstraints constraints) {
+          final int totalCandles = _candles.length;
+          
+          // 1. Zoom & Scroll Limits
+          _visibleCandleCount = _visibleCandleCount.clamp(10, 150);
+          final maxScroll = (totalCandles - _visibleCandleCount).toDouble();
+          // Allow scrolling into future (negative offset). Cap at 30% of screen width into future.
+          final minScroll = -_visibleCandleCount * 0.3; 
+          
+          _scrollOffset = _scrollOffset.clamp(minScroll, maxScroll >= 0 ? maxScroll : 0.0);
+          
+          // 2. Viewport Calculation
+          final double endX = totalCandles - _scrollOffset;
+          final double startX = endX - _visibleCandleCount;
+          
+          // 3. Dynamic Price Scaling
+          int viewStartInt = math.max(0, startX.floor());
+          int viewEndInt = math.min(totalCandles, endX.ceil());
+          
+          double minPrice = double.infinity;
+          double maxPrice = double.negativeInfinity;
+          
+          if (viewEndInt <= viewStartInt) {
+             // Fallback if looking at completely empty space
+             if (_candles.isNotEmpty) {
+                // Use last known close +- 10
+                 minPrice = _candles.last.close * 0.9;
+                 maxPrice = _candles.last.close * 1.1;
+             } else {
+                 minPrice = 0; maxPrice = 100;
+             }
+          } else {
+             for (int i = viewStartInt; i < viewEndInt; i++) {
+                if (_candles[i].low < minPrice) minPrice = _candles[i].low;
+                if (_candles[i].high > maxPrice) maxPrice = _candles[i].high;
+             }
+          }
+          
+          final double range = maxPrice - minPrice;
+          if (range == 0) {
+             minPrice -= 1; maxPrice += 1;
+          } else {
+             minPrice -= range * 0.1;
+             maxPrice += range * 0.1;
+          }
+          
+          // Ensure Visible Trade Lines are included
+          if (_entryPrice != null) {
+             double finalMin = minPrice;
+             double finalMax = maxPrice;
+             void expand(double val) {
+                if (val < finalMin) finalMin = val;
+                if (val > finalMax) finalMax = val;
+             }
+             expand(_entryPrice!);
+             if (_slPrice != null) expand(_slPrice!);
+             if (_tpPrice != null) expand(_tpPrice!);
+
+             if (finalMin != minPrice || finalMax != maxPrice) {
+                minPrice = finalMin - (finalMax - finalMin) * 0.05;
+                maxPrice = finalMax + (finalMax - finalMin) * 0.05;
+             }
+          }
+
+          // 4. Layout Constants
+          const double rightAxisWidth = 50.0;
+          const double bottomAxisHeight = 20.0;
+          
+          final double chartPlotWidth = math.max(0, constraints.maxWidth - rightAxisWidth);
+          final double chartPlotHeight = math.max(0, constraints.maxHeight - bottomAxisHeight);
+          
+          final double drawingPriceRange = maxPrice - minPrice;
+          final double pixelsPerPrice = chartPlotHeight / (drawingPriceRange == 0 ? 1 : drawingPriceRange);
+
+          double priceToY(double price) {
+             return (maxPrice - price) * pixelsPerPrice;
+          }
+
+          double yToPrice(double y) {
+             return maxPrice - (y / pixelsPerPrice);
+          }
+
+          return MouseRegion(
+                onHover: (event) => setState(() => _cursorPos = event.localPosition),
+                onExit: (_) => setState(() => _cursorPos = null),
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onHorizontalDragUpdate: (details) {
+                      setState(() {
+                        _scrollOffset -= details.primaryDelta! * 0.2; 
+                      });
+                  },
+                  onScaleStart: (_) {
+                      _zoomBase = _visibleCandleCount.toDouble();
+                  },
+                  onScaleUpdate: (details) {
+                      setState(() {
+                        if (details.scale != 1.0) {
+                            final double newCount = _zoomBase / details.scale;
+                            _visibleCandleCount = newCount.toInt().clamp(10, 150);
+                        }
+                      });
+                  },
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                      children: [
+                        // Grid & Candles & Lines
+                        Positioned(
+                          left: 0, top: 0, width: chartPlotWidth, height: chartPlotHeight,
+                          child: Stack(
+                             children: [
+                                 CustomPaint(
+                                   size: Size(chartPlotWidth, chartPlotHeight),
+                                   painter: _GridPainter(
+                                      startX: startX, endX: endX, minPrice: minPrice, maxPrice: maxPrice,
+                                      visibleCount: _visibleCandleCount.toDouble(),
+                                   ),
+                                 ),
+                                 RepaintBoundary(
+                                   child: CustomPaint(
+                                     size: Size(chartPlotWidth, chartPlotHeight),
+                                     painter: CandleStickPainter(
+                                       candles: _candles, startX: startX, endX: endX, minPrice: minPrice, maxPrice: maxPrice,
+                                     ),
+                                   ),
+                                 ),
+                                 if (_tradeMode != TradeMode.none && _entryPrice != null)
+                                   CustomPaint(
+                                      size: Size(chartPlotWidth, chartPlotHeight),
+                                      painter: _TradeLinePainter(
+                                         entryPrice: _entryPrice!, slPrice: _slPrice, tpPrice: _tpPrice,
+                                         minPrice: minPrice, maxPrice: maxPrice, tradeMode: _tradeMode,
+                                      ),
+                                   ),
+                             ]
+                          ),
+                        ),
+                        
+                       // Axes
+                       Positioned(
+                          right: 0, top: 0, bottom: bottomAxisHeight, width: rightAxisWidth,
+                          child: CustomPaint(painter: _AxisPainter(min: minPrice, max: maxPrice, isBottom: false, textStyle: GoogleFonts.shareTechMono(color: Colors.white24, fontSize: 10))),
+                       ),
+                       Positioned(
+                          left: 0, bottom: 0, height: bottomAxisHeight, width: chartPlotWidth,
+                          child: CustomPaint(painter: _AxisPainter(min: startX, max: endX, isBottom: true, candles: _candles, textStyle: GoogleFonts.shareTechMono(color: Colors.white54, fontSize: 10))),
+                       ),
+
+                       // Crosshair
+                       if (_cursorPos != null)
+                         Positioned(
+                           left: 0, top: 0, width: chartPlotWidth, height: chartPlotHeight,
+                           child: IgnorePointer(child: CustomPaint(painter: _CrosshairPainter(position: _cursorPos!, lineColor: Colors.white24))),
+                         ),
+
+                       // Controls
+                       if (_tradeMode != TradeMode.none && _entryPrice != null) ...[
+                          _buildEntryControls(_entryPrice!, _tradeMode == TradeMode.long ? Colors.cyan : Colors.pinkAccent, priceToY(_entryPrice!), yToPrice),
+                          
+                          // OLD DOC CALLS REMOVED.
+                          // Only call _buildLineControls if Active (price != null).
+                          // Docked versions are now INSIDE _buildEntryControls.
+                          
+                          if (_slPrice != null)
+                            _buildLineControls(
+                               currentPrice: _entryPrice!,
+                               activePrice: _slPrice,
+                               color: Colors.redAccent,
+                               label: "SL",
+                               entryY: priceToY(_entryPrice!),
+                               yToPrice: yToPrice,
+                               priceToY: priceToY,
+                               onUpdate: (v) => setState(() => _slPrice = v)
+                            ),
+                          
+                          if (_tpPrice != null)
+                            _buildLineControls(
+                               currentPrice: _entryPrice!,
+                               activePrice: _tpPrice,
+                               color: const Color(0xFF00E676),
+                               label: "TP",
+                               entryY: priceToY(_entryPrice!),
+                               yToPrice: yToPrice,
+                               priceToY: priceToY,
+                               onUpdate: (v) => setState(() => _tpPrice = v)
+                            ),
+                       ]
+                      ],
+                  ),
+                ),
+          );
+  }
+
+  Widget _buildEntryControls(double price, Color color, double topY, double Function(double) yToPrice) {
+    if (topY < 0 || topY > 2000) return const SizedBox(); 
+    
+    final isLong = _tradeMode == TradeMode.long;
+    final currentPrice = _selectedAsset!.currentPrice;
+    final pnl = (currentPrice - price) * (isLong ? 1 : -1) * 1000; 
+    final isProfitable = pnl >= 0;
+
+    return Positioned(
+       top: topY - 15, 
+       right: 50, 
+       child: Container(
+         height: 30,
+         decoration: BoxDecoration(
+            color: const Color(0xFF131722),
+            border: Border.all(color: color),
+            borderRadius: BorderRadius.circular(4),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 4)]
+         ),
+         child: Row(
+           mainAxisSize: MainAxisSize.min,
+           children: [
+              // 0. DOCKED BUTTONS (Render inside this row to align horizontally)
+              
+              // SL Docked
+              if (_slPrice == null)
+                 GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onVerticalDragStart: (_) {
+                       // Init at current price if needed, but update handles the move
+                       setState(() => _slPrice = price);
+                    },
+                    onVerticalDragUpdate: (d) {
+                       final newY = topY + d.primaryDelta!;
+                       setState(() => _slPrice = yToPrice(newY));
+                    },
+                    onTap: () {
+                       // Default spawn: 2%
+                       final dist = price * 0.02;
+                       setState(() => _slPrice = isLong ? price - dist : price + dist);
+                    },
+                    child: Container(
+                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                       decoration: const BoxDecoration(
+                          border: Border(right: BorderSide(color: Colors.white10))
+                       ),
+                       child: Text("SL", style: GoogleFonts.orbitron(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 10)),
+                    ),
+                 ),
+
+              // TP Docked
+              if (_tpPrice == null)
+                 GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onVerticalDragStart: (_) {
+                       setState(() => _tpPrice = price);
+                    },
+                    onVerticalDragUpdate: (d) {
+                       final newY = topY + d.primaryDelta!;
+                       setState(() => _tpPrice = yToPrice(newY));
+                    },
+                    onTap: () {
+                       final dist = price * 0.02;
+                       setState(() => _tpPrice = isLong ? price + dist : price - dist);
+                    },
+                    child: Container(
+                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                       decoration: const BoxDecoration(
+                          border: Border(right: BorderSide(color: Colors.white10))
+                       ),
+                       child: Text("TP", style: GoogleFonts.orbitron(color: const Color(0xFF00E676), fontWeight: FontWeight.bold, fontSize: 10)),
+                    ),
+                 ),
+
+              // 1. Swap
+              _buildControlItem(
+                onTap: _reversePosition, 
+                child: Icon(Icons.swap_vert, color: color, size: 16),
+                borderColor: Colors.white10
+              ),
+
+              // 2. Price
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                alignment: Alignment.center,
+                decoration: const BoxDecoration(
+                   border: Border(right: BorderSide(color: Colors.white10))
+                ),
+                child: Text(price.toStringAsFixed(2), style: GoogleFonts.shareTechMono(color: Colors.white, fontSize: 12)),
+              ),
+
+              // 3. PnL
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                alignment: Alignment.center,
+                color: isProfitable ? Colors.green.withOpacity(0.2) : Colors.red.withOpacity(0.2),
+                child: Text(
+                  "${pnl >= 0 ? '+' : ''}${pnl.abs().toStringAsFixed(2)}", 
+                  style: GoogleFonts.shareTechMono(color: isProfitable ? Colors.green : Colors.red, fontSize: 12)
+                ),
+              ),
+
+              // 4. Close (Entire Trade)
+              _buildControlItem(
+                onTap: _resetTrade, 
+                child: const Icon(Icons.close, color: Colors.white, size: 16),
+                borderColor: Colors.transparent
+              ),
+           ],
+         ),
+       ),
     );
   }
 
@@ -558,185 +668,9 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
     );
   }
 
-  Widget _buildEntryControls(double price, Color color, double topY, double Function(double) yToPrice) {
-    // Hide if out of bounds (top/bottom)
-    if (topY < 0 || topY > 2000) return const SizedBox(); 
-    
-    // PnL calc
-    final isLong = _tradeMode == TradeMode.long;
-    final currentPrice = _selectedAsset!.currentPrice;
-    final pnl = (currentPrice - price) * (isLong ? 1 : -1) * 1000; 
-    final isProfitable = pnl >= 0;
 
-    return Positioned(
-       top: topY - 15, 
-       right: 50, // Align with Chart Axis edge
-       child: Stack(
-         alignment: Alignment.center,
-         children: [
-            Align(
-              alignment: Alignment.centerRight,
-              child: Container(
-                height: 30,
-                decoration: BoxDecoration(
-                   color: const Color(0xFF131722),
-                   border: Border.all(color: color),
-                   borderRadius: BorderRadius.circular(4),
-                   boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 4)]
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                     // 1. Swap
-                     _buildControlItem(
-                       onTap: _reversePosition, 
-                       child: Icon(Icons.swap_vert, color: color, size: 16),
-                       borderColor: Colors.white10
-                     ),
 
-                     // 2. TP Docked Button (Only if NOT active)
-                     if (_tpPrice == null)
-                       GestureDetector(
-                          onVerticalDragUpdate: (d) {
-                             // Initialize TP dragging
-                             // For simplicity, just set a default offset, then let user drag line
-                             // Actually, d.globalPosition is where we are.
-                             // But better: Just click to add?
-                             // User wants DRAG to extract.
-                             // We don't know pixel conversion inside this callback accurately unless we close over it.
-                             // But we can approximate or use logic. 
-                             // Easier: Just add TP at fixed distance (+100?)
-                             setState(() {
-                               _tpPrice = isLong ? price + 10 : price - 10;
-                             });
-                          },
-                          // Allow tap to add too
-                          onTap: () {
-                             setState(() {
-                               _tpPrice = isLong ? price + 4 : price - 4;
-                             });
-                          },
-                          child: _buildControlItem(
-                             child: Text("TP", style: GoogleFonts.orbitron(color: const Color(0xFF00E676), fontWeight: FontWeight.bold, fontSize: 10)),
-                             borderColor: Colors.white10
-                          ),
-                       ),
-                     
-                     // 3. SL Docked Button (Only if NOT active)
-                     if (_slPrice == null)
-                       GestureDetector(
-                          onTap: () {
-                             setState(() {
-                               _slPrice = isLong ? price - 4 : price + 4;
-                             });
-                          },
-                          child: _buildControlItem(
-                             child: Text("SL", style: GoogleFonts.orbitron(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 10)),
-                             borderColor: Colors.white10
-                          ),
-                       ),
 
-                     // 4. Price
-                     Container(
-                       padding: const EdgeInsets.symmetric(horizontal: 8),
-                       alignment: Alignment.center,
-                       decoration: const BoxDecoration(
-                          border: Border(right: BorderSide(color: Colors.white10))
-                       ),
-                       child: Text(price.toStringAsFixed(2), style: GoogleFonts.shareTechMono(color: Colors.white, fontSize: 12)),
-                     ),
-
-                     // 5. PnL
-                     Container(
-                       padding: const EdgeInsets.symmetric(horizontal: 8),
-                       alignment: Alignment.center,
-                       color: isProfitable ? Colors.green.withOpacity(0.2) : Colors.red.withOpacity(0.2),
-                       child: Text(
-                         "${pnl >= 0 ? '+' : ''}${pnl.abs().toStringAsFixed(2)}", 
-                         style: GoogleFonts.shareTechMono(color: isProfitable ? Colors.green : Colors.red, fontSize: 12)
-                       ),
-                     ),
-
-                     // 6. Close (Entire Trade)
-                     _buildControlItem(
-                       onTap: _resetTrade, 
-                       child: const Icon(Icons.close, color: Colors.white, size: 16),
-                       borderColor: Colors.transparent
-                     ),
-                  ],
-                ),
-              ),
-            )
-         ],
-       ),
-    );
-  }
-
-  Widget _buildLineControls(double price, Color color, String label, double topY, double Function(double) yToPrice, Function(double) onUpdate) {
-     if (topY < 0 || topY > 2000) return const SizedBox();
-
-     void closeLine() {
-        setState(() {
-           if (label == "SL") _slPrice = null;
-           if (label == "TP") _tpPrice = null;
-        });
-     }
-
-     return Positioned(
-       top: topY - 15,
-       right: 50, 
-       child: GestureDetector(
-         // Ensure we capture drags on the handle
-         onVerticalDragUpdate: (d) {
-            // Adjust based on viewport pixels vs price
-            // d.primaryDelta is in pixels
-            // New Price = Current Price mapped back from New Y
-            // OR simpler: delta price
-            // But we have yToPrice converter!
-            // Let's us it.
-            // Actually, delta approach is safer for smoothness if we don't have absolute Y of touch easily
-            // But we do: topY is the current center.
-            // New Center = topY + delta
-            // New Price = yToPrice(New Center)
-            final newY = topY + d.primaryDelta!;
-            onUpdate(yToPrice(newY));
-         },
-         child: Container(
-           height: 30,
-           alignment: Alignment.centerRight,
-           color: Colors.transparent, // Hit test area
-           child: Container(
-              height: 30,
-              decoration: BoxDecoration(
-                 color: const Color(0xFF131722),
-                 border: Border.all(color: color),
-                 borderRadius: BorderRadius.circular(4),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                   Container(
-                     padding: const EdgeInsets.symmetric(horizontal: 8),
-                     decoration: const BoxDecoration(border: Border(right: BorderSide(color: Colors.white10))),
-                     child: Text(label, style: GoogleFonts.orbitron(fontSize: 10, color: color, fontWeight: FontWeight.bold)),
-                   ),
-                   Container(
-                     padding: const EdgeInsets.symmetric(horizontal: 8),
-                     decoration: const BoxDecoration(border: Border(right: BorderSide(color: Colors.white10))),
-                     child: Text(price.toStringAsFixed(2), style: GoogleFonts.shareTechMono(fontSize: 12, color: Colors.white)),
-                   ),
-                   _buildControlItem(
-                      onTap: closeLine,
-                      child: const Icon(Icons.close, color: Colors.white54, size: 14),
-                      borderColor: Colors.transparent
-                   ),
-                ],
-              ),
-           ),
-         ),
-       ),
-     );
-  }
 
   Widget _buildTradeManagerPanel() {
     return DraggableScrollableSheet(
@@ -859,8 +793,14 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
       onTap: () {
         setState(() {
           _tradeMode = label == "BUY" ? TradeMode.long : TradeMode.short;
-          _entryPrice = _selectedAsset!.currentPrice;
-          _slPrice = null; // Don't auto-set, let user drag
+          // Set Entry at latest candle Close (Center of latest candle)
+          // Ensure we have candles
+          if (_candles.isNotEmpty) {
+             _entryPrice = _candles.last.close;
+          } else {
+             _entryPrice = _selectedAsset!.currentPrice;
+          }
+          _slPrice = null; 
           _tpPrice = null;
         });
       },
@@ -874,6 +814,99 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
         child: Text(label, style: GoogleFonts.orbitron(color: color, fontWeight: FontWeight.bold)),
       ),
     );
+  }
+
+  // Refactored to handle "Docking"
+  Widget _buildLineControls({
+     required double currentPrice, 
+     required double? activePrice, 
+     required Color color, 
+     required String label, 
+     required double entryY, 
+     required double Function(double) yToPrice, 
+     required double Function(double) priceToY,
+     required Function(double?) onUpdate
+  }) {
+     
+     final bool isActive = activePrice != null;
+     final double price = isActive ? activePrice! : currentPrice;
+     
+     // If docked, use Entry Y. If active, calculate Y from price.
+     final double topY = isActive ? priceToY(price) : entryY;
+
+     // Docked Offsets to prevent overlap
+     // Entry Label is roughly 80px wide. We stack TP/SL next to it?
+     // Or specific offset.
+     // User: "Centre of blue line".
+     // We'll put them slightly offset if docked.
+     
+     // Hide if out of bounds
+     if (topY < 0 || topY > 2000) return const SizedBox();
+
+     return Positioned(
+       top: topY - 15,
+       right: isActive ? 50 : (label == "TP" ? 180 : 230), // Docked: Shift left to sit on the line? Or next to Entry Box.
+                                                            // Entry Control is at right: 50.
+                                                            // Entry Control width ~150?.
+                                                            // Let's Dock them to the LEFT of the Entry Control?
+                                                            // Or just stick them on the line at fixed visual offset.
+       child: GestureDetector(
+         onVerticalDragStart: (_) {
+            // If dragging starts from docked, init price
+            if (!isActive) {
+               onUpdate(currentPrice);
+            }
+         },
+         onVerticalDragUpdate: (d) {
+            // d.globalPosition is absolute. We need relative logic or delta.
+            // Using delta on existing price is safest.
+            // visualY = topY + delta.
+            // newPrice = yToPrice(visualY).
+            final newY = topY + d.primaryDelta!;
+            onUpdate(yToPrice(newY));
+         },
+         onTap: () {
+            // Click to spawn at defaults
+             if (!isActive) {
+                final isLong = _tradeMode == TradeMode.long;
+                final dist = currentPrice * 0.02; // 2% default
+                // TP goes UP for Long, SL goes DOWN for Long
+                double target;
+                if (label == "TP") {
+                   target = isLong ? currentPrice + dist : currentPrice - dist;
+                } else {
+                   target = isLong ? currentPrice - dist : currentPrice + dist;
+                }
+                onUpdate(target);
+             }
+         },
+         child: Container(
+           height: 30,
+           alignment: Alignment.center,
+           decoration: BoxDecoration(
+              color: const Color(0xFF131722),
+              border: Border.all(color: color),
+              borderRadius: BorderRadius.circular(4),
+           ),
+           padding: const EdgeInsets.symmetric(horizontal: 8),
+           child: Row(
+             mainAxisSize: MainAxisSize.min,
+             children: [
+                Text(label, style: GoogleFonts.orbitron(fontSize: 10, color: color, fontWeight: FontWeight.bold)),
+                if (isActive) ...[
+                   Container(width: 1, height: 12, color: Colors.white10, margin: const EdgeInsets.symmetric(horizontal: 6)),
+                   Text(price.toStringAsFixed(2), style: GoogleFonts.shareTechMono(fontSize: 12, color: Colors.white)),
+                   const SizedBox(width: 8),
+                   GestureDetector(
+                      onTap: () => onUpdate(null), // Close
+                      child: const Icon(Icons.close, color: Colors.white54, size: 14),
+                   )
+                ]
+             ],
+           ),
+         ),
+       ),
+     );
   }
 
   Widget _buildIntervalSelector() {
