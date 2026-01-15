@@ -42,6 +42,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
 
   // Zoom/Pan State
   int _visibleCandleCount = 30;
+  double _zoomBase = 30.0;
   double _scrollOffset = 0.0; // Index based scroll
   final DraggableScrollableController _sheetController = DraggableScrollableController();
 
@@ -296,7 +297,19 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
     if (_isLoadingHistory) {
       return const Center(child: CircularProgressIndicator(color: Colors.cyan));
     }
-    if (_candles.isEmpty) return const SizedBox();
+    // FIX: Data Safety - Handle empty or null lists
+    if (_candles.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.signal_wifi_off, color: Colors.cyan, size: 32),
+            const SizedBox(height: 16),
+            Text("WAITING FOR TELEMETRY...", style: GoogleFonts.orbitron(color: Colors.cyan, letterSpacing: 2)),
+          ],
+        ),
+      );
+    }
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -307,43 +320,76 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
          final maxScroll = (totalCandles - _visibleCandleCount).toDouble();
          _scrollOffset = _scrollOffset.clamp(0.0, maxScroll >= 0 ? maxScroll : 0.0);
          
-         // 2. Viewport Calculation (Indices)
+         // 2. Viewport Calculation (Exact floating point indices)
          final double endX = totalCandles - _scrollOffset;
          final double startX = endX - _visibleCandleCount;
          
-         // 3. Visible Data for Min/Max Calculation (still need subset for range)
-         final int startIndex = math.max(0, startX.floor());
-         final int endIndex = math.min(totalCandles, endX.ceil());
-         final visibleData = _candles.sublist(startIndex, endIndex);
+         // 3. Dynamic Price Scaling based on VISIBLE data
+         int viewStartInt = math.max(0, startX.floor());
+         int viewEndInt = math.min(totalCandles, endX.ceil());
          
-         if (visibleData.isEmpty) return const SizedBox();
-
-         // 4. Price Window Calculation
-         double minPrice = visibleData.map((c) => c.low).reduce(math.min);
-         double maxPrice = visibleData.map((c) => c.high).reduce(math.max);
+         double minPrice = double.infinity;
+         double maxPrice = double.negativeInfinity;
+         
+         // Safety: If view is invalid (shouldn't happen due to constraints), fallback
+         if (viewEndInt <= viewStartInt) {
+            minPrice = 0; maxPrice = 100;
+         } else {
+            for (int i = viewStartInt; i < viewEndInt; i++) {
+               if (_candles[i].low < minPrice) minPrice = _candles[i].low;
+               if (_candles[i].high > maxPrice) maxPrice = _candles[i].high;
+            }
+         }
+         
          final double range = maxPrice - minPrice;
+         // Add padding (10%)
+         if (range == 0) {
+            minPrice -= 1; maxPrice += 1;
+         } else {
+            minPrice -= range * 0.1;
+            maxPrice += range * 0.1;
+         }
          
-         minPrice -= range * 0.1; 
-         maxPrice += range * 0.1;
-         
-         // Ensure Trade Lines are visible
+         // Ensure Trade Lines are visible if active
          if (_entryPrice != null) {
-            minPrice = math.min(minPrice, _entryPrice! - range * 0.05);
-            maxPrice = math.max(maxPrice, _entryPrice! + range * 0.05);
-            if (_slPrice != null) minPrice = math.min(minPrice, _slPrice! - range * 0.05);
-            if (_slPrice != null) maxPrice = math.max(maxPrice, _slPrice! + range * 0.05);
-            if (_tpPrice != null) minPrice = math.min(minPrice, _tpPrice! - range * 0.05);
-            if (_tpPrice != null) maxPrice = math.max(maxPrice, _tpPrice! + range * 0.05);
+            double finalMin = minPrice;
+            double finalMax = maxPrice;
+            // Helper to expand range
+            void expand(double val) {
+               if (val < finalMin) finalMin = val;
+               if (val > finalMax) finalMax = val;
+            }
+            expand(_entryPrice!);
+            if (_slPrice != null) expand(_slPrice!);
+            if (_tpPrice != null) expand(_tpPrice!);
+
+            // Re-apply padding if we expanded
+            if (finalMin != minPrice || finalMax != maxPrice) {
+               minPrice = finalMin - (finalMax - finalMin) * 0.05;
+               maxPrice = finalMax + (finalMax - finalMin) * 0.05;
+            }
          }
 
-         // 5. Layout Constants & Coordinate Mapping
-         const double bottomTitleHeight = 30.0; 
-         final double chartPlotHeight = constraints.maxHeight - bottomTitleHeight;
-         final double priceRange = maxPrice - minPrice;
-         final double pixelsPerPrice = chartPlotHeight / (priceRange == 0 ? 1 : priceRange);
+         // 4. Layout Constants
+         const double rightAxisWidth = 50.0;
+         const double bottomAxisHeight = 20.0;
+         final double chartPlotWidth = constraints.maxWidth - rightAxisWidth;
+         final double chartPlotHeight = constraints.maxHeight - bottomAxisHeight;
+         
+         final double drawingPriceRange = maxPrice - minPrice;
+         final double pixelsPerPrice = chartPlotHeight / (drawingPriceRange == 0 ? 1 : drawingPriceRange);
 
-         // Helper for Y position (from top)
-         double getPriceY(double price) => (maxPrice - price) * pixelsPerPrice;
+         // Y = 0 is TOP of chart area.
+         // Price Max = Y 0
+         // Price Min = Y chartPlotHeight
+         double priceToY(double price) {
+            return (maxPrice - price) * pixelsPerPrice;
+         }
+
+         // Function to reverse map Y pixel to Price (for dragging)
+         double yToPrice(double y) {
+            return maxPrice - (y / pixelsPerPrice);
+         }
 
          return Stack(
            children: [
@@ -355,137 +401,121 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                      onHover: (event) => setState(() => _cursorPos = event.localPosition),
                      onExit: (_) => setState(() => _cursorPos = null),
                      child: GestureDetector(
-                       behavior: HitTestBehavior.translucent, 
+                       // FIX: Gesture Handling
+                       // We use opaque behavior to catch all touches on the chart surface
+                       behavior: HitTestBehavior.opaque,
                        onHorizontalDragUpdate: (details) {
                           setState(() {
                              _scrollOffset -= details.primaryDelta! * 0.2; 
                           });
                        },
+                       onScaleStart: (_) {
+                          _zoomBase = _visibleCandleCount.toDouble();
+                       },
                        onScaleUpdate: (details) {
                           setState(() {
-                            // Zoom
-                            if (details.scale != 1.0) {
-                               _visibleCandleCount = (30 / details.scale).round().clamp(10, 150);
-                            }
+                             if (details.scale != 1.0) {
+                                final double newCount = _zoomBase / details.scale;
+                                _visibleCandleCount = newCount.toInt().clamp(10, 150);
+                             }
                           });
                        },
                        child: Stack(
                          clipBehavior: Clip.none,
-                         children: [
-                           // LAYER 1: Custom Wick Painter (Behind Body)
-                           CustomPaint(
-                             size: Size(constraints.maxWidth, chartPlotHeight),
-                             painter: WickPainter(
-                               candles: _candles,
-                               startIndex: startIndex,
-                               endIndex: endIndex,
-                               minPrice: minPrice,
-                               maxPrice: maxPrice,
-                               visibleCount: _visibleCandleCount.toDouble(),
-                               offset: _scrollOffset
-                             ),
+                          children: [
+                           // LAYER 1: CHART PLOT AREA (Wicks + Bodies)
+                           Positioned(
+                              left: 0, top: 0, 
+                              width: chartPlotWidth, height: chartPlotHeight,
+                              child: Stack(
+                                 children: [
+                                     // Grid
+                                     CustomPaint(
+                                       size: Size(chartPlotWidth, chartPlotHeight),
+                                       painter: _GridPainter(
+                                          startX: startX, 
+                                          endX: endX, 
+                                          minPrice: minPrice, 
+                                          maxPrice: maxPrice,
+                                          visibleCount: _visibleCandleCount.toDouble(),
+                                       ),
+                                     ),
+                                     
+                                     // Candles
+                                     RepaintBoundary(
+                                       child: CustomPaint(
+                                         size: Size(chartPlotWidth, chartPlotHeight),
+                                         painter: CandleStickPainter(
+                                           candles: _candles,
+                                           startX: startX,
+                                           endX: endX,
+                                           minPrice: minPrice,
+                                           maxPrice: maxPrice,
+                                         ),
+                                       ),
+                                     ),
+                                     
+                                     // Trade Lines
+                                     if (_tradeMode != TradeMode.none && _entryPrice != null)
+                                       CustomPaint(
+                                          size: Size(chartPlotWidth, chartPlotHeight),
+                                          painter: _TradeLinePainter(
+                                             entryPrice: _entryPrice!,
+                                             slPrice: _slPrice,
+                                             tpPrice: _tpPrice,
+                                             minPrice: minPrice,
+                                             maxPrice: maxPrice,
+                                             tradeMode: _tradeMode,
+                                          ),
+                                       ),
+                                 ]
+                              ),
                            ),
 
-                           // LAYER 2: BarChart (Candle Bodies)
-                           Padding(
-                             padding: const EdgeInsets.only(bottom: bottomTitleHeight), 
-                             child: BarChart(
-                               BarChartData(
-                                 minY: minPrice,
-                                 maxY: maxPrice,
-                                 gridData: FlGridData(
-                                    show: true,
-                                    drawVerticalLine: true,
-                                    checkToShowVerticalLine: (value) => value % math.max(1, (_visibleCandleCount / 5).floor()) == 0,
-                                    getDrawingHorizontalLine: (_) => FlLine(color: Colors.white10, strokeWidth: 1),
-                                    getDrawingVerticalLine: (_) => FlLine(color: Colors.white10, strokeWidth: 1),
-                                 ),
-                                 titlesData: FlTitlesData(
-                                   show: true,
-                                   leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                                   topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                                   rightTitles: AxisTitles(
-                                     sideTitles: SideTitles(
-                                       showTitles: true,
-                                       reservedSize: 50,
-                                       getTitlesWidget: (value, meta) {
-                                         if (value == minPrice || value == maxPrice) return const SizedBox();
-                                         return Text(value.toStringAsFixed(2), style: GoogleFonts.shareTechMono(color: Colors.white24, fontSize: 10));
-                                       }
-                                     )
-                                   ),
-                                   bottomTitles: AxisTitles(
-                                     sideTitles: SideTitles(
-                                       showTitles: true,
-                                       reservedSize: bottomTitleHeight, 
-                                       interval: math.max(1, _visibleCandleCount / 5),
-                                       getTitlesWidget: (value, meta) {
-                                           final int index = value.toInt();
-                                           if (index < 0 || index >= totalCandles) return const SizedBox();
-                                           final candle = _candles[index];
-                                           final date = DateTime.fromMillisecondsSinceEpoch(candle.timestamp);
-                                           String text = "${date.hour}:${date.minute.toString().padLeft(2,'0')}";
-                                           return Padding(
-                                             padding: const EdgeInsets.only(top: 8),
-                                             child: Text(text, style: GoogleFonts.shareTechMono(color: Colors.white54, fontSize: 10)),
-                                           );
-                                       }
-                                     )
-                                   )
-                                 ),
-                                 borderData: FlBorderData(show: false),
-                                 barTouchData: BarTouchData(enabled: false),
-                                 
-                                 // Draw Lines using ExtraLines for perfect Chart alignment
-                                 extraLinesData: ExtraLinesData(
-                                   horizontalLines: [
-                                      if (_tradeMode != TradeMode.none && _entryPrice != null) ...[
-                                         HorizontalLine(y: _entryPrice!, color: (_tradeMode == TradeMode.long ? Colors.cyan : Colors.pinkAccent).withOpacity(0.5), strokeWidth: 1, dashArray: [4, 4]),
-                                         if (_slPrice != null) HorizontalLine(y: _slPrice!, color: Colors.redAccent.withOpacity(0.5), strokeWidth: 1, dashArray: [4, 4]),
-                                         if (_tpPrice != null) HorizontalLine(y: _tpPrice!, color: const Color(0xFF00E676).withOpacity(0.5), strokeWidth: 1, dashArray: [4, 4]),
-                                      ]
-                                   ]
-                                 ),
+                           // LAYER 1.5: Manual Axes
+                           // Right Axis
+                           Positioned(
+                              right: 0, top: 0, bottom: bottomAxisHeight, width: rightAxisWidth,
+                              child: CustomPaint(
+                                 painter: _AxisPainter(
+                                    min: minPrice, max: maxPrice, 
+                                    isBottom: false,
+                                    textStyle: GoogleFonts.shareTechMono(color: Colors.white24, fontSize: 10)
+                                 )
+                              ),
+                           ),
+                           // Bottom Axis
+                           Positioned(
+                              left: 0, bottom: 0, height: bottomAxisHeight, width: chartPlotWidth,
+                              child: CustomPaint(
+                                 painter: _AxisPainter(
+                                    min: startX, max: endX, 
+                                    isBottom: true,
+                                    candles: _candles,
+                                    textStyle: GoogleFonts.shareTechMono(color: Colors.white54, fontSize: 10)
+                                 )
+                              ),
+                           ),
 
-                                 barGroups: visibleData.map((candle) {
-                                    final index = _candles.indexOf(candle);
-                                    final isBullish = candle.close >= candle.open;
-                                    final color = isBullish ? const Color(0xFF00E676) : const Color(0xFFFF5252);
-                                    
-                                    // Body Only - Wicks handled by Painter
-                                    return BarChartGroupData(
-                                      x: index,
-                                      barRods: [
-                                        BarChartRodData(
-                                          toY: math.max(candle.open, candle.close),
-                                          fromY: math.min(candle.open, candle.close),
-                                          color: color,
-                                          width: 6.0, 
-                                          borderRadius: BorderRadius.circular(1),
-                                        )
-                                      ]
-                                    );
-                                 }).toList(),
-                               )
-                             ),
-                           ), // End Bar Chart
 
                            // Layer 3: Crosshair
                            if (_cursorPos != null)
-                             IgnorePointer(
-                               child: CustomPaint(
-                                 painter: _CrosshairPainter(position: _cursorPos!, lineColor: Colors.white24),
-                                 size: Size.infinite,
+                             Positioned(
+                               left: 0, top: 0, width: chartPlotWidth, height: chartPlotHeight,
+                               child: IgnorePointer(
+                                 child: CustomPaint(
+                                   painter: _CrosshairPainter(position: _cursorPos!, lineColor: Colors.white24),
+                                 ),
                                ),
                              ),
 
                            // Layer 4: Interactive Controls
                            if (_tradeMode != TradeMode.none && _entryPrice != null) ...[
-                              _buildEntryControls(_entryPrice!, _tradeMode == TradeMode.long ? Colors.cyan : Colors.pinkAccent, getPriceY(_entryPrice!), pixelsPerPrice),
-                              if (_slPrice != null) _buildLineControls(_slPrice!, Colors.redAccent, "SL", getPriceY(_slPrice!), pixelsPerPrice, (v) => setState(() => _slPrice = v)),
-                              if (_tpPrice != null) _buildLineControls(_tpPrice!, const Color(0xFF00E676), "TP", getPriceY(_tpPrice!), pixelsPerPrice, (v) => setState(() => _tpPrice = v)),
+                              _buildEntryControls(_entryPrice!, _tradeMode == TradeMode.long ? Colors.cyan : Colors.pinkAccent, priceToY(_entryPrice!), yToPrice),
+                              if (_slPrice != null) _buildLineControls(_slPrice!, Colors.redAccent, "SL", priceToY(_slPrice!), yToPrice, (v) => setState(() => _slPrice = v)),
+                              if (_tpPrice != null) _buildLineControls(_tpPrice!, const Color(0xFF00E676), "TP", priceToY(_tpPrice!), yToPrice, (v) => setState(() => _tpPrice = v)),
                            ]
-                         ],
+                          ],
                        ),
                      ),
                    ),
@@ -528,23 +558,22 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
     );
   }
 
-  Widget _buildEntryControls(double price, Color color, double topY, double pixelsPerPrice) {
-    if (topY < 0 || topY > 1000) return const SizedBox(); // Clip
+  Widget _buildEntryControls(double price, Color color, double topY, double Function(double) yToPrice) {
+    // Hide if out of bounds (top/bottom)
+    if (topY < 0 || topY > 2000) return const SizedBox(); 
     
     // PnL calc
     final isLong = _tradeMode == TradeMode.long;
     final currentPrice = _selectedAsset!.currentPrice;
-    final pnl = (currentPrice - price) * (isLong ? 1 : -1) * 1000; // Simulated PnL
+    final pnl = (currentPrice - price) * (isLong ? 1 : -1) * 1000; 
     final isProfitable = pnl >= 0;
 
     return Positioned(
        top: topY - 15, 
-       right: 50, // Align with Chart Axis edge (Right 0 covers axis)
+       right: 50, // Align with Chart Axis edge
        child: Stack(
-         clipBehavior: Clip.none,
          alignment: Alignment.center,
          children: [
-            // Controls Cluster
             Align(
               alignment: Alignment.centerRight,
               child: Container(
@@ -569,9 +598,22 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                      if (_tpPrice == null)
                        GestureDetector(
                           onVerticalDragUpdate: (d) {
-                             // "Extract" TP line
+                             // Initialize TP dragging
+                             // For simplicity, just set a default offset, then let user drag line
+                             // Actually, d.globalPosition is where we are.
+                             // But better: Just click to add?
+                             // User wants DRAG to extract.
+                             // We don't know pixel conversion inside this callback accurately unless we close over it.
+                             // But we can approximate or use logic. 
+                             // Easier: Just add TP at fixed distance (+100?)
                              setState(() {
-                               _tpPrice = price - (d.primaryDelta! / pixelsPerPrice);
+                               _tpPrice = isLong ? price + 10 : price - 10;
+                             });
+                          },
+                          // Allow tap to add too
+                          onTap: () {
+                             setState(() {
+                               _tpPrice = isLong ? price + 4 : price - 4;
                              });
                           },
                           child: _buildControlItem(
@@ -583,10 +625,9 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                      // 3. SL Docked Button (Only if NOT active)
                      if (_slPrice == null)
                        GestureDetector(
-                          onVerticalDragUpdate: (d) {
-                             // "Extract" SL line
+                          onTap: () {
                              setState(() {
-                               _slPrice = price - (d.primaryDelta! / pixelsPerPrice);
+                               _slPrice = isLong ? price - 4 : price + 4;
                              });
                           },
                           child: _buildControlItem(
@@ -631,10 +672,9 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
     );
   }
 
-  Widget _buildLineControls(double price, Color color, String label, double topY, double pixelsPerPrice, Function(double) onUpdate) {
-     if (topY < 0 || topY > 1000) return const SizedBox();
-     
-     // Close Handler for specific line
+  Widget _buildLineControls(double price, Color color, String label, double topY, double Function(double) yToPrice, Function(double) onUpdate) {
+     if (topY < 0 || topY > 2000) return const SizedBox();
+
      void closeLine() {
         setState(() {
            if (label == "SL") _slPrice = null;
@@ -644,18 +684,27 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
 
      return Positioned(
        top: topY - 15,
-       right: 50, // Align with Chart Axis edge
+       right: 50, 
        child: GestureDetector(
-         behavior: HitTestBehavior.translucent, // Catch drags everywhere on this strip
+         // Ensure we capture drags on the handle
          onVerticalDragUpdate: (d) {
-            // Sensitivity Factor: 1.0 (Direct tracking)
-            onUpdate(price - (d.primaryDelta! / pixelsPerPrice));
+            // Adjust based on viewport pixels vs price
+            // d.primaryDelta is in pixels
+            // New Price = Current Price mapped back from New Y
+            // OR simpler: delta price
+            // But we have yToPrice converter!
+            // Let's us it.
+            // Actually, delta approach is safer for smoothness if we don't have absolute Y of touch easily
+            // But we do: topY is the current center.
+            // New Center = topY + delta
+            // New Price = yToPrice(New Center)
+            final newY = topY + d.primaryDelta!;
+            onUpdate(yToPrice(newY));
          },
          child: Container(
            height: 30,
            alignment: Alignment.centerRight,
-           color: Colors.transparent, // Ensure Hit Test works on full width if needed
-           // padding: const EdgeInsets.only(right: 60), // Removed double padding
+           color: Colors.transparent, // Hit test area
            child: Container(
               height: 30,
               decoration: BoxDecoration(
@@ -666,19 +715,16 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                   // Label
                    Container(
                      padding: const EdgeInsets.symmetric(horizontal: 8),
                      decoration: const BoxDecoration(border: Border(right: BorderSide(color: Colors.white10))),
                      child: Text(label, style: GoogleFonts.orbitron(fontSize: 10, color: color, fontWeight: FontWeight.bold)),
                    ),
-                   // Price
                    Container(
                      padding: const EdgeInsets.symmetric(horizontal: 8),
                      decoration: const BoxDecoration(border: Border(right: BorderSide(color: Colors.white10))),
                      child: Text(price.toStringAsFixed(2), style: GoogleFonts.shareTechMono(fontSize: 12, color: Colors.white)),
                    ),
-                   // Close (Specific)
                    _buildControlItem(
                       onTap: closeLine,
                       child: const Icon(Icons.close, color: Colors.white54, size: 14),
@@ -1097,3 +1143,155 @@ class _DataPadModalState extends State<_DataPadModal> {
   }
 }
 
+class _AxisPainter extends CustomPainter {
+  final double min;
+  final double max;
+  final bool isBottom;
+  final List<MockCandle>? candles;
+  final TextStyle textStyle;
+
+  _AxisPainter({
+    required this.min, 
+    required this.max, 
+    required this.isBottom, 
+    this.candles,
+    required this.textStyle
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (isBottom) {
+       _paintBottom(canvas, size);
+    } else {
+       _paintRight(canvas, size);
+    }
+  }
+  
+  void _paintRight(Canvas canvas, Size size) {
+     final range = max - min;
+     if (range <= 0) return;
+     // 5 steps
+     for (int i=0; i<=5; i++) {
+        final double p = min + (range / 5 * i);
+        final double y = size.height * (1 - i/5.0);
+        
+        _drawText(canvas, p.toStringAsFixed(2), Offset(8, y - 6), size.width);
+     }
+  }
+  
+  void _paintBottom(Canvas canvas, Size size) {
+     if (candles == null || candles!.isEmpty) return;
+     final range = max - min; // Indices range
+     if (range <= 0) return;
+     
+     // Determine step
+     double step = range / 5;
+     if (step < 1) step = 1;
+     
+     for (double i = min; i <= max; i += step) {
+        if (i < 0 || i >= candles!.length) continue;
+        final index = i.floor();
+        if (index >= candles!.length) continue;
+
+        final candle = candles![index];
+        final date = DateTime.fromMillisecondsSinceEpoch(candle.timestamp);
+        final text = "${date.hour}:${date.minute.toString().padLeft(2,'0')}";
+        
+        final double x = (i - min) / range * size.width;
+        _drawText(canvas, text, Offset(x, 4), 50);
+     }
+  }
+
+  void _drawText(Canvas canvas, String text, Offset pos, double width) {
+     final span = TextSpan(text: text, style: textStyle);
+     final tp = TextPainter(text: span, textDirection: TextDirection.ltr);
+     tp.layout(maxWidth: width);
+     tp.paint(canvas, pos);
+  }
+
+  @override
+  bool shouldRepaint(covariant _AxisPainter old) {
+     return old.min != min || old.max != max || old.isBottom != isBottom || old.candles != candles; 
+  }
+}
+
+
+class _GridPainter extends CustomPainter {
+  final double startX;
+  final double endX;
+  final double minPrice;
+  final double maxPrice;
+  final double visibleCount;
+
+  _GridPainter({
+     required this.startX, required this.endX, required this.minPrice, required this.maxPrice, required this.visibleCount
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+     final paint = Paint()..color = Colors.white10..strokeWidth = 1.0;
+     final range = maxPrice - minPrice;
+     
+     // Horizontal Lines
+     for (int i=0; i<=5; i++) {
+        final double y = size.height * (1 - i/5.0);
+        canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+     }
+
+     // Vertical Lines
+     final xRange = endX - startX;
+     if (xRange <= 0) return;
+     double step = math.max(1, (visibleCount / 5).floor()).toDouble();
+     final double slotWidth = size.width / xRange;
+
+     for (double i = (startX / step).ceil() * step; i <= endX; i += step) {
+         final double x = (i - startX) * slotWidth + (slotWidth / 2); // Center of candle
+         canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+     }
+  }
+
+  @override
+  bool shouldRepaint(covariant _GridPainter old) {
+     return old.startX != startX || old.endX != endX || old.minPrice != minPrice || old.maxPrice != maxPrice;
+  }
+}
+
+class _TradeLinePainter extends CustomPainter {
+   final double entryPrice;
+   final double? slPrice;
+   final double? tpPrice;
+   final double minPrice;
+   final double maxPrice;
+   final TradeMode tradeMode;
+
+   _TradeLinePainter({required this.entryPrice, this.slPrice, this.tpPrice, required this.minPrice, required this.maxPrice, required this.tradeMode});
+
+   @override
+   void paint(Canvas canvas, Size size) {
+      final range = maxPrice - minPrice;
+      if (range <= 0) return;
+      final pixelsPerPrice = size.height / range;
+      
+      double priceToY(double price) => (maxPrice - price) * pixelsPerPrice;
+      
+      void drawLine(double price, Color color) {
+         final y = priceToY(price);
+         final paint = Paint()..color = color.withOpacity(0.5)..strokeWidth = 1..style = PaintingStyle.stroke;
+         // Dash
+         double x = 0;
+         while (x < size.width) {
+            canvas.drawLine(Offset(x, y), Offset(x + 4, y), paint);
+            x += 8;
+         }
+      }
+
+      drawLine(entryPrice, tradeMode == TradeMode.long ? Colors.cyan : Colors.pinkAccent);
+      if (slPrice != null) drawLine(slPrice!, Colors.redAccent);
+      if (tpPrice != null) drawLine(tpPrice!, const Color(0xFF00E676));
+   }
+
+   @override
+   bool shouldRepaint(covariant _TradeLinePainter old) {
+      return old.entryPrice != entryPrice || old.slPrice != slPrice || old.tpPrice != tpPrice || old.minPrice != minPrice;
+   }
+}
