@@ -7,6 +7,7 @@ import '../expense_provider.dart';
 import '../income_provider.dart';
 import '../../../widgets/reactor_gauge.dart';
 import '../../../core/providers/refinery_provider.dart';
+import '../../gamification/presentation/widgets/top_bar.dart';
 
 class ReactorCorePage extends ConsumerStatefulWidget {
   const ReactorCorePage({super.key});
@@ -24,6 +25,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
   Timer? _refineryTimer;
   bool _isRefining = false;
   bool _isCriticalHit = false;
+  bool _isDisposed = false;
   List<Particle> _particles = [];
   List<CriticalText> _criticalTexts = [];
   
@@ -42,6 +44,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
 
   @override
   void dispose() {
+    _isDisposed = true;
     _refineryTimer?.cancel();
     _pulseController.dispose();
     super.dispose();
@@ -73,84 +76,81 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
                 // Dark overlay for readability
                 Container(color: Colors.black.withOpacity(0.5)),
                 // Main content - centered layout
-                Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                        // UNREFINED ORE display (above reactor)
-                        _buildHolographicContainer(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Text(
-                                'RAW ORE',
-                                style: TextStyle(
-                                  color: Color(0xFF00D9FF),
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 2,
+                Column(
+                  children: [
+                     const TopBar(title: "REACTOR CORE"),
+                     Expanded(
+                       child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                              // UNREFINED ORE display (above reactor)
+                              _buildHolographicContainer(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Text(
+                                      'RAW ORE',
+                                      style: TextStyle(
+                                        color: Color(0xFF00D9FF),
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 2,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    // Display raw ore value from RefinerySystem
+                                    Column(
+                                      children: [
+                                        Text(
+                                          '$rawOre',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 40,
+                                            fontWeight: FontWeight.bold,
+                                            letterSpacing: 1,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'REFINERY EFFICIENCY: 80%',
+                                          style: const TextStyle(
+                                            color: Color(0xFF00B8D4),
+                                            fontSize: 12,
+                                            letterSpacing: 1,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
                               ),
-                              const SizedBox(height: 8),
-                              // Display raw ore value from RefinerySystem
-                              Column(
-                                children: [
-                                  Text(
-                                    '$rawOre',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 40,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 1,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'REFINERY EFFICIENCY: 80%',
-                                    style: const TextStyle(
-                                      color: Color(0xFF00B8D4),
-                                      fontSize: 12,
-                                      letterSpacing: 1,
-                                    ),
-                                  ),
-                                ],
+                              const SizedBox(height: 20),
+                              // Reactor core with pulse animation and responsive sizing
+                              ScaleTransition(
+                                scale: _pulseAnimation,
+                                child: Builder(
+                                  builder: (context) {
+                                    final screenWidth = MediaQuery.of(context).size.width;
+                                    final reactorWidth = screenWidth * 0.8;
+      
+                                    return Container(
+                                      width: reactorWidth,
+                                      child: ReactorGauge(
+                                        fillPercent: oreLevel,
+                                      ),
+                                    );
+                                  },
+                                ),
                               ),
                             ],
                           ),
                         ),
-                        const SizedBox(height: 20),
-                        // Reactor core with pulse animation and responsive sizing
-                        ScaleTransition(
-                          scale: _pulseAnimation,
-                          child: Builder(
-                            builder: (context) {
-                              final screenWidth = MediaQuery.of(context).size.width;
-                              final reactorWidth = screenWidth * 0.8;
-
-                              return Container(
-                                width: reactorWidth,
-                                child: ReactorGauge(
-                                  fillPercent: oreLevel,
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                // Top label
-                Positioned(
-                  top: 40,
-                  left: 30,
-                  child: Text(
-                    'REACTOR CORE',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      letterSpacing: 3,
-                      fontSize: 20,
-                    ),
-                  ),
+                     ),
+                  ],
                 ),
+                // Top label removed
+           
                 // Particle effects overlay
                 ..._particles.map((particle) => _buildParticle(particle)),
                 // Critical hit texts
@@ -164,6 +164,9 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
                     child: _buildRefineButton(),
                   ),
                 ),
+                
+                // Chat Overlay
+                const BotChatPanel(),
               ],
             );
           },
@@ -252,11 +255,15 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
     _refineryTimer?.cancel();
     _refineryTimer = null;
     
-    if (mounted) {
-      setState(() {
-        _isRefining = false;
-        _isCriticalHit = false;
-      });
+    if (mounted && !_isDisposed) {
+      try {
+        setState(() {
+          _isRefining = false;
+          _isCriticalHit = false;
+        });
+      } catch (e) {
+        // Ignore errors during dispose
+      }
     }
   }
 

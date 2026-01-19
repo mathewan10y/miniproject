@@ -9,6 +9,7 @@ import '../expense_provider.dart';
 import '../income_provider.dart';
 import 'add_expense_sheet.dart';
 import 'add_income_sheet.dart';
+import '../../gamification/presentation/widgets/top_bar.dart';
 
 class LogisticsPage extends ConsumerStatefulWidget {
   const LogisticsPage({super.key});
@@ -40,22 +41,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
           child: Column(
             children: [
               // Header
-              Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      'LOGISTICS BAY',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontSize: 24,
-                        letterSpacing: 2,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              const TopBar(title: 'LOGISTICS BAY'),
               // Content area - Transaction list or Analytics
               Expanded(
                 child: expensesAsync.when(
@@ -127,6 +113,9 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
             showGlow: false,
           ),
         ),
+        
+        // Chat Overlay
+        const BotChatPanel(),
       ],
     );
   }

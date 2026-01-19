@@ -9,6 +9,7 @@ import '../../../core/providers/refinery_provider.dart';
 import '../../trading/data/market_service.dart';
 import '../../trading/domain/models/market_asset.dart';
 import 'flight_deck_page_wickpainter.dart';
+import '../../gamification/presentation/widgets/top_bar.dart';
 
 class FlightDeckPage extends ConsumerStatefulWidget {
   const FlightDeckPage({super.key});
@@ -187,8 +188,10 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
             ),
           ),
 
+          // Main Content
           Column(
             children: [
+              const TopBar(title: "FLIGHT DECK"),
               Expanded(
                 flex: 8,
                 child: _buildTelemetryPanel(),
@@ -209,6 +212,9 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
             top: p.position.dy + 100,
             child: _buildParticle(p),
           )),
+          
+          // Chat Overlay
+          const BotChatPanel(),
         ],
       ),
     );
