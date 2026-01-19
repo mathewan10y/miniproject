@@ -99,6 +99,9 @@ class MixedMarketService implements MarketRepository {
     if (interval == '1D') step = const Duration(days: 1);
     if (interval == '1W') step = const Duration(days: 7);
     if (interval == '4H') step = const Duration(hours: 4);
+    if (interval == '1H') step = const Duration(hours: 1);
+    if (interval == '30M') step = const Duration(minutes: 30);
+    if (interval == '15M') step = const Duration(minutes: 15);
     
     DateTime currentStr = now.subtract(step * points);
     

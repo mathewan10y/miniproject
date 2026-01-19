@@ -375,6 +375,11 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
            ],
         ),
         _buildTradeManagerPanel(),
+        Positioned(
+           left: 16, 
+           bottom: 100, // Just above the docked panel
+           child: _buildTimeframeSelector(),
+        ),
       ],
     );
   }
@@ -739,6 +744,47 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
           else
              _buildActiveTradeHeader(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTimeframeSelector() {
+    final intervals = ['15M', '30M', '1H', '4H', '1D', '1W'];
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.black54,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: intervals.map((interval) {
+          final isSelected = _selectedInterval == interval;
+          return GestureDetector(
+            onTap: () {
+              setState(() => _selectedInterval = interval);
+              if (_selectedAsset != null) _loadHistory(_selectedAsset!);
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              margin: const EdgeInsets.symmetric(horizontal: 2),
+              decoration: BoxDecoration(
+                color: isSelected ? Colors.cyan.withOpacity(0.2) : Colors.transparent,
+                borderRadius: BorderRadius.circular(4),
+                border: isSelected ? Border.all(color: Colors.cyan.withOpacity(0.5)) : null,
+              ),
+              child: Text(
+                interval,
+                style: GoogleFonts.shareTechMono(
+                  color: isSelected ? Colors.cyan : Colors.white54,
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+            ),
+          );
+        }).toList(),
       ),
     );
   }
@@ -1178,10 +1224,23 @@ class _DataPadModal extends StatefulWidget {
 
 class _DataPadModalState extends State<_DataPadModal> {
   String _searchQuery = "";
+  late Set<AssetSubType> _selectedSubTypes;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedSubTypes = Set.from(widget.allowedTypes);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final filteredAssets = widget.assets.where((a) => a.symbol.toLowerCase().contains(_searchQuery.toLowerCase()) || a.name.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
+    // Filter logic: text search AND subType match
+    final filteredAssets = widget.assets.where((a) {
+      final matchesSearch = a.symbol.toLowerCase().contains(_searchQuery.toLowerCase()) || 
+                            a.name.toLowerCase().contains(_searchQuery.toLowerCase());
+      final matchesType = _selectedSubTypes.contains(a.subType);
+      return matchesSearch && matchesType;
+    }).toList();
 
     return DraggableScrollableSheet(
       initialChildSize: 0.8,
@@ -1205,6 +1264,37 @@ class _DataPadModalState extends State<_DataPadModal> {
                    ],
                  ),
                ),
+               
+               // Filter Chips (New)
+               Padding(
+                 padding: const EdgeInsets.symmetric(horizontal: 16),
+                 child: Wrap(
+                   spacing: 8,
+                   runSpacing: 8,
+                   children: widget.allowedTypes.map((type) {
+                     final isSelected = _selectedSubTypes.contains(type);
+                     return FilterChip(
+                       label: Text(type.name.toUpperCase(), style: GoogleFonts.shareTechMono(fontSize: 10, color: isSelected ? Colors.black : Colors.white)),
+                       selected: isSelected,
+                       onSelected: (selected) {
+                         setState(() {
+                           if (selected) {
+                             _selectedSubTypes.add(type);
+                           } else {
+                             _selectedSubTypes.remove(type);
+                           }
+                         });
+                       },
+                       backgroundColor: Colors.white10,
+                       selectedColor: widget.sectorColor,
+                       checkmarkColor: Colors.black,
+                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: Colors.white24)),
+                     );
+                   }).toList(),
+                 ),
+               ),
+               const SizedBox(height: 12),
+
                Padding(
                  padding: const EdgeInsets.symmetric(horizontal: 16),
                  child: TextField(
