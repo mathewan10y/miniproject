@@ -820,10 +820,13 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
           children: [
              // HEADER (Always Visible)
              GestureDetector(
-                onTap: () => setState(() => _isPanelExpanded = !_isPanelExpanded),
+                onTap: () {
+                   setState(() => _isPanelExpanded = !_isPanelExpanded);
+                },
                 behavior: HitTestBehavior.opaque,
                 child: Container(
-                   height: 45,
+                   height: 44, // Reduced by 1px to accommodate top border and avoid overflow
+                   alignment: Alignment.center,
                    padding: const EdgeInsets.symmetric(horizontal: 16),
                    decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.02),
