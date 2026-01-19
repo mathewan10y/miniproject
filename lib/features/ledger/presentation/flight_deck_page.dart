@@ -50,8 +50,8 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
   final double _maxCandleWidth = 50.0;
   double _scrollOffset = 0.0; // Index based scroll from RIGHT
 
-  final DraggableScrollableController _sheetController = DraggableScrollableController();
-
+  bool _isPanelExpanded = false;
+  int _selectedTabIndex = 0;
 
   bool _isLoadingHistory = false;
   String _selectedInterval = '1H';
@@ -357,6 +357,8 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
       );
     }
 
+    final double panelHeight = _isPanelExpanded ? 300.0 : 45.0;
+
     return Stack(
       children: [
         Column(
@@ -370,15 +372,29 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                     }
                  ),
               ),
-              // Increased spacer to 80 to fully clear the Trade Manager Panel's collapsed state + shadow
-              const SizedBox(height: 80),
+              // Spacer for the collapsed panel
+              const SizedBox(height: 50),
            ],
         ),
-        _buildTradeManagerPanel(),
-        Positioned(
-           left: 16, 
-           bottom: 100, // Just above the docked panel
+        
+        // Dynamic Timeframe Selector
+        AnimatedPositioned(
+           duration: const Duration(milliseconds: 300),
+           curve: Curves.fastOutSlowIn,
+           left: 16,
+           bottom: panelHeight + 8, // Always sits just above the panel
            child: _buildTimeframeSelector(),
+        ),
+
+        // Custom Bottom Panel
+        AnimatedPositioned(
+           duration: const Duration(milliseconds: 300),
+           curve: Curves.fastOutSlowIn,
+           left: 0, 
+           right: 0, 
+           bottom: 0,
+           height: panelHeight,
+           child: _buildTradeManagerPanel(),
         ),
       ],
     );
@@ -794,73 +810,161 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
 
 
   Widget _buildTradeManagerPanel() {
-    return DraggableScrollableSheet(
-      controller: _sheetController,
-      initialChildSize: 0.1,
-      minChildSize: 0.05, // Collapsed
-      maxChildSize: 0.5,
-      builder: (context, scrollController) {
-         return Container(
-            decoration: BoxDecoration(
-               color: const Color(0xFF0A0A0A),
-               border: const Border(top: BorderSide(color: Colors.white24)),
-               borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-               boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 10)]
-            ),
-            child: ListView(
-               controller: scrollController,
-               padding: const EdgeInsets.all(16),
-               children: [
-                  Center(child: Container(width: 40, height: 4, color: Colors.white24)),
-                  const SizedBox(height: 8),
-                  // Expand Arrow
-                  Center(
-                    child: GestureDetector(
-                      onTap: () {
-                         final needsExpand = _sheetController.size < 0.2;
-                         _sheetController.animateTo(
-                           needsExpand ? 0.4 : 0.05,
-                           duration: const Duration(milliseconds: 300), 
-                           curve: Curves.easeOut
-                         );
-                      },
-                      child: const Icon(Icons.keyboard_arrow_up, color: Colors.white24, size: 24)
-                    )
-                  ),
-                  const SizedBox(height: 8),
-                  Text("ACTIVE POSITIONS", style: GoogleFonts.orbitron(color: Colors.white, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  if (_tradeMode != TradeMode.none)
-                    Container(
-                       padding: const EdgeInsets.all(12),
-                       color: Colors.white.withOpacity(0.05),
-                       child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Container(
+       decoration: BoxDecoration(
+          color: const Color(0xFF0A0A0A),
+          border: const Border(top: BorderSide(color: Colors.white24)),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 10)]
+       ),
+       child: Column(
+          children: [
+             // HEADER (Always Visible)
+             GestureDetector(
+                onTap: () => setState(() => _isPanelExpanded = !_isPanelExpanded),
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                   height: 45,
+                   padding: const EdgeInsets.symmetric(horizontal: 16),
+                   decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.02),
+                      border: Border(bottom: BorderSide(color: _isPanelExpanded ? Colors.white10 : Colors.transparent))
+                   ),
+                   child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                         Row(children: [
+                            Icon(_isPanelExpanded ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up, color: Colors.white54, size: 20),
+                            const SizedBox(width: 8),
+                            Text("PAPER TRADING", style: GoogleFonts.orbitron(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                            const SizedBox(width: 8),
+                            _buildPanelTab("Positions", 0),
+                            _buildPanelTab("Orders", 1),
+                            _buildPanelTab("History", 2),
+                         ]),
+                         
+                         // Account Stats
+                         Row(children: [
+                            _buildAccountStat("Balance", "\$4,933.54"),
+                            const SizedBox(width: 16),
+                            _buildAccountStat("P&L", "-\$66.46", valueColor: Colors.redAccent),
+                            const SizedBox(width: 16),
+                            _buildAccountStat("Equity", "\$4,933.55"),
+                         ])
+                      ],
+                   ),
+                ),
+             ),
+
+             // BODY (Visible when expanded)
+             if (_isPanelExpanded)
+               Expanded(
+                  child: _buildPanelContent(),
+               )
+          ],
+       ),
+    );
+  }
+
+  Widget _buildPanelTab(String label, int index) {
+     final isSelected = _selectedTabIndex == index;
+     return GestureDetector(
+        onTap: () {
+           setState(() {
+              _selectedTabIndex = index;
+              if (!_isPanelExpanded) _isPanelExpanded = true;
+           });
+        },
+        child: Container(
+           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+           decoration: BoxDecoration(
+              border: isSelected ? const Border(bottom: BorderSide(color: Colors.cyan, width: 2)) : null
+           ),
+           child: Text(label, style: GoogleFonts.shareTechMono(color: isSelected ? Colors.cyan : Colors.white54, fontSize: 12)),
+        ),
+     );
+  }
+
+  Widget _buildAccountStat(String label, String value, {Color? valueColor}) {
+     return Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+           Text(label, style: GoogleFonts.shareTechMono(color: Colors.white24, fontSize: 9)),
+           Text(value, style: GoogleFonts.shareTechMono(color: valueColor ?? Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+        ],
+     );
+  }
+
+  Widget _buildPanelContent() {
+     if (_selectedTabIndex == 0) {
+        // POSITIONS
+        if (_tradeMode == TradeMode.none || _entryPrice == null) {
+           return Center(
+             child: Text("NO ACTIVE POSITIONS", style: GoogleFonts.orbitron(color: Colors.white24)),
+           );
+        }
+        
+        final isLong = _tradeMode == TradeMode.long;
+        final currentPrice = _selectedAsset!.currentPrice;
+        final pnl = (currentPrice - _entryPrice!) * (isLong ? 1 : -1) * 1000;
+        final pnlPercent = (pnl / (1000 * _entryPrice!)) * 100;
+
+        return ListView(
+           padding: const EdgeInsets.all(0),
+           children: [
+              // Table Header
+              Container(
+                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                 color: Colors.white.withOpacity(0.02),
+                 child: Row(
+                    children: [
+                       Expanded(flex: 2, child: Text("Symbol", style: GoogleFonts.shareTechMono(color: Colors.white54, fontSize: 10))),
+                       Expanded(flex: 1, child: Text("Side", style: GoogleFonts.shareTechMono(color: Colors.white54, fontSize: 10))),
+                       Expanded(flex: 1, child: Text("Qty", style: GoogleFonts.shareTechMono(color: Colors.white54, fontSize: 10))),
+                       Expanded(flex: 2, child: Text("Entry Price", style: GoogleFonts.shareTechMono(color: Colors.white54, fontSize: 10))),
+                       Expanded(flex: 2, child: Text("Last Price", style: GoogleFonts.shareTechMono(color: Colors.white54, fontSize: 10))),
+                       Expanded(flex: 2, child: Text("P&L", style: GoogleFonts.shareTechMono(color: Colors.white54, fontSize: 10))),
+                       Expanded(flex: 1, child: SizedBox()),
+                    ],
+                 ),
+              ),
+              // Table Row
+              Container(
+                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                 decoration: const BoxDecoration(
+                    border: Border(bottom: BorderSide(color: Colors.white10))
+                 ),
+                 child: Row(
+                    children: [
+                       Expanded(flex: 2, child: Row(children: [
+                          Icon(Icons.token, color: Colors.cyan, size: 14),
+                          const SizedBox(width: 8),
+                          Text(_selectedAsset!.symbol, style: GoogleFonts.shareTechMono(color: Colors.white, fontWeight: FontWeight.bold)),
+                       ])),
+                       Expanded(flex: 1, child: Text(isLong ? "LONG" : "SHORT", style: GoogleFonts.shareTechMono(color: isLong ? Colors.cyan : Colors.pinkAccent, fontSize: 12))),
+                       Expanded(flex: 1, child: Text("1,000", style: GoogleFonts.shareTechMono(color: Colors.white, fontSize: 12))),
+                       Expanded(flex: 2, child: Text(_entryPrice!.toStringAsFixed(2), style: GoogleFonts.shareTechMono(color: Colors.white, fontSize: 12))),
+                       Expanded(flex: 2, child: Text(currentPrice.toStringAsFixed(2), style: GoogleFonts.shareTechMono(color: Colors.white, fontSize: 12))),
+                       Expanded(flex: 2, child: Text("${pnl >= 0 ? '+' : ''}${pnl.toStringAsFixed(2)} USD", style: GoogleFonts.shareTechMono(color: pnl >= 0 ? Colors.green : Colors.red, fontSize: 12))),
+                       Expanded(flex: 1, child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                             Row(children: [
-                                Icon(_selectedAsset!.type == AssetType.warpDrive ? Icons.bolt : Icons.show_chart, color: Colors.cyan, size: 16),
-                                const SizedBox(width: 8),
-                                Text(_selectedAsset!.symbol, style: GoogleFonts.shareTechMono(color: Colors.white, fontWeight: FontWeight.bold)),
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(_tradeMode == TradeMode.long ? "LONG" : "SHORT", style: GoogleFonts.orbitron(fontSize: 10, color: _tradeMode == TradeMode.long ? Colors.cyan : Colors.pinkAccent, fontWeight: FontWeight.bold)),
-                                ),
-                             ]),
-                             Text("\$${((_selectedAsset!.currentPrice - _entryPrice!) * (_tradeMode == TradeMode.long ? 1 : -1) * 1000).toStringAsFixed(2)}", 
-                               style: GoogleFonts.shareTechMono(color: Colors.white, fontSize: 14)
+                             GestureDetector(
+                                onTap: _resetTrade,
+                                child: const Icon(Icons.close, color: Colors.white54, size: 16),
                              )
                           ],
-                       ),
-                     ),
-                ],
-             ),
-          );
-       }
-     );
+                       )),
+                    ],
+                 ),
+              )
+           ],
+        );
+     } else {
+        return Center(
+           child: Text("NO DATA AVAILABLE", style: GoogleFonts.orbitron(color: Colors.white24)),
+        );
+     }
   }
 
   Widget _buildActiveTradeHeader() {
