@@ -74,7 +74,7 @@ class TopBar extends ConsumerWidget {
   Widget _buildBotIcon(BuildContext context, WidgetRef ref, String assetPath, BotType type) {
     return GestureDetector(
       onTap: () {
-        ref.read(botChatProvider.notifier).toggleChat();
+        ref.read(botChatProvider.notifier).openChat(type);
       },
       child: Container(
         width: 40,
@@ -113,8 +113,15 @@ class _BotChatPanelState extends ConsumerState<BotChatPanel> {
   @override
   Widget build(BuildContext context) {
     final chatState = ref.watch(botChatProvider);
-    
-    if (!chatState.isChatOpen) return const SizedBox();
+    final activeBot = chatState.activeBot;
+
+    if (activeBot == null) return const SizedBox();
+
+    // Dynamic Theming
+    final isCrash = activeBot == BotType.crash;
+    final themeColor = isCrash ? Colors.orange : Colors.cyan;
+    final headerText = isCrash ? "CRASH OVERRIDE // UNSTABLE" : "AURA SYSTEM // ONLINE";
+    final hintText = isCrash ? "Say something, if you must..." : "Enter directive...";
 
     // Auto-scroll to bottom
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -135,21 +142,44 @@ class _BotChatPanelState extends ConsumerState<BotChatPanel> {
       child: Container(
         decoration: BoxDecoration(
           color: const Color(0xFF0F1115).withOpacity(0.95),
-          border: const Border(left: BorderSide(color: Colors.cyan)),
+          border: Border(left: BorderSide(color: themeColor, width: 2)),
+          boxShadow: [
+            BoxShadow(
+              color: themeColor.withOpacity(0.3),
+              blurRadius: 20,
+              spreadRadius: 2,
+            )
+          ],
         ),
         child: Column(
           children: [
             // Header
             Container(
               padding: const EdgeInsets.all(12),
-              color: Colors.black45,
+              decoration: BoxDecoration(
+                color: themeColor.withOpacity(0.1),
+                border: Border(bottom: BorderSide(color: themeColor.withOpacity(0.3))),
+              ),
               child: Row(
                 children: [
-                  Text("COMM.LINK // ESTABLISHED", style: GoogleFonts.shareTechMono(color: Colors.cyan)),
+                  Icon(
+                    isCrash ? Icons.warning_amber_rounded : Icons.security,
+                    color: themeColor,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    headerText,
+                    style: GoogleFonts.shareTechMono(
+                      color: themeColor,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1,
+                    ),
+                  ),
                   const Spacer(),
                   IconButton(
                     icon: const Icon(Icons.close, color: Colors.white54, size: 20),
-                    onPressed: () => ref.read(botChatProvider.notifier).toggleChat(),
+                    onPressed: () => ref.read(botChatProvider.notifier).closeChat(),
                   ),
                 ],
               ),
@@ -160,10 +190,10 @@ class _BotChatPanelState extends ConsumerState<BotChatPanel> {
               child: ListView.builder(
                 controller: _scrollController,
                 padding: const EdgeInsets.all(16),
-                itemCount: chatState.messages.length,
+                itemCount: chatState.currentMessages.length,
                 itemBuilder: (context, index) {
-                  final msg = chatState.messages[index];
-                  return _buildMessageBubble(msg);
+                  final msg = chatState.currentMessages[index];
+                  return _buildMessageBubble(msg, themeColor);
                 },
               ),
             ),
@@ -171,8 +201,9 @@ class _BotChatPanelState extends ConsumerState<BotChatPanel> {
             // Input
             Container(
               padding: const EdgeInsets.all(12),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 border: Border(top: BorderSide(color: Colors.white10)),
+                color: Colors.black26,
               ),
               child: Row(
                 children: [
@@ -181,7 +212,7 @@ class _BotChatPanelState extends ConsumerState<BotChatPanel> {
                       controller: _controller,
                       style: GoogleFonts.shareTechMono(color: Colors.white),
                       decoration: InputDecoration(
-                        hintText: "Enter command...",
+                        hintText: hintText,
                         hintStyle: GoogleFonts.shareTechMono(color: Colors.white24),
                         border: InputBorder.none,
                       ),
@@ -192,7 +223,7 @@ class _BotChatPanelState extends ConsumerState<BotChatPanel> {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.send, color: Colors.cyan),
+                    icon: Icon(Icons.send, color: themeColor),
                     onPressed: () {
                       ref.read(botChatProvider.notifier).sendMessage(_controller.text);
                       _controller.clear();
@@ -207,7 +238,7 @@ class _BotChatPanelState extends ConsumerState<BotChatPanel> {
     );
   }
 
-  Widget _buildMessageBubble(ChatMessage msg) {
+  Widget _buildMessageBubble(ChatMessage msg, Color themeColor) {
     if (msg.isUser) {
       return Align(
         alignment: Alignment.centerRight,
@@ -215,16 +246,41 @@ class _BotChatPanelState extends ConsumerState<BotChatPanel> {
           margin: const EdgeInsets.only(bottom: 12, left: 40),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.cyan.withOpacity(0.1),
-            border: Border.all(color: Colors.cyan.withOpacity(0.3)),
-            borderRadius: BorderRadius.circular(8),
+            color: themeColor.withOpacity(0.15),
+            border: Border.all(color: themeColor.withOpacity(0.3)),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(8),
+              topRight: Radius.circular(2),
+              bottomLeft: Radius.circular(8),
+              bottomRight: Radius.circular(8),
+            ),
           ),
           child: Text(msg.text, style: GoogleFonts.shareTechMono(color: Colors.white)),
         ),
       );
     } else {
+      // Handle System Messages (botType == null)
+      if (msg.botType == null) {
+        return Align(
+          alignment: Alignment.center,
+          child: Container(
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: Colors.white10),
+            ),
+            child: Text(
+              msg.text,
+              style: GoogleFonts.shareTechMono(color: Colors.white54, fontSize: 10),
+            ),
+          ),
+        );
+      }
+
       final isCrash = msg.botType == BotType.crash;
-      final color = isCrash ? Colors.orange : Colors.blue; 
+      final color = isCrash ? Colors.orange : Colors.cyan; 
       final name = isCrash ? "CRASH" : "AURA";
       
       return Align(
@@ -235,23 +291,44 @@ class _BotChatPanelState extends ConsumerState<BotChatPanel> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 24, height: 24,
+                width: 28, height: 28,
                 margin: const EdgeInsets.only(top: 4),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
+                  border: Border.all(color: color.withOpacity(0.5)),
                   image: DecorationImage(
                     image: AssetImage(isCrash ? 'lib/assets/tars.png' : 'lib/assets/case.png'),
+                    fit: BoxFit.cover,
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(name, style: GoogleFonts.orbitron(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
+                    Text(
+                      name, 
+                      style: GoogleFonts.orbitron(
+                        color: color, 
+                        fontSize: 10, 
+                        fontWeight: FontWeight.bold
+                      )
+                    ),
                     const SizedBox(height: 4),
-                    Text(msg.text, style: GoogleFonts.shareTechMono(color: Colors.white70)),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.05),
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(2),
+                          topRight: Radius.circular(8),
+                          bottomLeft: Radius.circular(8),
+                          bottomRight: Radius.circular(8),
+                        ),
+                      ),
+                      child: Text(msg.text, style: GoogleFonts.shareTechMono(color: Colors.white70)),
+                    ),
                   ],
                 ),
               ),
