@@ -1,57 +1,111 @@
-import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart' as p;
-import 'dart:io';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/models/expense_model.dart';
 
 class AppDatabase {
-  static const String _dbName = 'stardust.db';
-  late String _dbPath;
+  static const _expensesKey = 'db_expenses';
+  static const _incomesKey = 'db_incomes';
+
+  // In-memory cache populated from SharedPreferences on first use
+  final List<Expense> _expenses = [];
+  final List<Income> _incomes = [];
+  bool _initialized = false;
+
+  // ─── Initialisation ──────────────────────────────────────────────────────
 
   Future<void> initialize() async {
-    final dbFolder = await getApplicationDocumentsDirectory();
-    _dbPath = p.join(dbFolder.path, _dbName);
+    if (_initialized) return;
+    _initialized = true;
+    final prefs = await SharedPreferences.getInstance();
+
+    // Load expenses
+    final expJson = prefs.getString(_expensesKey);
+    if (expJson != null) {
+      try {
+        final list = jsonDecode(expJson) as List<dynamic>;
+        _expenses
+          ..clear()
+          ..addAll(
+            list.map((e) => Expense.fromJson(e as Map<String, dynamic>)),
+          );
+      } catch (_) {
+        _expenses.clear();
+      }
+    }
+
+    // Load incomes
+    final incJson = prefs.getString(_incomesKey);
+    if (incJson != null) {
+      try {
+        final list = jsonDecode(incJson) as List<dynamic>;
+        _incomes
+          ..clear()
+          ..addAll(list.map((i) => Income.fromJson(i as Map<String, dynamic>)));
+      } catch (_) {
+        _incomes.clear();
+      }
+    }
   }
 
-  // For now, using in-memory list as a simple database
-  static final List<Expense> _expenses = [];
-  static final List<Income> _incomes = [];
+  // ─── Persistence helpers ──────────────────────────────────────────────────
+
+  Future<void> _saveExpenses() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _expensesKey,
+      jsonEncode(_expenses.map((e) => e.toJson()).toList()),
+    );
+  }
+
+  Future<void> _saveIncomes() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _incomesKey,
+      jsonEncode(_incomes.map((i) => i.toJson()).toList()),
+    );
+  }
+
+  // ─── Expense API ─────────────────────────────────────────────────────────
 
   // Alias for backwards compatibility
   List<dynamic> get expenses => _expenses;
 
-  // Add expense
   Future<void> addExpense(Expense expense) async {
+    await initialize();
     _expenses.add(expense);
+    await _saveExpenses();
   }
 
-  // Get all expenses
   Future<List<Expense>> getAllExpenses() async {
+    await initialize();
     return List.from(_expenses);
   }
 
-  // Delete expense
   Future<void> deleteExpense(String id) async {
+    await initialize();
     _expenses.removeWhere((e) => e.id == id);
+    await _saveExpenses();
   }
 
-  // Update expense
   Future<void> updateExpense(Expense expense) async {
+    await initialize();
     final index = _expenses.indexWhere((e) => e.id == expense.id);
     if (index >= 0) {
       _expenses[index] = expense;
+      await _saveExpenses();
     }
   }
 
-  // Get expenses by category
   Future<List<Expense>> getExpensesByCategory(String category) async {
+    await initialize();
     return _expenses.where((e) => e.category == category).toList();
   }
 
-  // Get expenses by date range
   Future<List<Expense>> getExpensesByDateRange(
     DateTime startDate,
     DateTime endDate,
   ) async {
+    await initialize();
     return _expenses
         .where(
           (e) =>
@@ -60,27 +114,36 @@ class AppDatabase {
         .toList();
   }
 
-  // Income methods
+  // ─── Income API ───────────────────────────────────────────────────────────
+
   Future<void> addIncome(Income income) async {
+    await initialize();
     _incomes.add(income);
+    await _saveIncomes();
   }
 
   Future<List<Income>> getAllIncomes() async {
+    await initialize();
     return List.from(_incomes);
   }
 
   Future<void> deleteIncome(String id) async {
+    await initialize();
     _incomes.removeWhere((i) => i.id == id);
+    await _saveIncomes();
   }
 
   Future<void> updateIncome(Income income) async {
+    await initialize();
     final index = _incomes.indexWhere((i) => i.id == income.id);
     if (index >= 0) {
       _incomes[index] = income;
+      await _saveIncomes();
     }
   }
 
   Future<List<Income>> getIncomesByCategory(String category) async {
+    await initialize();
     return _incomes.where((i) => i.category == category).toList();
   }
 
@@ -88,6 +151,7 @@ class AppDatabase {
     DateTime startDate,
     DateTime endDate,
   ) async {
+    await initialize();
     return _incomes
         .where(
           (i) =>
@@ -96,6 +160,8 @@ class AppDatabase {
         .toList();
   }
 }
+
+// ─── Models ───────────────────────────────────────────────────────────────────
 
 class Expense {
   final String id;

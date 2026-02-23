@@ -24,6 +24,10 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
   bool _showAnalytics = false;
   String _selectedPeriod = 'daily'; // daily, weekly, monthly, yearly, alltime
   CalendarFormat _calendarFormat = CalendarFormat.month;
+  // Controls which dataset the Pie Chart displays
+  String _pieChartMode = 'expenses'; // 'expenses' | 'incomes'
+  // Controls which chart type to display on compact screens
+  String _analyticsChartShow = 'pie'; // 'pie' | 'bar'
 
   // Responsive breakpoints
   static const double _mobileBreakpoint = 600;
@@ -57,7 +61,10 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
                     return incomesAsync.when(
                       data: (incomes) {
                         if (_showAnalytics) {
-                          return _buildAnalyticsWithCalendarView(expenses);
+                          return _buildAnalyticsWithCalendarView(
+                            expenses,
+                            incomes,
+                          );
                         } else {
                           return _buildTransactionListView(expenses, incomes);
                         }
@@ -241,7 +248,10 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
     );
   }
 
-  Widget _buildAnalyticsWithCalendarView(List<Expense> expenses) {
+  Widget _buildAnalyticsWithCalendarView(
+    List<Expense> expenses,
+    List<Income> incomes,
+  ) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final screenWidth = constraints.maxWidth;
@@ -273,6 +283,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
         // Build analytics panel with action buttons inside
         Widget analyticsPanel = _buildAnalyticsViewWithButtons(
           expenses,
+          incomes,
           isCompact: isCompact,
           isMobile: isMobile,
         );
@@ -312,7 +323,8 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
 
   // Analytics view with action buttons inside
   Widget _buildAnalyticsViewWithButtons(
-    List<Expense> expenses, {
+    List<Expense> expenses,
+    List<Income> incomes, {
     bool isCompact = false,
     bool isMobile = false,
   }) {
@@ -321,7 +333,11 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
         children: [
           // Analytics content takes most space
           Expanded(
-            child: _buildAnalyticsContent(expenses, isCompact: isCompact),
+            child: _buildAnalyticsContent(
+              expenses,
+              incomes,
+              isCompact: isCompact,
+            ),
           ),
           // Action buttons at bottom
           _buildActionButtonsRow(isCompact: isCompact, isMobile: isMobile),
@@ -332,129 +348,239 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
 
   // Analytics content without the container
   Widget _buildAnalyticsContent(
-    List<Expense> expenses, {
+    List<Expense> expenses,
+    List<Income> incomes, {
     bool isCompact = false,
   }) {
-    final chartPadding = isCompact ? 8.0 : 12.0;
-    final pieChartRadius = isCompact ? 60.0 : 100.0;
-    final centerSpaceRadius = isCompact ? 25.0 : 40.0;
+    final filteredExpenses = _filterExpensesByPeriod(expenses);
+    final filteredIncomes = _filterIncomesByPeriod(incomes);
+
+    final double pieRadius = isCompact ? 50.0 : 80.0;
+    final double centerSpace = isCompact ? 20.0 : 32.0;
+
+    // Build inner pie chart widget
+    Widget pieWidget = _buildPieChart(
+      items: _pieChartMode == 'expenses' ? filteredExpenses : filteredIncomes,
+      categoryFn:
+          _pieChartMode == 'expenses'
+              ? (e) => (e as Expense).category
+              : (i) => (i as Income).category,
+      amountFn:
+          _pieChartMode == 'expenses'
+              ? (e) => (e as Expense).amount
+              : (i) => (i as Income).amount,
+      radius: pieRadius,
+      centerSpaceRadius: centerSpace,
+      emptyLabel: _pieChartMode == 'expenses' ? 'No Expenses' : 'No Income',
+    );
+
+    // Build inner bar chart widget
+    Widget barWidget = _buildBarChartWidget(
+      filteredIncomes,
+      filteredExpenses,
+      isCompact: isCompact,
+    );
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Period Display
+        // ── Top controls bar ────────────────────────────────────────
         Padding(
-          padding: EdgeInsets.all(isCompact ? 8.0 : 12.0),
-          child: Text(
-            _getPeriodDisplayText(),
-            style: TextStyle(
-              color: const Color(0xFF00D9FF),
-              fontSize: isCompact ? 12 : 14,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1,
-            ),
-            textAlign: TextAlign.center,
+          padding: EdgeInsets.fromLTRB(
+            isCompact ? 8 : 12,
+            isCompact ? 6 : 10,
+            isCompact ? 8 : 12,
+            0,
+          ),
+          child: Row(
+            children: [
+              // Period display
+              Expanded(
+                child: Text(
+                  _getPeriodDisplayText(),
+                  style: TextStyle(
+                    color: const Color(0xFF00D9FF),
+                    fontSize: isCompact ? 10 : 13,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.8,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              // Pie-mode chips (always visible)
+              _buildMiniChip(
+                label: 'EXP',
+                active: _pieChartMode == 'expenses',
+                activeColor: Colors.orange,
+                onTap: () => setState(() => _pieChartMode = 'expenses'),
+                isCompact: isCompact,
+              ),
+              SizedBox(width: isCompact ? 4 : 6),
+              _buildMiniChip(
+                label: 'INC',
+                active: _pieChartMode == 'incomes',
+                activeColor: Colors.green,
+                onTap: () => setState(() => _pieChartMode = 'incomes'),
+                isCompact: isCompact,
+              ),
+              // Chart-type toggle (compact only)
+              if (isCompact) ...[
+                const SizedBox(width: 8),
+                _buildMiniChip(
+                  label: 'PIE',
+                  active: _analyticsChartShow == 'pie',
+                  activeColor: const Color(0xFF00D9FF),
+                  onTap: () => setState(() => _analyticsChartShow = 'pie'),
+                  isCompact: isCompact,
+                ),
+                SizedBox(width: 4),
+                _buildMiniChip(
+                  label: 'BAR',
+                  active: _analyticsChartShow == 'bar',
+                  activeColor: const Color(0xFF00D9FF),
+                  onTap: () => setState(() => _analyticsChartShow = 'bar'),
+                  isCompact: isCompact,
+                ),
+              ],
+            ],
           ),
         ),
-        SizedBox(height: isCompact ? 4 : 8),
-        // Period Filter Buttons
+        SizedBox(height: isCompact ? 4 : 6),
+        // ── Period filter buttons ────────────────────────────────────
         Padding(
-          padding: EdgeInsets.symmetric(horizontal: isCompact ? 8.0 : 12.0),
+          padding: EdgeInsets.symmetric(horizontal: isCompact ? 6.0 : 10.0),
           child: Wrap(
-            spacing: isCompact ? 4 : 8,
-            runSpacing: isCompact ? 4 : 8,
+            spacing: isCompact ? 3 : 6,
+            runSpacing: isCompact ? 3 : 6,
             alignment: WrapAlignment.center,
             children: [
               _buildPeriodButton('DAILY', 'daily', isCompact: isCompact),
               _buildPeriodButton('WEEKLY', 'weekly', isCompact: isCompact),
               _buildPeriodButton('MONTHLY', 'monthly', isCompact: isCompact),
               _buildPeriodButton('YEARLY', 'yearly', isCompact: isCompact),
-              _buildPeriodButton('ALL TIME', 'alltime', isCompact: isCompact),
+              _buildPeriodButton('ALL', 'alltime', isCompact: isCompact),
             ],
           ),
         ),
-        SizedBox(height: isCompact ? 8 : 12),
-        // Charts
+        SizedBox(height: isCompact ? 4 : 8),
+        // ── Chart area ───────────────────────────────────────────────
         Expanded(
-          child: Column(
-            children: [
-              // Pie Chart
-              Expanded(
-                child: Padding(
-                  padding: EdgeInsets.all(chartPadding),
-                  child: PieChart(
-                    PieChartData(
-                      sections: _getPieChartData(
-                        _filterExpensesByPeriod(expenses),
-                        radius: pieChartRadius,
-                      ),
-                      centerSpaceRadius: centerSpaceRadius,
-                      sectionsSpace: 2,
+          child: Padding(
+            padding: EdgeInsets.all(isCompact ? 6.0 : 10.0),
+            child:
+                isCompact
+                    // Compact: one chart at a time, toggled above
+                    ? (_analyticsChartShow == 'pie' ? pieWidget : barWidget)
+                    // Wide: pie left, bar right
+                    : Row(
+                      children: [
+                        Expanded(child: pieWidget),
+                        const SizedBox(width: 12),
+                        Expanded(child: barWidget),
+                      ],
                     ),
-                  ),
-                ),
-              ),
-              SizedBox(height: isCompact ? 8 : 12),
-              // Bar Chart
-              Expanded(
-                child: Padding(
-                  padding: EdgeInsets.all(chartPadding),
-                  child: BarChart(
-                    BarChartData(
-                      barGroups: _getBarChartData(
-                        _filterExpensesByPeriod(expenses),
-                      ),
-                      borderData: FlBorderData(show: false),
-                      gridData: FlGridData(show: true),
-                      titlesData: FlTitlesData(
-                        bottomTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            getTitlesWidget: (value, meta) {
-                              const titles = ['D', 'W', 'M'];
-                              if (value.toInt() < titles.length) {
-                                return Text(
-                                  titles[value.toInt()],
-                                  style: TextStyle(
-                                    color: const Color(0xFF00D9FF),
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: isCompact ? 10 : 12,
-                                  ),
-                                );
-                              }
-                              return const SizedBox();
-                            },
-                          ),
-                        ),
-                        leftTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            reservedSize: isCompact ? 28 : 32,
-                            getTitlesWidget: (value, meta) {
-                              return Text(
-                                '${value.toInt()}',
-                                style: TextStyle(
-                                  color: const Color(0xFFBBDEFF),
-                                  fontSize: isCompact ? 8 : 10,
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                        topTitles: const AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-                        rightTitles: const AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
           ),
         ),
       ],
+    );
+  }
+
+  // Compact mini-chip used in the controls bar
+  Widget _buildMiniChip({
+    required String label,
+    required bool active,
+    required Color activeColor,
+    required VoidCallback onTap,
+    bool isCompact = false,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: isCompact ? 6 : 9,
+          vertical: isCompact ? 3 : 5,
+        ),
+        decoration: BoxDecoration(
+          color: active ? activeColor.withOpacity(0.2) : Colors.black38,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: active ? activeColor : Colors.white24,
+            width: active ? 1.5 : 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: active ? activeColor : const Color(0xFFBBDEFF),
+            fontSize: isCompact ? 8.5 : 10,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.4,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Extracted bar chart widget so it can be used independently
+  Widget _buildBarChartWidget(
+    List<Income> incomes,
+    List<Expense> expenses, {
+    bool isCompact = false,
+  }) {
+    return BarChart(
+      BarChartData(
+        barGroups: _getBarChartData(incomes, expenses),
+        borderData: FlBorderData(show: false),
+        gridData: const FlGridData(show: true),
+        titlesData: FlTitlesData(
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              getTitlesWidget: (value, meta) {
+                const titles = ['INCOME', 'EXPENSE'];
+                final idx = value.toInt();
+                if (idx >= 0 && idx < titles.length) {
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      titles[idx],
+                      style: TextStyle(
+                        color: idx == 0 ? Colors.green : Colors.orange,
+                        fontWeight: FontWeight.bold,
+                        fontSize: isCompact ? 8 : 10,
+                      ),
+                    ),
+                  );
+                }
+                return const SizedBox();
+              },
+            ),
+          ),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: isCompact ? 30 : 38,
+              getTitlesWidget: (value, meta) {
+                return Text(
+                  value >= 1000
+                      ? '${(value / 1000).toStringAsFixed(1)}k'
+                      : value.toInt().toString(),
+                  style: TextStyle(
+                    color: const Color(0xFFBBDEFF),
+                    fontSize: isCompact ? 7 : 9,
+                  ),
+                );
+              },
+            ),
+          ),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+        ),
+      ),
     );
   }
 
@@ -514,68 +640,98 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
     );
   }
 
-  List<PieChartSectionData> _getPieChartData(
-    List<Expense> expenses, {
-    double radius = 100,
+  // Generic pie chart – works for both Expense and Income lists.
+  Widget _buildPieChart({
+    required List<dynamic> items,
+    required String Function(dynamic) categoryFn,
+    required double Function(dynamic) amountFn,
+    required double radius,
+    required double centerSpaceRadius,
+    String emptyLabel = 'No Data',
   }) {
-    Map<String, double> categoryTotals = {};
-    for (var expense in expenses) {
-      categoryTotals[expense.category] =
-          (categoryTotals[expense.category] ?? 0) + expense.amount;
+    if (items.isEmpty) {
+      return Center(
+        child: Text(
+          emptyLabel,
+          style: const TextStyle(color: Color(0xFFBBDEFF), fontSize: 13),
+        ),
+      );
     }
 
-    final colors = [
+    final Map<String, double> totals = {};
+    for (final item in items) {
+      final cat = categoryFn(item);
+      totals[cat] = (totals[cat] ?? 0) + amountFn(item);
+    }
+
+    const colors = [
       Colors.cyan,
       Colors.blue,
       Colors.purple,
       Colors.pink,
       Colors.orange,
+      Colors.teal,
+      Colors.amber,
     ];
 
-    int colorIndex = 0;
-    return categoryTotals.entries.map((entry) {
-      final section = PieChartSectionData(
-        value: entry.value,
-        title: entry.key,
-        color: colors[colorIndex % colors.length],
-        radius: radius,
-        titleStyle: TextStyle(
-          color: Colors.white,
-          fontSize: radius < 80 ? 10 : 12,
-          fontWeight: FontWeight.bold,
-        ),
-      );
-      colorIndex++;
-      return section;
-    }).toList();
+    int idx = 0;
+    final sections =
+        totals.entries.map((entry) {
+          final s = PieChartSectionData(
+            value: entry.value,
+            title: entry.key,
+            color: colors[idx % colors.length],
+            radius: radius,
+            titleStyle: TextStyle(
+              color: Colors.white,
+              fontSize: radius < 80 ? 9 : 11,
+              fontWeight: FontWeight.bold,
+            ),
+          );
+          idx++;
+          return s;
+        }).toList();
+
+    return PieChart(
+      PieChartData(
+        sections: sections,
+        centerSpaceRadius: centerSpaceRadius,
+        sectionsSpace: 2,
+      ),
+    );
   }
 
-  List<BarChartGroupData> _getBarChartData(List<Expense> expenses) {
+  // Comparative bar chart: Bar 0 = Total Income (green), Bar 1 = Total Expenses (orange)
+  List<BarChartGroupData> _getBarChartData(
+    List<Income> incomes,
+    List<Expense> expenses,
+  ) {
+    final totalIncome = incomes.fold(0.0, (s, i) => s + i.amount);
+    final totalExpenses = expenses.fold(0.0, (s, e) => s + e.amount);
     return [
       BarChartGroupData(
         x: 0,
         barRods: [
           BarChartRodData(
-            toY: expenses
-                .where((e) => _isSameDay(e.timestamp, DateTime.now()))
-                .fold(0.0, (prev, e) => prev + e.amount),
-            color: Colors.cyan,
+            toY: totalIncome,
+            color: Colors.green,
+            width: 28,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
           ),
         ],
       ),
       BarChartGroupData(
         x: 1,
-        barRods: [BarChartRodData(toY: 250, color: Colors.blue)],
-      ),
-      BarChartGroupData(
-        x: 2,
-        barRods: [BarChartRodData(toY: 350, color: Colors.purple)],
+        barRods: [
+          BarChartRodData(
+            toY: totalExpenses,
+            color: Colors.orange,
+            width: 28,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+          ),
+        ],
       ),
     ];
-  }
-
-  bool _isSameDay(DateTime a, DateTime b) {
-    return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
   Widget _buildCustomButton({
@@ -766,6 +922,45 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
       case 'alltime':
       default:
         return expenses;
+    }
+  }
+
+  // Mirrors _filterExpensesByPeriod for Income records
+  List<Income> _filterIncomesByPeriod(List<Income> incomes) {
+    switch (_selectedPeriod) {
+      case 'daily':
+        return incomes
+            .where((i) => isSameDay(i.timestamp, _selectedDay))
+            .toList();
+      case 'weekly':
+        final weekStart = _selectedDay.subtract(
+          Duration(days: _selectedDay.weekday - 1),
+        );
+        final weekEnd = weekStart.add(const Duration(days: 6));
+        return incomes
+            .where(
+              (i) =>
+                  i.timestamp.isAfter(
+                    weekStart.subtract(const Duration(seconds: 1)),
+                  ) &&
+                  i.timestamp.isBefore(weekEnd.add(const Duration(seconds: 1))),
+            )
+            .toList();
+      case 'monthly':
+        return incomes
+            .where(
+              (i) =>
+                  i.timestamp.year == _selectedDay.year &&
+                  i.timestamp.month == _selectedDay.month,
+            )
+            .toList();
+      case 'yearly':
+        return incomes
+            .where((i) => i.timestamp.year == _selectedDay.year)
+            .toList();
+      case 'alltime':
+      default:
+        return incomes;
     }
   }
 
