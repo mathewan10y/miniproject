@@ -23,6 +23,14 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
   DateTime _focusedDay = DateTime.now();
   bool _showAnalytics = false;
   String _selectedPeriod = 'daily'; // daily, weekly, monthly, yearly, alltime
+  CalendarFormat _calendarFormat = CalendarFormat.month;
+
+  // Responsive breakpoints
+  static const double _mobileBreakpoint = 600;
+  static const double _tabletBreakpoint = 900;
+
+  bool _isCompactLayout(double width) => width < _tabletBreakpoint;
+  bool _isMobileLayout(double width) => width < _mobileBreakpoint;
 
   @override
   Widget build(BuildContext context) {
@@ -91,29 +99,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
             ],
           ),
         ),
-        // Action buttons - both in bottom right corner
-        Positioned(
-          bottom: 30,
-          right: 260, // Expanded spacing: Expense(220) + Spacing(10) + margin(30) = 260
-          child: _buildActionButton(
-            onPressed: () => _openAddIncomeSheet(context),
-            icon: Icons.download,
-            label: 'INCOME',
-            color: Colors.cyan,
-          ),
-        ),
-        Positioned(
-          bottom: 30,
-          right: 30,
-          child: _buildActionButton(
-            onPressed: () => _openAddExpenseSheet(context),
-            icon: Icons.upload,
-            label: 'EXPENSE',
-            color: Colors.orange,
-            showGlow: false,
-          ),
-        ),
-        
+
         // Chat Overlay
         const BotChatPanel(),
       ],
@@ -124,15 +110,16 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (ctx) => AddExpenseSheet(
-        onExpenseAdded: (double amount) {
-          // Deduct from total savings
-          final refineryNotifier = ref.read(refineryProvider.notifier);
-          // Note: We'll need to add a method to deduct from savings
-          // For now, this is a placeholder for the logic
-          _showExpenseDeductionSnackBar(context, amount);
-        },
-      ),
+      builder:
+          (ctx) => AddExpenseSheet(
+            onExpenseAdded: (double amount) {
+              // Deduct from total savings
+              final refineryNotifier = ref.read(refineryProvider.notifier);
+              // Note: We'll need to add a method to deduct from savings
+              // For now, this is a placeholder for the logic
+              _showExpenseDeductionSnackBar(context, amount);
+            },
+          ),
     );
   }
 
@@ -140,16 +127,19 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (ctx) => AddIncomeSheet(
-        onIncomeAdded: (double amount) {
-          // Calculate ore from income
-          final refineryNotifier = ref.read(refineryProvider.notifier);
-          final oreGenerated = refineryNotifier.calculateOreFromIncome(amount);
-          
-          // Show mining success notification
-          _showMiningSuccessSnackBar(context, amount, oreGenerated);
-        },
-      ),
+      builder:
+          (ctx) => AddIncomeSheet(
+            onIncomeAdded: (double amount) {
+              // Calculate ore from income
+              final refineryNotifier = ref.read(refineryProvider.notifier);
+              final oreGenerated = refineryNotifier.calculateOreFromIncome(
+                amount,
+              );
+
+              // Show mining success notification
+              _showMiningSuccessSnackBar(context, amount, oreGenerated);
+            },
+          ),
     );
   }
 
@@ -178,442 +168,293 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
       ),
     );
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Row(
-        children: [
-          // Calendar
-          Expanded(
-            flex: 2,
-            child: _buildGlassmorphContainer(
-              child: Column(
-                children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      child: TableCalendar(
-                        firstDay: DateTime.utc(2020, 1, 1),
-                        lastDay: DateTime.utc(2030, 12, 31),
-                        focusedDay: _focusedDay,
-                        selectedDayPredicate:
-                            (day) => isSameDay(_selectedDay, day),
-                        onDaySelected: (selectedDay, focusedDay) {
-                          setState(() {
-                            _selectedDay = selectedDay;
-                            _focusedDay = focusedDay;
-                          });
-                        },
-                        calendarStyle: CalendarStyle(
-                          defaultTextStyle: const TextStyle(
-                            color: Color(0xFFBBDEFF),
-                          ),
-                          weekendTextStyle: const TextStyle(
-                            color: Color(0xFFBBDEFF),
-                          ),
-                          selectedDecoration: BoxDecoration(
-                            color: const Color(0xFF00D9FF),
-                            shape: BoxShape.circle,
-                          ),
-                          todayDecoration: BoxDecoration(
-                            color: const Color(0xFF00B8D4),
-                            shape: BoxShape.circle,
-                          ),
-                          defaultDecoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                          ),
-                          weekendDecoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        headerStyle: HeaderStyle(
-                          formatButtonTextStyle: const TextStyle(
-                            color: Color(0xFF00D9FF),
-                          ),
-                          titleTextStyle: const TextStyle(
-                            color: Color(0xFF00D9FF),
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          leftChevronIcon: const Icon(
-                            Icons.chevron_left,
-                            color: Color(0xFF00D9FF),
-                          ),
-                          rightChevronIcon: const Icon(
-                            Icons.chevron_right,
-                            color: Color(0xFF00D9FF),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  // Toggle Analytics Button (using button.png)
-                  _buildCustomButton(
-                    onPressed: () {
-                      setState(() {
-                        _showAnalytics = !_showAnalytics;
-                      });
-                    },
-                    size: 80,
-                    label: 'SHOW ANALYTICS',
-                  ),
-                  const SizedBox(height: 12),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          // Transaction list
-          Expanded(
-            flex: 2,
-            child: _buildGlassmorphContainer(
-              child:
-                  transactions.isEmpty
-                      ? const Center(
-                        child: Text(
-                          'No transactions on this day.',
-                          style: TextStyle(color: Color(0xFFBBDEFF)),
-                        ),
-                      )
-                      : ListView.builder(
-                        itemCount: transactions.length,
-                        itemBuilder: (ctx, index) {
-                          final transaction = transactions[index];
-                          final isIncome = transaction['type'] == 'income';
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        final isCompact = _isCompactLayout(screenWidth);
+        final isMobile = _isMobileLayout(screenWidth);
+        final padding = isCompact ? 8.0 : 16.0;
 
-                          if (isIncome) {
-                            final income = transaction['item'] as Income;
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8.0,
-                                vertical: 4.0,
-                              ),
-                              child: Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: const Color(
-                                    0xFF4A5568,
-                                  ).withOpacity(0.3),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: Colors.white24,
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          income.category,
-                                          style: const TextStyle(
-                                            color: Color(0xFFE0FFFF),
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          'INCOME',
-                                          style: TextStyle(
-                                            color: Colors.green.shade300,
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    Text(
-                                      '+\$${income.amount.toStringAsFixed(2)}',
-                                      style: TextStyle(
-                                        color: Colors.green.shade300,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          } else {
-                            final expense = transaction['item'] as Expense;
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8.0,
-                                vertical: 4.0,
-                              ),
-                              child: Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.3),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: Colors.white24,
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          expense.category,
-                                          style: const TextStyle(
-                                            color: Color(0xFFE0FFFF),
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          expense.isWant ? 'WANT' : 'NEED',
-                                          style: TextStyle(
-                                            color:
-                                                expense.isWant
-                                                    ? Colors.orange
-                                                    : Colors.green,
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    Text(
-                                      '-\$${expense.amount.toStringAsFixed(2)}',
-                                      style: const TextStyle(
-                                        color: Color(0xFF00D9FF),
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          }
-                        },
-                      ),
-            ),
+        // Build calendar panel with toggle button
+        Widget calendarPanel = _buildGlassmorphContainer(
+          child: Column(
+            children: [
+              Expanded(child: _buildResponsiveCalendar(isCompact: isCompact)),
+              SizedBox(height: isCompact ? 8 : 12),
+              // Toggle Analytics Button
+              _buildCustomButton(
+                onPressed: () {
+                  setState(() {
+                    _showAnalytics = !_showAnalytics;
+                  });
+                },
+                size: isCompact ? 60 : 80,
+                label: 'SHOW ANALYTICS',
+              ),
+              SizedBox(height: isCompact ? 8 : 12),
+            ],
           ),
-        ],
-      ),
+        );
+
+        // Build transaction list panel with action buttons inside
+        Widget transactionPanel = _buildGlassmorphContainer(
+          child: Column(
+            children: [
+              // Transaction list takes most space
+              Expanded(child: _buildResponsiveTransactionList(transactions)),
+              // Action buttons at bottom of transaction panel
+              _buildActionButtonsRow(isCompact: isCompact, isMobile: isMobile),
+            ],
+          ),
+        );
+
+        if (isMobile) {
+          // Vertical layout for mobile devices
+          return Padding(
+            padding: EdgeInsets.symmetric(horizontal: padding),
+            child: Column(
+              children: [
+                // Calendar takes less space on mobile
+                Expanded(flex: 2, child: calendarPanel),
+                const SizedBox(height: 12),
+                // Transaction list with buttons inside
+                Expanded(flex: 3, child: transactionPanel),
+              ],
+            ),
+          );
+        } else {
+          // Horizontal layout for tablets and desktops
+          return Padding(
+            padding: EdgeInsets.symmetric(horizontal: padding),
+            child: Row(
+              children: [
+                // Calendar
+                Expanded(flex: isCompact ? 3 : 2, child: calendarPanel),
+                SizedBox(width: isCompact ? 12 : 16),
+                // Transaction list with buttons inside
+                Expanded(flex: 2, child: transactionPanel),
+              ],
+            ),
+          );
+        }
+      },
     );
   }
 
   Widget _buildAnalyticsWithCalendarView(List<Expense> expenses) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Row(
-        children: [
-          // Calendar (same as transaction view)
-          Expanded(
-            flex: 2,
-            child: _buildGlassmorphContainer(
-              child: Column(
-                children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      child: TableCalendar(
-                        firstDay: DateTime.utc(2020, 1, 1),
-                        lastDay: DateTime.utc(2030, 12, 31),
-                        focusedDay: _focusedDay,
-                        selectedDayPredicate:
-                            (day) => isSameDay(_selectedDay, day),
-                        onDaySelected: (selectedDay, focusedDay) {
-                          setState(() {
-                            _selectedDay = selectedDay;
-                            _focusedDay = focusedDay;
-                          });
-                        },
-                        calendarStyle: CalendarStyle(
-                          defaultTextStyle: const TextStyle(
-                            color: Color(0xFFBBDEFF),
-                          ),
-                          weekendTextStyle: const TextStyle(
-                            color: Color(0xFFBBDEFF),
-                          ),
-                          selectedDecoration: BoxDecoration(
-                            color: const Color(0xFF00D9FF),
-                            shape: BoxShape.circle,
-                          ),
-                          todayDecoration: BoxDecoration(
-                            color: const Color(0xFF00B8D4),
-                            shape: BoxShape.circle,
-                          ),
-                          defaultDecoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                          ),
-                          weekendDecoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        headerStyle: HeaderStyle(
-                          formatButtonTextStyle: const TextStyle(
-                            color: Color(0xFF00D9FF),
-                          ),
-                          titleTextStyle: const TextStyle(
-                            color: Color(0xFF00D9FF),
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          leftChevronIcon: const Icon(
-                            Icons.chevron_left,
-                            color: Color(0xFF00D9FF),
-                          ),
-                          rightChevronIcon: const Icon(
-                            Icons.chevron_right,
-                            color: Color(0xFF00D9FF),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  // Toggle Analytics Button
-                  _buildCustomButton(
-                    onPressed: () {
-                      setState(() {
-                        _showAnalytics = !_showAnalytics;
-                      });
-                    },
-                    size: 80,
-                    label: 'HIDE ANALYTICS',
-                  ),
-                  const SizedBox(height: 12),
-                ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        final isCompact = _isCompactLayout(screenWidth);
+        final isMobile = _isMobileLayout(screenWidth);
+        final padding = isCompact ? 8.0 : 16.0;
+
+        // Build calendar panel with toggle button
+        Widget calendarPanel = _buildGlassmorphContainer(
+          child: Column(
+            children: [
+              Expanded(child: _buildResponsiveCalendar(isCompact: isCompact)),
+              SizedBox(height: isCompact ? 8 : 12),
+              // Toggle Analytics Button
+              _buildCustomButton(
+                onPressed: () {
+                  setState(() {
+                    _showAnalytics = !_showAnalytics;
+                  });
+                },
+                size: isCompact ? 60 : 80,
+                label: 'HIDE ANALYTICS',
               ),
-            ),
+              SizedBox(height: isCompact ? 8 : 12),
+            ],
           ),
-          const SizedBox(width: 16),
-          // Analytics with period filters
-          Expanded(flex: 2, child: _buildAnalyticsView(expenses)),
+        );
+
+        // Build analytics panel with action buttons inside
+        Widget analyticsPanel = _buildAnalyticsViewWithButtons(
+          expenses,
+          isCompact: isCompact,
+          isMobile: isMobile,
+        );
+
+        if (isMobile) {
+          // Vertical layout for mobile devices
+          return Padding(
+            padding: EdgeInsets.symmetric(horizontal: padding),
+            child: Column(
+              children: [
+                // Calendar takes less space on mobile
+                Expanded(flex: 2, child: calendarPanel),
+                const SizedBox(height: 12),
+                // Analytics with buttons inside
+                Expanded(flex: 3, child: analyticsPanel),
+              ],
+            ),
+          );
+        } else {
+          // Horizontal layout for tablets and desktops
+          return Padding(
+            padding: EdgeInsets.symmetric(horizontal: padding),
+            child: Row(
+              children: [
+                // Calendar
+                Expanded(flex: isCompact ? 3 : 2, child: calendarPanel),
+                SizedBox(width: isCompact ? 12 : 16),
+                // Analytics with buttons inside
+                Expanded(flex: 2, child: analyticsPanel),
+              ],
+            ),
+          );
+        }
+      },
+    );
+  }
+
+  // Analytics view with action buttons inside
+  Widget _buildAnalyticsViewWithButtons(
+    List<Expense> expenses, {
+    bool isCompact = false,
+    bool isMobile = false,
+  }) {
+    return _buildGlassmorphContainer(
+      child: Column(
+        children: [
+          // Analytics content takes most space
+          Expanded(
+            child: _buildAnalyticsContent(expenses, isCompact: isCompact),
+          ),
+          // Action buttons at bottom
+          _buildActionButtonsRow(isCompact: isCompact, isMobile: isMobile),
         ],
       ),
     );
   }
 
-  Widget _buildAnalyticsView(List<Expense> expenses) {
-    return _buildGlassmorphContainer(
-      child: Column(
-        children: [
-          // Period Display
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Text(
-              _getPeriodDisplayText(),
-              style: const TextStyle(
-                color: Color(0xFF00D9FF),
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1,
-              ),
+  // Analytics content without the container
+  Widget _buildAnalyticsContent(
+    List<Expense> expenses, {
+    bool isCompact = false,
+  }) {
+    final chartPadding = isCompact ? 8.0 : 12.0;
+    final pieChartRadius = isCompact ? 60.0 : 100.0;
+    final centerSpaceRadius = isCompact ? 25.0 : 40.0;
+
+    return Column(
+      children: [
+        // Period Display
+        Padding(
+          padding: EdgeInsets.all(isCompact ? 8.0 : 12.0),
+          child: Text(
+            _getPeriodDisplayText(),
+            style: TextStyle(
+              color: const Color(0xFF00D9FF),
+              fontSize: isCompact ? 12 : 14,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1,
             ),
+            textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 8),
-          // Period Filter Buttons
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12.0),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _buildPeriodButton('DAILY', 'daily'),
-                _buildPeriodButton('WEEKLY', 'weekly'),
-                _buildPeriodButton('MONTHLY', 'monthly'),
-                _buildPeriodButton('YEARLY', 'yearly'),
-                _buildPeriodButton('ALL TIME', 'alltime'),
-              ],
-            ),
+        ),
+        SizedBox(height: isCompact ? 4 : 8),
+        // Period Filter Buttons
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: isCompact ? 8.0 : 12.0),
+          child: Wrap(
+            spacing: isCompact ? 4 : 8,
+            runSpacing: isCompact ? 4 : 8,
+            alignment: WrapAlignment.center,
+            children: [
+              _buildPeriodButton('DAILY', 'daily', isCompact: isCompact),
+              _buildPeriodButton('WEEKLY', 'weekly', isCompact: isCompact),
+              _buildPeriodButton('MONTHLY', 'monthly', isCompact: isCompact),
+              _buildPeriodButton('YEARLY', 'yearly', isCompact: isCompact),
+              _buildPeriodButton('ALL TIME', 'alltime', isCompact: isCompact),
+            ],
           ),
-          const SizedBox(height: 12),
-          // Charts
-          Expanded(
-            child: Column(
-              children: [
-                // Pie Chart
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12.0),
-                    child: PieChart(
-                      PieChartData(
-                        sections: _getPieChartData(
-                          _filterExpensesByPeriod(expenses),
-                        ),
-                        centerSpaceRadius: 40,
-                        sectionsSpace: 2,
+        ),
+        SizedBox(height: isCompact ? 8 : 12),
+        // Charts
+        Expanded(
+          child: Column(
+            children: [
+              // Pie Chart
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.all(chartPadding),
+                  child: PieChart(
+                    PieChartData(
+                      sections: _getPieChartData(
+                        _filterExpensesByPeriod(expenses),
+                        radius: pieChartRadius,
                       ),
+                      centerSpaceRadius: centerSpaceRadius,
+                      sectionsSpace: 2,
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
-                // Bar Chart
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12.0),
-                    child: BarChart(
-                      BarChartData(
-                        barGroups: _getBarChartData(
-                          _filterExpensesByPeriod(expenses),
-                        ),
-                        borderData: FlBorderData(show: false),
-                        gridData: FlGridData(show: true),
-                        titlesData: FlTitlesData(
-                          bottomTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true,
-                              getTitlesWidget: (value, meta) {
-                                const titles = ['D', 'W', 'M'];
-                                if (value.toInt() < titles.length) {
-                                  return Text(
-                                    titles[value.toInt()],
-                                    style: const TextStyle(
-                                      color: Color(0xFF00D9FF),
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  );
-                                }
-                                return const SizedBox();
-                              },
-                            ),
-                          ),
-                          leftTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true,
-                              getTitlesWidget: (value, meta) {
+              ),
+              SizedBox(height: isCompact ? 8 : 12),
+              // Bar Chart
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.all(chartPadding),
+                  child: BarChart(
+                    BarChartData(
+                      barGroups: _getBarChartData(
+                        _filterExpensesByPeriod(expenses),
+                      ),
+                      borderData: FlBorderData(show: false),
+                      gridData: FlGridData(show: true),
+                      titlesData: FlTitlesData(
+                        bottomTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            getTitlesWidget: (value, meta) {
+                              const titles = ['D', 'W', 'M'];
+                              if (value.toInt() < titles.length) {
                                 return Text(
-                                  '${value.toInt()}',
-                                  style: const TextStyle(
-                                    color: Color(0xFFBBDEFF),
-                                    fontSize: 10,
+                                  titles[value.toInt()],
+                                  style: TextStyle(
+                                    color: const Color(0xFF00D9FF),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: isCompact ? 10 : 12,
                                   ),
                                 );
-                              },
-                            ),
+                              }
+                              return const SizedBox();
+                            },
                           ),
-                          topTitles: AxisTitles(
-                            sideTitles: SideTitles(showTitles: false),
+                        ),
+                        leftTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            reservedSize: isCompact ? 28 : 32,
+                            getTitlesWidget: (value, meta) {
+                              return Text(
+                                '${value.toInt()}',
+                                style: TextStyle(
+                                  color: const Color(0xFFBBDEFF),
+                                  fontSize: isCompact ? 8 : 10,
+                                ),
+                              );
+                            },
                           ),
-                          rightTitles: AxisTitles(
-                            sideTitles: SideTitles(showTitles: false),
-                          ),
+                        ),
+                        topTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
+                        rightTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -673,7 +514,10 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
     );
   }
 
-  List<PieChartSectionData> _getPieChartData(List<Expense> expenses) {
+  List<PieChartSectionData> _getPieChartData(
+    List<Expense> expenses, {
+    double radius = 100,
+  }) {
     Map<String, double> categoryTotals = {};
     for (var expense in expenses) {
       categoryTotals[expense.category] =
@@ -694,10 +538,10 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
         value: entry.value,
         title: entry.key,
         color: colors[colorIndex % colors.length],
-        radius: 100,
-        titleStyle: const TextStyle(
+        radius: radius,
+        titleStyle: TextStyle(
           color: Colors.white,
-          fontSize: 12,
+          fontSize: radius < 80 ? 10 : 12,
           fontWeight: FontWeight.bold,
         ),
       );
@@ -785,8 +629,16 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
     );
   }
 
-  Widget _buildPeriodButton(String label, String period) {
+  Widget _buildPeriodButton(
+    String label,
+    String period, {
+    bool isCompact = false,
+  }) {
     final isActive = _selectedPeriod == period;
+    final horizontalPadding = isCompact ? 8.0 : 12.0;
+    final verticalPadding = isCompact ? 6.0 : 8.0;
+    final fontSize = isCompact ? 9.0 : 11.0;
+
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -794,7 +646,10 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
         });
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: EdgeInsets.symmetric(
+          horizontal: horizontalPadding,
+          vertical: verticalPadding,
+        ),
         decoration: BoxDecoration(
           color:
               isActive
@@ -810,7 +665,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
           label,
           style: TextStyle(
             color: isActive ? const Color(0xFF00D9FF) : const Color(0xFFBBDEFF),
-            fontSize: 11,
+            fontSize: fontSize,
             fontWeight: FontWeight.bold,
             letterSpacing: 0.5,
           ),
@@ -933,15 +788,16 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
             image: AssetImage('lib/assets/button.png'),
             fit: BoxFit.fill,
           ),
-          boxShadow: showGlow
-              ? [
-                  BoxShadow(
-                    color: color.withOpacity(0.3),
-                    blurRadius: 10,
-                    spreadRadius: 2,
-                  ),
-                ]
-              : [],
+          boxShadow:
+              showGlow
+                  ? [
+                    BoxShadow(
+                      color: color.withOpacity(0.3),
+                      blurRadius: 10,
+                      spreadRadius: 2,
+                    ),
+                  ]
+                  : [],
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -968,14 +824,16 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
   }
 
   // Mining Success SnackBar
-  void _showMiningSuccessSnackBar(BuildContext context, double amount, int ore) {
+  void _showMiningSuccessSnackBar(
+    BuildContext context,
+    double amount,
+    int ore,
+  ) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: Colors.cyan.withOpacity(0.9),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         content: Row(
           children: [
             const Icon(Icons.check_circle, color: Colors.white),
@@ -1005,9 +863,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
       SnackBar(
         backgroundColor: Colors.orange.withOpacity(0.9),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         content: Row(
           children: [
             const Icon(Icons.trending_down, color: Colors.white),
@@ -1026,10 +882,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
                   ),
                   Text(
                     'Ore Consumed: -$oreReduced',
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 12,
-                    ),
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                 ],
               ),
@@ -1037,6 +890,387 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
           ],
         ),
         duration: const Duration(seconds: 4),
+      ),
+    );
+  }
+
+  // Responsive Action Button Builder
+  Widget _buildResponsiveActionButton({
+    required VoidCallback onPressed,
+    required IconData icon,
+    required String label,
+    required Color color,
+    bool showGlow = true,
+    bool compact = false,
+  }) {
+    final buttonWidth = compact ? 130.0 : 160.0;
+    final buttonHeight = compact ? 50.0 : 60.0;
+    final iconSize = compact ? 18.0 : 20.0;
+    final fontSize = compact ? 10.0 : 12.0;
+
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        width: buttonWidth,
+        height: buttonHeight,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          image: const DecorationImage(
+            image: AssetImage('lib/assets/button.png'),
+            fit: BoxFit.fill,
+          ),
+          boxShadow:
+              showGlow
+                  ? [
+                    BoxShadow(
+                      color: color.withOpacity(0.3),
+                      blurRadius: 10,
+                      spreadRadius: 2,
+                    ),
+                  ]
+                  : [],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: Colors.white, size: iconSize),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: fontSize,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Action Buttons Row Builder - fits inside transaction/analytics panel
+  Widget _buildActionButtonsRow({
+    required bool isCompact,
+    required bool isMobile,
+  }) {
+    final spacing = isCompact ? 8.0 : 12.0;
+    final padding = isCompact ? 8.0 : 12.0;
+
+    if (isMobile) {
+      // Vertical stack for mobile
+      return Padding(
+        padding: EdgeInsets.all(padding),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildResponsiveActionButton(
+              onPressed: () => _openAddIncomeSheet(context),
+              icon: Icons.download,
+              label: 'INCOME',
+              color: Colors.cyan,
+              compact: true,
+            ),
+            SizedBox(height: spacing),
+            _buildResponsiveActionButton(
+              onPressed: () => _openAddExpenseSheet(context),
+              icon: Icons.upload,
+              label: 'EXPENSE',
+              color: Colors.orange,
+              showGlow: false,
+              compact: true,
+            ),
+          ],
+        ),
+      );
+    } else {
+      // Horizontal row for larger screens
+      return Padding(
+        padding: EdgeInsets.all(padding),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Flexible(
+              child: _buildResponsiveActionButton(
+                onPressed: () => _openAddIncomeSheet(context),
+                icon: Icons.download,
+                label: 'INCOME',
+                color: Colors.cyan,
+                compact: isCompact,
+              ),
+            ),
+            SizedBox(width: spacing),
+            Flexible(
+              child: _buildResponsiveActionButton(
+                onPressed: () => _openAddExpenseSheet(context),
+                icon: Icons.upload,
+                label: 'EXPENSE',
+                color: Colors.orange,
+                showGlow: false,
+                compact: isCompact,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  // Responsive Calendar Widget Builder
+  Widget _buildResponsiveCalendar({required bool isCompact}) {
+    final rowHeight = isCompact ? 40.0 : 52.0;
+    final headerFontSize = isCompact ? 14.0 : 16.0;
+    final dayFontSize = isCompact ? 12.0 : 14.0;
+
+    return Column(
+      children: [
+        // Format toggle buttons for compact view
+        if (isCompact)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildCalendarFormatButton('Month', CalendarFormat.month),
+                const SizedBox(width: 8),
+                _buildCalendarFormatButton('2 Weeks', CalendarFormat.twoWeeks),
+                const SizedBox(width: 8),
+                _buildCalendarFormatButton('Week', CalendarFormat.week),
+              ],
+            ),
+          ),
+        Expanded(
+          child: SingleChildScrollView(
+            child: TableCalendar(
+              firstDay: DateTime.utc(2020, 1, 1),
+              lastDay: DateTime.utc(2030, 12, 31),
+              focusedDay: _focusedDay,
+              calendarFormat: _calendarFormat,
+              availableCalendarFormats: const {
+                CalendarFormat.month: 'Month',
+                CalendarFormat.twoWeeks: '2 weeks',
+                CalendarFormat.week: 'Week',
+              },
+              onFormatChanged: (format) {
+                setState(() {
+                  _calendarFormat = format;
+                });
+              },
+              selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+              onDaySelected: (selectedDay, focusedDay) {
+                setState(() {
+                  _selectedDay = selectedDay;
+                  _focusedDay = focusedDay;
+                });
+              },
+              calendarStyle: CalendarStyle(
+                cellMargin: EdgeInsets.all(isCompact ? 2 : 4),
+                rowDecoration: BoxDecoration(),
+                defaultTextStyle: TextStyle(
+                  color: const Color(0xFFBBDEFF),
+                  fontSize: dayFontSize,
+                ),
+                weekendTextStyle: TextStyle(
+                  color: const Color(0xFFBBDEFF),
+                  fontSize: dayFontSize,
+                ),
+                selectedDecoration: const BoxDecoration(
+                  color: Color(0xFF00D9FF),
+                  shape: BoxShape.circle,
+                ),
+                todayDecoration: const BoxDecoration(
+                  color: Color(0xFF00B8D4),
+                  shape: BoxShape.circle,
+                ),
+                defaultDecoration: const BoxDecoration(shape: BoxShape.circle),
+                weekendDecoration: const BoxDecoration(shape: BoxShape.circle),
+              ),
+              rowHeight: rowHeight,
+              daysOfWeekHeight: isCompact ? 20 : 24,
+              headerStyle: HeaderStyle(
+                formatButtonVisible: !isCompact,
+                formatButtonTextStyle: TextStyle(
+                  color: const Color(0xFF00D9FF),
+                  fontSize: isCompact ? 10 : 12,
+                ),
+                formatButtonDecoration: BoxDecoration(
+                  border: Border.all(color: const Color(0xFF00D9FF)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                titleTextStyle: TextStyle(
+                  color: const Color(0xFF00D9FF),
+                  fontSize: headerFontSize,
+                  fontWeight: FontWeight.bold,
+                ),
+                leftChevronIcon: Icon(
+                  Icons.chevron_left,
+                  color: const Color(0xFF00D9FF),
+                  size: isCompact ? 20 : 24,
+                ),
+                rightChevronIcon: Icon(
+                  Icons.chevron_right,
+                  color: const Color(0xFF00D9FF),
+                  size: isCompact ? 20 : 24,
+                ),
+                headerPadding: EdgeInsets.symmetric(
+                  vertical: isCompact ? 8 : 12,
+                ),
+              ),
+              daysOfWeekStyle: DaysOfWeekStyle(
+                weekdayStyle: TextStyle(
+                  color: const Color(0xFF00D9FF),
+                  fontSize: isCompact ? 10 : 12,
+                  fontWeight: FontWeight.bold,
+                ),
+                weekendStyle: TextStyle(
+                  color: const Color(0xFF00D9FF),
+                  fontSize: isCompact ? 10 : 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Calendar Format Button Builder
+  Widget _buildCalendarFormatButton(String label, CalendarFormat format) {
+    final isActive = _calendarFormat == format;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _calendarFormat = format;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color:
+              isActive
+                  ? const Color(0xFF00D9FF).withOpacity(0.2)
+                  : Colors.black.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isActive ? const Color(0xFF00D9FF) : Colors.white24,
+            width: isActive ? 2 : 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isActive ? const Color(0xFF00D9FF) : const Color(0xFFBBDEFF),
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Responsive Transaction List Builder
+  Widget _buildResponsiveTransactionList(
+    List<Map<String, dynamic>> transactions,
+  ) {
+    return transactions.isEmpty
+        ? const Center(
+          child: Text(
+            'No transactions on this day.',
+            style: TextStyle(color: Color(0xFFBBDEFF)),
+          ),
+        )
+        : ListView.builder(
+          itemCount: transactions.length,
+          itemBuilder: (ctx, index) {
+            final transaction = transactions[index];
+            final isIncome = transaction['type'] == 'income';
+
+            if (isIncome) {
+              final income = transaction['item'] as Income;
+              return _buildTransactionCard(
+                title: income.category,
+                subtitle: 'INCOME',
+                subtitleColor: Colors.green.shade300,
+                amount: '+\$${income.amount.toStringAsFixed(2)}',
+                amountColor: Colors.green.shade300,
+                isIncome: true,
+              );
+            } else {
+              final expense = transaction['item'] as Expense;
+              return _buildTransactionCard(
+                title: expense.category,
+                subtitle: expense.isWant ? 'WANT' : 'NEED',
+                subtitleColor: expense.isWant ? Colors.orange : Colors.green,
+                amount: '-\$${expense.amount.toStringAsFixed(2)}',
+                amountColor: const Color(0xFF00D9FF),
+                isIncome: false,
+              );
+            }
+          },
+        );
+  }
+
+  // Transaction Card Builder
+  Widget _buildTransactionCard({
+    required String title,
+    required String subtitle,
+    required Color subtitleColor,
+    required String amount,
+    required Color amountColor,
+    required bool isIncome,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color:
+              isIncome
+                  ? const Color(0xFF4A5568).withOpacity(0.3)
+                  : Colors.black.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.white24, width: 1),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Color(0xFFE0FFFF),
+                      fontWeight: FontWeight.bold,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: subtitleColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              amount,
+              style: TextStyle(
+                color: amountColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
