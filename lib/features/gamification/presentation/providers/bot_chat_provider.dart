@@ -89,6 +89,13 @@ class BotChatNotifier extends StateNotifier<BotChatState> {
     _handleBotResponse(text, currentBot);
   }
 
+  void injectBotResponse(BotType bot, String text) {
+     if (state.activeBot != bot) {
+        state = state.copyWith(activeBot: bot);
+     }
+     _addToHistory(bot, ChatMessage(text: text, isUser: false, botType: bot));
+  }
+
   void _addToHistory(BotType historyOwner, ChatMessage message) {
     if (historyOwner == BotType.aura) {
       state = state.copyWith(auraMessages: [...state.auraMessages, message]);

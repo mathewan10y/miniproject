@@ -6,8 +6,9 @@ import '../providers/bot_chat_provider.dart';
 
 class TopBar extends ConsumerWidget {
   final String title;
+  final VoidCallback? onVarsityToggle;
 
-  const TopBar({super.key, required this.title});
+  const TopBar({super.key, required this.title, this.onVarsityToggle});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -24,15 +25,28 @@ class TopBar extends ConsumerWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Title
-          Text(
-            title,
-            style: GoogleFonts.orbitron(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 2,
-            ),
+          // Title & Left Controls
+          Row(
+            children: [
+               if (onVarsityToggle != null)
+                 Padding(
+                   padding: const EdgeInsets.only(right: 12),
+                   child: IconButton(
+                     icon: const Icon(Icons.school, color: Colors.cyan),
+                     onPressed: onVarsityToggle,
+                     tooltip: "Varsity Orbit",
+                   ),
+                 ),
+               Text(
+                title,
+                style: GoogleFonts.orbitron(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2,
+                ),
+              ),
+            ],
           ),
 
           // Right Side: Fuel & Bots

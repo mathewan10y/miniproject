@@ -11,6 +11,8 @@ import '../../trading/domain/models/market_asset.dart';
 import 'flight_deck_page_wickpainter.dart';
 import '../../gamification/presentation/widgets/top_bar.dart';
 
+import '../../gamification/presentation/widgets/varsity_orbit_panel.dart';
+
 class FlightDeckPage extends ConsumerStatefulWidget {
   const FlightDeckPage({super.key});
 
@@ -43,7 +45,6 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
   Offset? _cursorPos; // Crosshair cursor position
 
   // Zoom/Pan State
-  // Zoom/Pan State
   double _candleWidth = 10.0;
   double _baseCandleWidth = 10.0;
   final double _minCandleWidth = 2.0;
@@ -51,6 +52,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
   double _scrollOffset = 0.0; // Index based scroll from RIGHT
 
   bool _isPanelExpanded = false;
+  bool _showVarsityPanel = false; // NEW: Varsity Panel State
   int _selectedTabIndex = 0;
 
   bool _isLoadingHistory = false;
@@ -191,7 +193,10 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
           // Main Content
           Column(
             children: [
-              const TopBar(title: "FLIGHT DECK"),
+               TopBar(
+                title: "FLIGHT DECK",
+                onVarsityToggle: () => setState(() => _showVarsityPanel = !_showVarsityPanel),
+              ),
               Expanded(
                 flex: 8,
                 child: _buildTelemetryPanel(),
@@ -213,6 +218,10 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
             child: _buildParticle(p),
           )),
           
+          // Varsity Overlay
+          if (_showVarsityPanel)
+             VarsityOrbitPanel(onClose: () => setState(() => _showVarsityPanel = false)),
+
           // Chat Overlay
           const BotChatPanel(),
         ],
