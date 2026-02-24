@@ -12,6 +12,9 @@ import 'flight_deck_page_wickpainter.dart';
 import '../../gamification/presentation/widgets/top_bar.dart';
 
 import '../../gamification/presentation/widgets/varsity_orbit_panel.dart';
+import '../../gamification/user_stats_provider.dart';
+import '../../trading/data/portfolio_provider.dart';
+import '../../trading/domain/models/open_position.dart';
 
 class FlightDeckPage extends ConsumerStatefulWidget {
   const FlightDeckPage({super.key});
@@ -856,12 +859,28 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                          
                          // Account Stats
                          Row(children: [
-                            _buildAccountStat("Balance", "\$4,933.54"),
-                            const SizedBox(width: 16),
-                            _buildAccountStat("P&L", "-\$66.46", valueColor: Colors.redAccent),
-                            const SizedBox(width: 16),
-                            _buildAccountStat("Equity", "\$4,933.55"),
-                         ])
+                          Builder(builder: (context) {
+                            final stats = ref.watch(userStatsProvider);
+                            final positions = ref.watch(portfolioProvider);
+                            // unrealized P&L = sum of all open positions vs. live price
+                            // We use asset.currentPrice when available, else entry price (flat)
+                            double totalUnrl = 0;
+                            for (final p in positions) {
+                              final livePrice = p.assetId == _selectedAsset?.id
+                                  ? (_selectedAsset!.currentPrice)
+                                  : p.entryPrice; // flat if asset not on screen
+                              totalUnrl += p.unrealizedPnl(livePrice);
+                            }
+                            final equity = stats.tradingCredits + totalUnrl;
+                            return Row(children: [
+                               _buildAccountStat("Balance", "₹${stats.tradingCredits.toStringAsFixed(2)}"),
+                               const SizedBox(width: 16),
+                               _buildAccountStat("P&L", "${totalUnrl >= 0 ? '+' : ''}₹${totalUnrl.toStringAsFixed(2)}", valueColor: totalUnrl >= 0 ? Colors.greenAccent : Colors.redAccent),
+                               const SizedBox(width: 16),
+                               _buildAccountStat("Equity", "₹${equity.toStringAsFixed(2)}"),
+                            ]);
+                          }),
+                       ])
                       ],
                    ),
                 ),
@@ -909,22 +928,19 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
 
   Widget _buildPanelContent() {
      if (_selectedTabIndex == 0) {
-        // POSITIONS
-        if (_tradeMode == TradeMode.none || _entryPrice == null) {
+        // POSITIONS — real data from portfolioProvider
+        final positions = ref.watch(portfolioProvider);
+
+        if (positions.isEmpty) {
            return Center(
              child: Text("NO ACTIVE POSITIONS", style: GoogleFonts.orbitron(color: Colors.white24)),
            );
         }
-        
-        final isLong = _tradeMode == TradeMode.long;
-        final currentPrice = _selectedAsset!.currentPrice;
-        final pnl = (currentPrice - _entryPrice!) * (isLong ? 1 : -1) * 1000;
-        final pnlPercent = (pnl / (1000 * _entryPrice!)) * 100;
 
         return ListView(
-           padding: const EdgeInsets.all(0),
+           padding: EdgeInsets.zero,
            children: [
-              // Table Header
+              // Table header
               Container(
                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                  color: Colors.white.withOpacity(0.02),
@@ -933,43 +949,55 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                        Expanded(flex: 2, child: Text("Symbol", style: GoogleFonts.shareTechMono(color: Colors.white54, fontSize: 10))),
                        Expanded(flex: 1, child: Text("Side", style: GoogleFonts.shareTechMono(color: Colors.white54, fontSize: 10))),
                        Expanded(flex: 1, child: Text("Qty", style: GoogleFonts.shareTechMono(color: Colors.white54, fontSize: 10))),
-                       Expanded(flex: 2, child: Text("Entry Price", style: GoogleFonts.shareTechMono(color: Colors.white54, fontSize: 10))),
-                       Expanded(flex: 2, child: Text("Last Price", style: GoogleFonts.shareTechMono(color: Colors.white54, fontSize: 10))),
+                       Expanded(flex: 2, child: Text("Entry (₹)", style: GoogleFonts.shareTechMono(color: Colors.white54, fontSize: 10))),
+                       Expanded(flex: 2, child: Text("Current (₹)", style: GoogleFonts.shareTechMono(color: Colors.white54, fontSize: 10))),
                        Expanded(flex: 2, child: Text("P&L", style: GoogleFonts.shareTechMono(color: Colors.white54, fontSize: 10))),
-                       Expanded(flex: 1, child: SizedBox()),
+                       Expanded(flex: 1, child: const SizedBox()),
                     ],
                  ),
               ),
-              // Table Row
-              Container(
-                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                 decoration: const BoxDecoration(
-                    border: Border(bottom: BorderSide(color: Colors.white10))
-                 ),
-                 child: Row(
-                    children: [
-                       Expanded(flex: 2, child: Row(children: [
-                          Icon(Icons.token, color: Colors.cyan, size: 14),
-                          const SizedBox(width: 8),
-                          Text(_selectedAsset!.symbol, style: GoogleFonts.shareTechMono(color: Colors.white, fontWeight: FontWeight.bold)),
-                       ])),
-                       Expanded(flex: 1, child: Text(isLong ? "LONG" : "SHORT", style: GoogleFonts.shareTechMono(color: isLong ? Colors.cyan : Colors.pinkAccent, fontSize: 12))),
-                       Expanded(flex: 1, child: Text("1,000", style: GoogleFonts.shareTechMono(color: Colors.white, fontSize: 12))),
-                       Expanded(flex: 2, child: Text(_entryPrice!.toStringAsFixed(2), style: GoogleFonts.shareTechMono(color: Colors.white, fontSize: 12))),
-                       Expanded(flex: 2, child: Text(currentPrice.toStringAsFixed(2), style: GoogleFonts.shareTechMono(color: Colors.white, fontSize: 12))),
-                       Expanded(flex: 2, child: Text("${pnl >= 0 ? '+' : ''}${pnl.toStringAsFixed(2)} USD", style: GoogleFonts.shareTechMono(color: pnl >= 0 ? Colors.green : Colors.red, fontSize: 12))),
-                       Expanded(flex: 1, child: Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                             GestureDetector(
-                                onTap: _resetTrade,
-                                child: const Icon(Icons.close, color: Colors.white54, size: 16),
-                             )
-                          ],
-                       )),
-                    ],
-                 ),
-              )
+              // Rows
+              ...positions.map((OpenPosition pos) {
+                 final livePrice = pos.assetId == _selectedAsset?.id
+                     ? _selectedAsset!.currentPrice
+                     : pos.entryPrice;
+                 final pnl = pos.unrealizedPnl(livePrice);
+                 return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: const BoxDecoration(
+                       border: Border(bottom: BorderSide(color: Colors.white10))
+                    ),
+                    child: Row(
+                       children: [
+                          Expanded(flex: 2, child: Row(children: [
+                             Icon(Icons.token, color: Colors.cyan, size: 14),
+                             const SizedBox(width: 6),
+                             Text(pos.assetSymbol, style: GoogleFonts.shareTechMono(color: Colors.white, fontWeight: FontWeight.bold)),
+                          ])),
+                          Expanded(flex: 1, child: Text(
+                             pos.isLong ? "LONG" : "SHORT",
+                             style: GoogleFonts.shareTechMono(color: pos.isLong ? Colors.cyan : Colors.pinkAccent, fontSize: 12),
+                          )),
+                          Expanded(flex: 1, child: Text(pos.quantity.toStringAsFixed(2), style: GoogleFonts.shareTechMono(color: Colors.white, fontSize: 12))),
+                          Expanded(flex: 2, child: Text(pos.entryPrice.toStringAsFixed(2), style: GoogleFonts.shareTechMono(color: Colors.white, fontSize: 12))),
+                          Expanded(flex: 2, child: Text(livePrice.toStringAsFixed(2), style: GoogleFonts.shareTechMono(color: Colors.white, fontSize: 12))),
+                          Expanded(flex: 2, child: Text(
+                             "${pnl >= 0 ? '+' : ''}₹${pnl.toStringAsFixed(2)}",
+                             style: GoogleFonts.shareTechMono(color: pnl >= 0 ? Colors.green : Colors.red, fontSize: 12),
+                          )),
+                          Expanded(flex: 1, child: GestureDetector(
+                             onTap: () {
+                                final realizedPnl = ref.read(portfolioProvider.notifier).closePosition(pos.assetId, livePrice);
+                                if (realizedPnl != null) {
+                                   ref.read(userStatsProvider.notifier).addFuel(pos.totalCost + realizedPnl);
+                                }
+                             },
+                             child: const Icon(Icons.close, color: Colors.white54, size: 16),
+                          )),
+                       ],
+                    ),
+                 );
+              }),
            ],
         );
      } else {
