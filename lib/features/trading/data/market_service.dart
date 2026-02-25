@@ -305,7 +305,7 @@ class MixedMarketService implements MarketRepository {
     if (assetId == 'nasdaq') price = 16800.0;
     if (assetId == 'usdinr') price = 84.0;
 
-    int points = 100;
+    int points = 500;
     Duration step = const Duration(hours: 1);
     if (interval == '1D') step = const Duration(days: 1);
     if (interval == '1W') step = const Duration(days: 7);

@@ -53,6 +53,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
   final double _minCandleWidth = 2.0;
   final double _maxCandleWidth = 50.0;
   double _scrollOffset = 0.0; // Index based scroll from RIGHT
+  Offset? _lastFocalPoint; // For pan tracking in scale gesture
 
   bool _isPanelExpanded = false;
   bool _showVarsityPanel = false;
@@ -194,6 +195,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
             final targetVisible = _candles.length < 80 ? _candles.length : 80;
             _candleWidth = (screenW / targetVisible).clamp(_minCandleWidth, _maxCandleWidth);
             _baseCandleWidth = _candleWidth;
+            print('[Chart] Loaded ${_candles.length} candles, showing $targetVisible, candleWidth=$_candleWidth');
           }
         });
       }
@@ -629,39 +631,32 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
         onExit: (_) => setState(() => _cursorPos = null),
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onHorizontalDragUpdate: (details) {
-            setState(() {
-              // Pan Logic
-              // Scroll Offset is in Candles.
-              // Delta is px.
-              // DeltaCandles = DeltaPx / CandleWidth.
-              // Pan Left (Move right) => Delta > 0.
-              // Moving right means looking at earlier candles?
-              // If I drag mouse RIGHT, I expect chart to move RIGHT.
-              // So Previous candles (Lower Index) come into view.
-              // StartX should DECREASE.
-              // EndX should DECREASE.
-              // EndX = Total - Offset.
-              // So Offset should INCREASE.
-              // Logic: _scrollOffset += px / width.
-              _scrollOffset += details.primaryDelta! / _candleWidth;
-            });
-          },
           onScaleStart: (details) {
             _baseCandleWidth = _candleWidth;
+            _lastFocalPoint = details.localFocalPoint;
           },
           onScaleUpdate: (details) {
-            // Handle Pinch Zoom
-            if (details.scale != 1.0) {
-              // Use focalPoint of the pinch
-              if (details.localFocalPoint.dx < chartPlotWidth) {
+            setState(() {
+              // Pan: track focal point movement for single-finger drag
+              if (_lastFocalPoint != null) {
+                final dx = details.localFocalPoint.dx - _lastFocalPoint!.dx;
+                _scrollOffset += dx / _candleWidth;
+              }
+              _lastFocalPoint = details.localFocalPoint;
+
+              // Zoom: handle pinch (scale != 1.0)
+              if (details.scale != 1.0 &&
+                  details.localFocalPoint.dx < chartPlotWidth) {
                 _handleZoom(
                   details.scale,
                   details.localFocalPoint,
                   chartPlotWidth,
                 );
               }
-            }
+            });
+          },
+          onScaleEnd: (_) {
+            _lastFocalPoint = null;
           },
           child: Stack(
             clipBehavior: Clip.none,
