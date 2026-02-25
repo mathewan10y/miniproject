@@ -55,8 +55,17 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
   double _scrollOffset = 0.0; // Index based scroll from RIGHT
 
   bool _isPanelExpanded = false;
-  bool _showVarsityPanel = false; // NEW: Varsity Panel State
+  bool _showVarsityPanel = false;
   int _selectedTabIndex = 0;
+
+  // Panel drag height
+  double _panelHeight = 45.0;
+  static const double _panelMinHeight = 45.0;
+  static const double _panelMaxHeight = 500.0;
+
+  // Trade quantity
+  double _tradeQuantity = 1.0;
+  final GlobalKey _qtyButtonKey = GlobalKey();
 
   bool _isLoadingHistory = false;
   String _selectedInterval = '1H';
@@ -426,35 +435,31 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
           children: [
             _buildChartHeader(),
             Expanded(
-              // COUPLED: LayoutBuilder gets the exact size for the chart painting
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   return _buildChartCanvas(constraints);
                 },
               ),
             ),
-            // Spacer for the collapsed panel
-            const SizedBox(height: 50),
+            SizedBox(height: _panelHeight > _panelMinHeight ? 0 : 50),
           ],
         ),
 
         // Dynamic Timeframe Selector
         AnimatedPositioned(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.fastOutSlowIn,
+          duration: const Duration(milliseconds: 100),
+          curve: Curves.easeOut,
           left: 16,
-          bottom: panelHeight + 8, // Always sits just above the panel
+          bottom: _panelHeight + 8,
           child: _buildTimeframeSelector(),
         ),
 
-        // Custom Bottom Panel
-        AnimatedPositioned(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.fastOutSlowIn,
+        // Drag-adjustable Bottom Panel
+        Positioned(
           left: 0,
           right: 0,
           bottom: 0,
-          height: panelHeight,
+          height: _panelHeight,
           child: _buildTradeManagerPanel(),
         ),
       ],
@@ -963,16 +968,294 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
           ),
           Row(
             children: [
-              _buildTradeButton("BUY", Colors.cyan),
-              const SizedBox(width: 8),
               _buildTradeButton("SELL", Colors.pinkAccent),
+              const SizedBox(width: 4),
+              // ── Quantity Selector ──
+              _buildQuantitySelector(),
+              const SizedBox(width: 4),
+              _buildTradeButton("BUY", Colors.cyan),
               if (_tradeMode != TradeMode.none) ...[
-                const SizedBox(width: 12),
+                const SizedBox(width: 8),
                 _buildActiveTradeHeader(),
               ],
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildQuantitySelector() {
+    return GestureDetector(
+      key: _qtyButtonKey,
+      onTap: () => _showQuantityPopup(),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        decoration: BoxDecoration(
+          color: const Color(0xFF131722),
+          border: Border.all(color: Colors.white24),
+          borderRadius: BorderRadius.circular(3),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              _tradeQuantity % 1 == 0
+                  ? _tradeQuantity.toInt().toString()
+                  : _tradeQuantity.toStringAsFixed(1),
+              style: GoogleFonts.shareTechMono(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const Icon(Icons.arrow_drop_down, color: Colors.white54, size: 14),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showQuantityPopup() {
+    final presets = [1, 5, 25, 100, 500, 1000];
+    final controller =
+        TextEditingController(text: _tradeQuantity.toStringAsFixed(0));
+
+    // Get button position to anchor the popup below it
+    final RenderBox? box =
+        _qtyButtonKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null) return;
+    final btnPos = box.localToGlobal(Offset.zero);
+    final btnSize = box.size;
+
+    late OverlayEntry overlay;
+    overlay = OverlayEntry(
+      builder: (ctx) {
+        return Stack(
+          children: [
+            // Dismiss on tap outside
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: () => overlay.remove(),
+                behavior: HitTestBehavior.opaque,
+                child: Container(color: Colors.black38),
+              ),
+            ),
+            // Popup anchored below the button
+            Positioned(
+              left: (btnPos.dx - 60).clamp(8.0, MediaQuery.of(context).size.width - 180),
+              top: btnPos.dy + btnSize.height + 4,
+              child: Material(
+                color: Colors.transparent,
+                child: StatefulBuilder(
+                  builder: (sbCtx, setPopupState) {
+                    return Container(
+                      width: 170,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1E222D),
+                        border: Border.all(color: Colors.white24),
+                        borderRadius: BorderRadius.circular(6),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withAlpha(120),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Quantity',
+                              style: GoogleFonts.shareTechMono(
+                                  color: Colors.white54, fontSize: 10)),
+                          const SizedBox(height: 6),
+                          // Text input
+                          SizedBox(
+                            height: 34,
+                            child: TextField(
+                              controller: controller,
+                              keyboardType: const TextInputType.numberWithOptions(
+                                  decimal: true),
+                              style: GoogleFonts.shareTechMono(
+                                  color: Colors.white, fontSize: 14),
+                              textAlign: TextAlign.center,
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: Colors.white.withAlpha(10),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(3),
+                                  borderSide:
+                                      const BorderSide(color: Colors.white24),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(3),
+                                  borderSide:
+                                      const BorderSide(color: Colors.white24),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(3),
+                                  borderSide:
+                                      const BorderSide(color: Colors.cyan),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 6),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          // ─ / + row
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _qtyActionBtn('\u2212', () {
+                                  final v =
+                                      (double.tryParse(controller.text) ?? 1) -
+                                          1;
+                                  if (v >= 1) {
+                                    controller.text = v.toStringAsFixed(0);
+                                    setPopupState(() {});
+                                  }
+                                }),
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: _qtyActionBtn('+', () {
+                                  final v =
+                                      (double.tryParse(controller.text) ?? 0) +
+                                          1;
+                                  controller.text = v.toStringAsFixed(0);
+                                  setPopupState(() {});
+                                }),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          // Preset grid — 2 per row
+                          ...List.generate(3, (row) {
+                            final a = presets[row * 2];
+                            final b = presets[row * 2 + 1];
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 4),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: _qtyPresetBtn(
+                                        a, controller, setPopupState),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: _qtyPresetBtn(
+                                        b, controller, setPopupState),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
+                          const SizedBox(height: 2),
+                          // C / reset row
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _qtyActionBtn('C', () {
+                                  controller.text = '1';
+                                  setPopupState(() {});
+                                }),
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: _qtyActionBtn('\u21BB', () {
+                                  controller.text = '1';
+                                  setPopupState(() {});
+                                }),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          // OK button — full width
+                          SizedBox(
+                            width: double.infinity,
+                            height: 30,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.cyan.withAlpha(40),
+                                foregroundColor: Colors.cyan,
+                                side: const BorderSide(color: Colors.cyan),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                padding: EdgeInsets.zero,
+                              ),
+                              onPressed: () {
+                                final val =
+                                    double.tryParse(controller.text) ??
+                                        _tradeQuantity;
+                                setState(() => _tradeQuantity =
+                                    val.clamp(0.01, 100000));
+                                overlay.remove();
+                              },
+                              child: Text('OK',
+                                  style: GoogleFonts.orbitron(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    Overlay.of(context).insert(overlay);
+  }
+
+  Widget _qtyPresetBtn(
+      int value, TextEditingController ctrl, StateSetter setS) {
+    return GestureDetector(
+      onTap: () {
+        ctrl.text = value.toString();
+        setS(() {});
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: Colors.white.withAlpha(8),
+          border: Border.all(color: Colors.white24),
+          borderRadius: BorderRadius.circular(3),
+        ),
+        child: Text(value.toString(),
+            style: GoogleFonts.shareTechMono(
+                color: Colors.white70,
+                fontSize: 12,
+                fontWeight: FontWeight.bold)),
+      ),
+    );
+  }
+
+  Widget _qtyActionBtn(String label, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 72,
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: Colors.white.withAlpha(8),
+          border: Border.all(color: Colors.white24),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Text(label,
+            style: GoogleFonts.shareTechMono(
+                color: Colors.white70, fontSize: 14)),
       ),
     );
   }
@@ -1046,9 +1329,30 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
       ),
       child: Column(
         children: [
-          // HEADER
+          // HEADER — acts as drag handle for resizing
           GestureDetector(
-            onTap: () => setState(() => _isPanelExpanded = !_isPanelExpanded),
+            onTap: () => setState(() {
+              _isPanelExpanded = !_isPanelExpanded;
+              _panelHeight = _isPanelExpanded ? 300.0 : _panelMinHeight;
+            }),
+            onVerticalDragUpdate: (d) {
+              setState(() {
+                _panelHeight = (_panelHeight - d.primaryDelta!)
+                    .clamp(_panelMinHeight, _panelMaxHeight);
+                _isPanelExpanded = _panelHeight > _panelMinHeight + 10;
+              });
+            },
+            onVerticalDragEnd: (_) {
+              setState(() {
+                if (_panelHeight < 100) {
+                  _panelHeight = _panelMinHeight;
+                  _isPanelExpanded = false;
+                } else if (_panelHeight < 180) {
+                  _panelHeight = 200;
+                  _isPanelExpanded = true;
+                }
+              });
+            },
             behavior: HitTestBehavior.opaque,
             child: Container(
               height: 44,
@@ -1635,8 +1939,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
             ? _candles.last.close
             : _selectedAsset!.currentPrice;
 
-        // Open a real position via PortfolioProvider
-        final cost = price * 1; // 1 unit default
+        final cost = price * _tradeQuantity;
         final statsNotifier = ref.read(userStatsProvider.notifier);
         final success = statsNotifier.deductFuel(cost);
         if (!success) {
@@ -1658,7 +1961,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                 assetSymbol: _selectedAsset!.symbol,
                 assetName: _selectedAsset!.name,
                 entryPrice: price,
-                quantity: 1,
+                quantity: _tradeQuantity,
                 isLong: isLong,
                 openedAt: DateTime.now(),
               ),
