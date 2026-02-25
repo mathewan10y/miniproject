@@ -8,6 +8,7 @@ import '../income_provider.dart';
 import '../../../widgets/reactor_gauge.dart';
 import '../../../core/providers/refinery_provider.dart';
 import '../../gamification/presentation/widgets/top_bar.dart';
+import '../../gamification/presentation/widgets/levels_panel.dart';
 
 class ReactorCorePage extends ConsumerStatefulWidget {
   const ReactorCorePage({super.key});
@@ -75,78 +76,84 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
                 Image.asset('lib/assets/bg_center.jpg', fit: BoxFit.cover),
                 // Dark overlay for readability
                 Container(color: Colors.black.withOpacity(0.5)),
+                // Levels Panel (left side, behind TopBar)
+                const Positioned(
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: LevelsPanel(),
+                ),
                 // Main content - centered layout
                 Column(
                   children: [
                      const TopBar(title: "REACTOR CORE"),
                      Expanded(
                        child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                              // UNREFINED ORE display (above reactor)
-                              _buildHolographicContainer(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Text(
-                                      'RAW ORE',
-                                      style: TextStyle(
-                                        color: Color(0xFF00D9FF),
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: 2,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    // Display raw ore value from RefinerySystem
-                                    Column(
-                                      children: [
-                                        Text(
-                                          '$rawOre',
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 40,
-                                            fontWeight: FontWeight.bold,
-                                            letterSpacing: 1,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          'REFINERY EFFICIENCY: 80%',
-                                          style: const TextStyle(
-                                            color: Color(0xFF00B8D4),
-                                            fontSize: 12,
-                                            letterSpacing: 1,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              // Reactor core with pulse animation and responsive sizing
-                              ScaleTransition(
-                                scale: _pulseAnimation,
-                                child: Builder(
-                                  builder: (context) {
-                                    final screenWidth = MediaQuery.of(context).size.width;
-                                    final reactorWidth = screenWidth * 0.8;
+                         child: Column(
+                           mainAxisAlignment: MainAxisAlignment.center,
+                           children: [
+                               // UNREFINED ORE display (above reactor)
+                               _buildHolographicContainer(
+                                 child: Column(
+                                   mainAxisSize: MainAxisSize.min,
+                                   children: [
+                                     const Text(
+                                       'RAW ORE',
+                                       style: TextStyle(
+                                         color: Color(0xFF00D9FF),
+                                         fontSize: 16,
+                                         fontWeight: FontWeight.bold,
+                                         letterSpacing: 2,
+                                       ),
+                                     ),
+                                     const SizedBox(height: 8),
+                                     Column(
+                                       children: [
+                                         Text(
+                                           '$rawOre',
+                                           style: const TextStyle(
+                                             color: Colors.white,
+                                             fontSize: 40,
+                                             fontWeight: FontWeight.bold,
+                                             letterSpacing: 1,
+                                           ),
+                                         ),
+                                         const SizedBox(height: 8),
+                                         Text(
+                                           'REFINERY EFFICIENCY: 80%',
+                                           style: const TextStyle(
+                                             color: Color(0xFF00B8D4),
+                                             fontSize: 12,
+                                             letterSpacing: 1,
+                                           ),
+                                         ),
+                                       ],
+                                     ),
+                                   ],
+                                 ),
+                               ),
+                               const SizedBox(height: 20),
+                               // Reactor core with pulse animation and responsive sizing
+                               ScaleTransition(
+                                 scale: _pulseAnimation,
+                                 child: Builder(
+                                   builder: (context) {
+                                     final screenWidth = MediaQuery.of(context).size.width;
+                                     final reactorWidth = screenWidth * 0.8;
       
-                                    return Container(
-                                      width: reactorWidth,
-                                      child: ReactorGauge(
-                                        fillPercent: oreLevel,
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                     ),
+                                     return Container(
+                                       width: reactorWidth,
+                                       child: ReactorGauge(
+                                         fillPercent: oreLevel,
+                                       ),
+                                     );
+                                   },
+                                 ),
+                               ),
+                             ],
+                           ),
+                         ),
+                       ),
                   ],
                 ),
                 // Top label removed
