@@ -58,7 +58,7 @@ class _TradingPageState extends ConsumerState<TradingPage>
     try {
       final service = ref.read(marketServiceProvider);
       final history =
-          await service.getAssetHistory(widget.asset.id, _selectedInterval);
+          await service.getAssetHistory(widget.asset.id, _selectedInterval, '5d');
       setState(() {
         _candles = history
             .map((h) => CandleData(

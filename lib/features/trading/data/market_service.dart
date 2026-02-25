@@ -17,7 +17,7 @@ final marketAssetsProvider = FutureProvider<List<MarketAsset>>((ref) async {
 
 abstract class MarketRepository {
   Future<List<MarketAsset>> fetchAssets();
-  Future<List<MockCandle>> getAssetHistory(String assetId, String interval);
+  Future<List<MockCandle>> getAssetHistory(String assetId, String interval, String range);
 
   /// Live USD → INR rate captured during the last Yahoo fetch.
   /// Falls back to 84.0 if Yahoo has not been called yet.
@@ -180,12 +180,12 @@ class MixedMarketService implements MarketRepository {
   // ─── Real Chart History via Yahoo Finance ─────────────────────────────────
 
   @override
-  Future<List<MockCandle>> getAssetHistory(String assetId, String interval) async {
+  Future<List<MockCandle>> getAssetHistory(String assetId, String interval, String range) async {
     final yahooSymbol = _yahooChartSymbols[assetId];
 
     if (yahooSymbol != null) {
       try {
-        final candles = await _fetchYahooChart(assetId, yahooSymbol, interval);
+        final candles = await _fetchYahooChart(assetId, yahooSymbol, interval, range);
         if (candles.isNotEmpty) return candles;
       } catch (e) {
         print('[MarketService] Yahoo chart fetch failed for $assetId: $e');
@@ -197,32 +197,7 @@ class MixedMarketService implements MarketRepository {
   }
 
   Future<List<MockCandle>> _fetchYahooChart(
-      String assetId, String yahooSymbol, String interval) async {
-    // Map our intervals to Yahoo Finance API params
-    String yahooInterval;
-    String yahooRange;
-
-    switch (interval) {
-      case '1H':
-        yahooInterval = '15m';
-        yahooRange = '5d';
-        break;
-      case '4H':
-        yahooInterval = '1h';
-        yahooRange = '1mo';
-        break;
-      case '1D':
-        yahooInterval = '1d';
-        yahooRange = '6mo';
-        break;
-      case '1W':
-        yahooInterval = '1wk';
-        yahooRange = '2y';
-        break;
-      default:
-        yahooInterval = '1d';
-        yahooRange = '6mo';
-    }
+      String assetId, String yahooSymbol, String yahooInterval, String yahooRange) async {
 
     final url =
         'https://query1.finance.yahoo.com/v8/finance/chart/$yahooSymbol'

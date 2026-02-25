@@ -48,8 +48,8 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
   Offset? _cursorPos; // Crosshair cursor position
 
   // Zoom/Pan State
-  double _candleWidth = 10.0;
-  double _baseCandleWidth = 10.0;
+  double _candleWidth = 5.0;
+  double _baseCandleWidth = 5.0;
   final double _minCandleWidth = 2.0;
   final double _maxCandleWidth = 50.0;
   double _scrollOffset = 0.0; // Index based scroll from RIGHT
@@ -140,15 +140,61 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
     });
     try {
       final service = ref.read(marketServiceProvider);
+      String yahooInterval;
+      String yahooRange;
+
+      switch (_selectedInterval) {
+        case '15M':
+          yahooInterval = '5m';
+          yahooRange = '1d';
+          break;
+        case '30M':
+          yahooInterval = '15m';
+          yahooRange = '5d';
+          break;
+        case '1H':
+          yahooInterval = '15m';
+          yahooRange = '5d';
+          break;
+        case '4H':
+          yahooInterval = '60m';
+          yahooRange = '5d';
+          break;
+        case '1D':
+          yahooInterval = '1d';
+          yahooRange = '1mo';
+          break;
+        case '1W':
+          yahooInterval = '5d';
+          yahooRange = '3mo';
+          break;
+        case '1M':
+          yahooInterval = '1mo';
+          yahooRange = '6mo';
+          break;
+        default:
+          yahooInterval = '15m';
+          yahooRange = '5d';
+      }
+
       final history = await service.getAssetHistory(
         asset.id,
-        _selectedInterval,
+        yahooInterval,
+        yahooRange,
       );
       if (mounted) {
         setState(() {
           _candles = history;
           _isLoadingHistory = false;
           _resetTrade();
+          _scrollOffset = 0;
+          // Auto-fit: aim for ~80 visible candles, or show all if fewer
+          if (_candles.length > 0) {
+            final screenW = MediaQuery.of(context).size.width - 60;
+            final targetVisible = _candles.length < 80 ? _candles.length : 80;
+            _candleWidth = (screenW / targetVisible).clamp(_minCandleWidth, _maxCandleWidth);
+            _baseCandleWidth = _candleWidth;
+          }
         });
       }
     } catch (e) {
