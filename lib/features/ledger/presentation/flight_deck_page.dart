@@ -40,9 +40,9 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
   double? _slPrice;
   double? _tpPrice;
 
-  // Drag State
-  bool _isDraggingSL = false;
-  bool _isDraggingTP = false;
+  // Drag State — absolute position tracking for SL/TP
+  double? _dragStartGlobalY;
+  double? _dragStartPrice;
 
   // Visuals
   Offset? _cursorPos; // Crosshair cursor position
@@ -724,6 +724,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                       : Colors.pinkAccent,
                   priceToY(_entryPrice!),
                   yToPrice,
+                  priceToY,
                 ),
 
                 if (_slPrice != null)
@@ -762,6 +763,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
     Color color,
     double topY,
     double Function(double) yToPrice,
+    double Function(double) priceToY,
   ) {
     if (topY < 0 || topY > 2000) return const SizedBox();
 
@@ -792,13 +794,20 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
             if (_slPrice == null)
               GestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onVerticalDragStart: (_) {
-                  // Init at current price if needed, but update handles the move
+                onVerticalDragStart: (d) {
+                  _dragStartGlobalY = d.globalPosition.dy;
+                  _dragStartPrice = price;
                   setState(() => _slPrice = price);
                 },
                 onVerticalDragUpdate: (d) {
-                  final newY = topY + d.primaryDelta!;
-                  setState(() => _slPrice = yToPrice(newY));
+                  if (_dragStartGlobalY == null || _dragStartPrice == null) return;
+                  final totalDeltaY = d.globalPosition.dy - _dragStartGlobalY!;
+                  final startY = priceToY(_dragStartPrice!);
+                  setState(() => _slPrice = yToPrice(startY + totalDeltaY));
+                },
+                onVerticalDragEnd: (_) {
+                  _dragStartGlobalY = null;
+                  _dragStartPrice = null;
                 },
                 onTap: () {
                   // Default spawn: 2%
@@ -830,12 +839,20 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
             if (_tpPrice == null)
               GestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onVerticalDragStart: (_) {
+                onVerticalDragStart: (d) {
+                  _dragStartGlobalY = d.globalPosition.dy;
+                  _dragStartPrice = price;
                   setState(() => _tpPrice = price);
                 },
                 onVerticalDragUpdate: (d) {
-                  final newY = topY + d.primaryDelta!;
-                  setState(() => _tpPrice = yToPrice(newY));
+                  if (_dragStartGlobalY == null || _dragStartPrice == null) return;
+                  final totalDeltaY = d.globalPosition.dy - _dragStartGlobalY!;
+                  final startY = priceToY(_dragStartPrice!);
+                  setState(() => _tpPrice = yToPrice(startY + totalDeltaY));
+                },
+                onVerticalDragEnd: (_) {
+                  _dragStartGlobalY = null;
+                  _dragStartPrice = null;
                 },
                 onTap: () {
                   final dist = price * 0.02;
@@ -944,16 +961,17 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
               ),
             ],
           ),
-          if (_tradeMode == TradeMode.none)
-            Row(
-              children: [
-                _buildTradeButton("BUY", Colors.cyan),
-                const SizedBox(width: 8),
-                _buildTradeButton("SELL", Colors.pinkAccent),
+          Row(
+            children: [
+              _buildTradeButton("BUY", Colors.cyan),
+              const SizedBox(width: 8),
+              _buildTradeButton("SELL", Colors.pinkAccent),
+              if (_tradeMode != TradeMode.none) ...[
+                const SizedBox(width: 12),
+                _buildActiveTradeHeader(),
               ],
-            )
-          else
-            _buildActiveTradeHeader(),
+            ],
+          ),
         ],
       ),
     );
@@ -1012,33 +1030,35 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
   }
 
   Widget _buildTradeManagerPanel() {
+    final stats = ref.watch(userStatsProvider);
+    final portfolioState = ref.watch(portfolioProvider);
+    final balance = stats.tradingCredits;
+    final currentPrice = _selectedAsset?.currentPrice ?? 0;
+    final unrealizedPnl = portfolioState.positions.fold(
+        0.0, (sum, p) => sum + p.unrealizedPnl(currentPrice));
+    final realizedPnl = portfolioState.totalRealizedPnl;
+    final equity = balance + unrealizedPnl;
+
     return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF0A0A0A),
-        border: const Border(top: BorderSide(color: Colors.white24)),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 10),
-        ],
+      decoration: const BoxDecoration(
+        color: Color(0xFF0A0A0A),
+        border: Border(top: BorderSide(color: Colors.white24)),
       ),
       child: Column(
         children: [
-          // HEADER (Always Visible)
+          // HEADER
           GestureDetector(
-            onTap: () {
-              setState(() => _isPanelExpanded = !_isPanelExpanded);
-            },
+            onTap: () => setState(() => _isPanelExpanded = !_isPanelExpanded),
             behavior: HitTestBehavior.opaque,
             child: Container(
-              height:
-                  44, // Reduced by 1px to accommodate top border and avoid overflow
+              height: 44,
               alignment: Alignment.center,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.02),
+                color: Colors.white.withAlpha(5),
                 border: Border(
                   bottom: BorderSide(
-                    color:
-                        _isPanelExpanded ? Colors.white10 : Colors.transparent,
+                    color: _isPanelExpanded ? Colors.white10 : Colors.transparent,
                   ),
                 ),
               ),
@@ -1072,25 +1092,30 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                         _buildPanelTab("Positions", 0),
                         _buildPanelTab("Orders", 1),
                         _buildPanelTab("History", 2),
+                        _buildPanelTab("Balance", 3),
+                        _buildPanelTab("Journal", 4),
                       ],
                     ),
                   ),
-
-                  // Account Stats
+                  // Live Account Stats
                   Flexible(
                     fit: FlexFit.loose,
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        _buildAccountStat("Balance", "\$4,933.54"),
-                        const SizedBox(width: 12),
+                        _buildAccountStat(
+                            "Balance", "₹${balance.toStringAsFixed(0)}"),
+                        const SizedBox(width: 10),
                         _buildAccountStat(
                           "P&L",
-                          "-\$66.46",
-                          valueColor: Colors.redAccent,
+                          "${realizedPnl >= 0 ? '+' : ''}₹${realizedPnl.toStringAsFixed(0)}",
+                          valueColor: realizedPnl >= 0
+                              ? Colors.greenAccent
+                              : Colors.redAccent,
                         ),
-                        const SizedBox(width: 12),
-                        _buildAccountStat("Equity", "\$4,933.55"),
+                        const SizedBox(width: 10),
+                        _buildAccountStat(
+                            "Equity", "₹${equity.toStringAsFixed(0)}"),
                       ],
                     ),
                   ),
@@ -1098,8 +1123,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
               ),
             ),
           ),
-
-          // BODY (Visible when expanded)
+          // BODY
           if (_isPanelExpanded) Expanded(child: _buildPanelContent()),
         ],
       ),
@@ -1118,12 +1142,10 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 6),
         decoration: BoxDecoration(
-          border:
-              isSelected
-                  ? const Border(
-                    bottom: BorderSide(color: Colors.cyan, width: 2),
-                  )
-                  : null,
+          border: isSelected
+              ? const Border(
+                  bottom: BorderSide(color: Colors.cyan, width: 2))
+              : null,
         ),
         child: Text(
           label,
@@ -1141,115 +1163,70 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        Text(
-          label,
-          style: GoogleFonts.shareTechMono(color: Colors.white24, fontSize: 9),
-        ),
-        Text(
-          value,
-          style: GoogleFonts.shareTechMono(
-            color: valueColor ?? Colors.white,
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        Text(label,
+            style:
+                GoogleFonts.shareTechMono(color: Colors.white24, fontSize: 9)),
+        Text(value,
+            style: GoogleFonts.shareTechMono(
+              color: valueColor ?? Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+            )),
       ],
     );
   }
 
   Widget _buildPanelContent() {
-    if (_selectedTabIndex == 0) {
-      // POSITIONS
-      if (_tradeMode == TradeMode.none || _entryPrice == null) {
-        return Center(
-          child: Text(
-            "NO ACTIVE POSITIONS",
-            style: GoogleFonts.orbitron(color: Colors.white24),
-          ),
-        );
-      }
+    switch (_selectedTabIndex) {
+      case 0: return _buildPositionsPanel();
+      case 1: return _buildOrdersPanel();
+      case 2: return _buildHistoryPanel();
+      case 3: return _buildBalanceHistoryPanel();
+      case 4: return _buildJournalPanel();
+      default: return _buildPositionsPanel();
+    }
+  }
 
-      final isLong = _tradeMode == TradeMode.long;
-      final currentPrice = _selectedAsset!.currentPrice;
-      final pnl = (currentPrice - _entryPrice!) * (isLong ? 1 : -1) * 1000;
-      final pnlPercent = (pnl / (1000 * _entryPrice!)) * 100;
+  Widget _buildPositionsPanel() {
+    final portfolioState = ref.watch(portfolioProvider);
+    final positions = portfolioState.positions;
+    final currentPrice = _selectedAsset?.currentPrice ?? 0;
 
-      return ListView(
-        padding: const EdgeInsets.all(0),
-        children: [
-          // Table Header
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: Colors.white.withOpacity(0.02),
-            child: Row(
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    "Symbol",
-                    style: GoogleFonts.shareTechMono(
-                      color: Colors.white54,
-                      fontSize: 10,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: 1,
-                  child: Text(
-                    "Side",
-                    style: GoogleFonts.shareTechMono(
-                      color: Colors.white54,
-                      fontSize: 10,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: 1,
-                  child: Text(
-                    "Qty",
-                    style: GoogleFonts.shareTechMono(
-                      color: Colors.white54,
-                      fontSize: 10,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    "Entry Price",
-                    style: GoogleFonts.shareTechMono(
-                      color: Colors.white54,
-                      fontSize: 10,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    "Last Price",
-                    style: GoogleFonts.shareTechMono(
-                      color: Colors.white54,
-                      fontSize: 10,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    "P&L",
-                    style: GoogleFonts.shareTechMono(
-                      color: Colors.white54,
-                      fontSize: 10,
-                    ),
-                  ),
-                ),
-                Expanded(flex: 1, child: SizedBox()),
-              ],
-            ),
+    if (positions.isEmpty) {
+      return Center(
+        child: Text("NO ACTIVE POSITIONS",
+            style: GoogleFonts.orbitron(color: Colors.white24)),
+      );
+    }
+
+    final headerStyle =
+        GoogleFonts.shareTechMono(color: Colors.white54, fontSize: 10);
+
+    return ListView(
+      padding: EdgeInsets.zero,
+      children: [
+        // Header
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          color: Colors.white.withAlpha(5),
+          child: Row(
+            children: [
+              Expanded(flex: 2, child: Text("Symbol", style: headerStyle)),
+              Expanded(flex: 1, child: Text("Side", style: headerStyle)),
+              Expanded(flex: 1, child: Text("Qty", style: headerStyle)),
+              Expanded(flex: 2, child: Text("Entry", style: headerStyle)),
+              Expanded(flex: 2, child: Text("Last", style: headerStyle)),
+              Expanded(flex: 2, child: Text("P&L", style: headerStyle)),
+              const SizedBox(width: 40),
+            ],
           ),
-          // Table Row
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        ),
+        // Rows
+        ...positions.map((pos) {
+          final pnl = pos.unrealizedPnl(currentPrice);
+          return Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: const BoxDecoration(
               border: Border(bottom: BorderSide(color: Colors.white10)),
             ),
@@ -1257,99 +1234,328 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
               children: [
                 Expanded(
                   flex: 2,
-                  child: Row(
-                    children: [
-                      Icon(Icons.token, color: Colors.cyan, size: 14),
-                      const SizedBox(width: 8),
-                      Text(
-                        _selectedAsset!.symbol,
+                  child: Row(children: [
+                    Icon(Icons.token, color: Colors.cyan, size: 14),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(pos.assetSymbol,
+                          style: GoogleFonts.shareTechMono(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12),
+                          overflow: TextOverflow.ellipsis),
+                    ),
+                  ]),
+                ),
+                Expanded(
+                  flex: 1,
+                  child: Text(
+                    pos.isLong ? "LONG" : "SHORT",
+                    style: GoogleFonts.shareTechMono(
+                      color: pos.isLong ? Colors.cyan : Colors.pinkAccent,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 1,
+                  child: Text(pos.quantity.toStringAsFixed(1),
+                      style: GoogleFonts.shareTechMono(
+                          color: Colors.white, fontSize: 11)),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Text("₹${pos.entryPrice.toStringAsFixed(2)}",
+                      style: GoogleFonts.shareTechMono(
+                          color: Colors.white, fontSize: 11)),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Text("₹${currentPrice.toStringAsFixed(2)}",
+                      style: GoogleFonts.shareTechMono(
+                          color: Colors.white, fontSize: 11)),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    "${pnl >= 0 ? '+' : ''}₹${pnl.toStringAsFixed(2)}",
+                    style: GoogleFonts.shareTechMono(
+                      color: pnl >= 0 ? Colors.greenAccent : Colors.redAccent,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    final p = ref.read(portfolioProvider.notifier)
+                        .getPositionById(pos.id);
+                    if (p == null) return;
+                    final closePnl = p.realizedPnl(currentPrice);
+                    ref.read(userStatsProvider.notifier)
+                        .addFuel(p.totalCost + closePnl);
+                    final bal = ref.read(userStatsProvider).tradingCredits;
+                    ref.read(portfolioProvider.notifier)
+                        .closePosition(pos.id, currentPrice, balanceAfter: bal);
+                    _resetTrade();
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.redAccent),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text("✕",
                         style: GoogleFonts.shareTechMono(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  flex: 1,
-                  child: Text(
-                    isLong ? "LONG" : "SHORT",
-                    style: GoogleFonts.shareTechMono(
-                      color: isLong ? Colors.cyan : Colors.pinkAccent,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: 1,
-                  child: Text(
-                    "1,000",
-                    style: GoogleFonts.shareTechMono(
-                      color: Colors.white,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    _entryPrice!.toStringAsFixed(2),
-                    style: GoogleFonts.shareTechMono(
-                      color: Colors.white,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    currentPrice.toStringAsFixed(2),
-                    style: GoogleFonts.shareTechMono(
-                      color: Colors.white,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    "${pnl >= 0 ? '+' : ''}${pnl.toStringAsFixed(2)} USD",
-                    style: GoogleFonts.shareTechMono(
-                      color: pnl >= 0 ? Colors.green : Colors.red,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: 1,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      GestureDetector(
-                        onTap: _resetTrade,
-                        child: const Icon(
-                          Icons.close,
-                          color: Colors.white54,
-                          size: 16,
-                        ),
-                      ),
-                    ],
+                            color: Colors.redAccent, fontSize: 12)),
                   ),
                 ),
               ],
             ),
-          ),
-        ],
-      );
-    } else {
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _buildHistoryPanel() {
+    final portfolioState = ref.watch(portfolioProvider);
+    final history = portfolioState.history;
+
+    if (history.isEmpty) {
       return Center(
-        child: Text(
-          "NO DATA AVAILABLE",
-          style: GoogleFonts.orbitron(color: Colors.white24),
-        ),
+        child: Text("NO TRADE HISTORY",
+            style: GoogleFonts.orbitron(color: Colors.white24)),
       );
     }
+
+    final headerStyle =
+        GoogleFonts.shareTechMono(color: Colors.white54, fontSize: 10);
+
+    return ListView(
+      padding: EdgeInsets.zero,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          color: Colors.white.withAlpha(5),
+          child: Row(
+            children: [
+              Expanded(flex: 2, child: Text("Symbol", style: headerStyle)),
+              Expanded(flex: 1, child: Text("Side", style: headerStyle)),
+              Expanded(flex: 1, child: Text("Qty", style: headerStyle)),
+              Expanded(flex: 2, child: Text("Entry", style: headerStyle)),
+              Expanded(flex: 2, child: Text("Exit", style: headerStyle)),
+              Expanded(flex: 2, child: Text("P&L", style: headerStyle)),
+            ],
+          ),
+        ),
+        ...history.reversed.map((item) {
+          return Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: const BoxDecoration(
+              border: Border(bottom: BorderSide(color: Colors.white10)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: Text(item.assetSymbol,
+                      style: GoogleFonts.shareTechMono(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12)),
+                ),
+                Expanded(
+                  flex: 1,
+                  child: Text(
+                    item.isLong ? "LONG" : "SHORT",
+                    style: GoogleFonts.shareTechMono(
+                      color: item.isLong ? Colors.cyan : Colors.pinkAccent,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 1,
+                  child: Text(item.quantity.toStringAsFixed(1),
+                      style: GoogleFonts.shareTechMono(
+                          color: Colors.white, fontSize: 11)),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Text("₹${item.entryPrice.toStringAsFixed(2)}",
+                      style: GoogleFonts.shareTechMono(
+                          color: Colors.white, fontSize: 11)),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Text("₹${item.exitPrice.toStringAsFixed(2)}",
+                      style: GoogleFonts.shareTechMono(
+                          color: Colors.white, fontSize: 11)),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    "${item.realizedPnl >= 0 ? '+' : ''}₹${item.realizedPnl.toStringAsFixed(2)}",
+                    style: GoogleFonts.shareTechMono(
+                      color: item.realizedPnl >= 0
+                          ? Colors.greenAccent
+                          : Colors.redAccent,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _buildOrdersPanel() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.receipt_long_outlined, color: Colors.white12, size: 36),
+          const SizedBox(height: 8),
+          Text("NO PENDING ORDERS",
+              style: GoogleFonts.orbitron(color: Colors.white24, fontSize: 12)),
+          const SizedBox(height: 4),
+          Text("All orders are filled instantly",
+              style: GoogleFonts.shareTechMono(
+                  color: Colors.white12, fontSize: 10)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBalanceHistoryPanel() {
+    final portfolioState = ref.watch(portfolioProvider);
+    final events = portfolioState.balanceHistory;
+
+    if (events.isEmpty) {
+      return Center(
+        child: Text("NO BALANCE CHANGES",
+            style: GoogleFonts.orbitron(color: Colors.white24)),
+      );
+    }
+
+    final headerStyle =
+        GoogleFonts.shareTechMono(color: Colors.white54, fontSize: 10);
+
+    return ListView(
+      padding: EdgeInsets.zero,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          color: Colors.white.withAlpha(5),
+          child: Row(
+            children: [
+              Expanded(flex: 2, child: Text("Time", style: headerStyle)),
+              Expanded(flex: 3, child: Text("Description", style: headerStyle)),
+              Expanded(flex: 2, child: Text("Change", style: headerStyle)),
+              Expanded(flex: 2, child: Text("Balance", style: headerStyle)),
+            ],
+          ),
+        ),
+        ...events.reversed.map((event) {
+          final isPositive = event.delta >= 0;
+          return Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: const BoxDecoration(
+              border: Border(bottom: BorderSide(color: Colors.white10)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    '${event.timestamp.hour.toString().padLeft(2, '0')}:${event.timestamp.minute.toString().padLeft(2, '0')}',
+                    style: GoogleFonts.shareTechMono(
+                        color: Colors.white54, fontSize: 11),
+                  ),
+                ),
+                Expanded(
+                  flex: 3,
+                  child: Text(event.description,
+                      style: GoogleFonts.shareTechMono(
+                          color: Colors.white70, fontSize: 11),
+                      overflow: TextOverflow.ellipsis),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    '${isPositive ? "+" : ""}₹${event.delta.toStringAsFixed(2)}',
+                    style: GoogleFonts.shareTechMono(
+                      color: isPositive ? Colors.greenAccent : Colors.redAccent,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Text('₹${event.balanceAfter.toStringAsFixed(0)}',
+                      style: GoogleFonts.shareTechMono(
+                          color: Colors.white, fontSize: 11)),
+                ),
+              ],
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _buildJournalPanel() {
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Trade Notes',
+            style: GoogleFonts.orbitron(color: Colors.white38, fontSize: 10),
+          ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: TextField(
+              maxLines: null,
+              expands: true,
+              textAlignVertical: TextAlignVertical.top,
+              style: GoogleFonts.shareTechMono(
+                  color: Colors.white70, fontSize: 13),
+              decoration: InputDecoration(
+                hintText:
+                    'Why did I enter this trade? Thesis, risk/reward, lessons...',
+                hintStyle: GoogleFonts.shareTechMono(
+                    color: Colors.white12, fontSize: 12),
+                filled: true,
+                fillColor: Colors.white.withAlpha(8),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Colors.white10),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Colors.white10),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Colors.cyan),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildActiveTradeHeader() {
@@ -1424,15 +1630,44 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
   Widget _buildTradeButton(String label, Color color) {
     return GestureDetector(
       onTap: () {
+        final isLong = label == "BUY";
+        final price = _candles.isNotEmpty
+            ? _candles.last.close
+            : _selectedAsset!.currentPrice;
+
+        // Open a real position via PortfolioProvider
+        final cost = price * 1; // 1 unit default
+        final statsNotifier = ref.read(userStatsProvider.notifier);
+        final success = statsNotifier.deductFuel(cost);
+        if (!success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Insufficient FUEL',
+                  style: GoogleFonts.shareTechMono(color: Colors.white)),
+              backgroundColor: Colors.redAccent,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          return;
+        }
+
+        final balAfter = ref.read(userStatsProvider).tradingCredits;
+        ref.read(portfolioProvider.notifier).openPosition(
+              OpenPosition(
+                assetId: _selectedAsset!.id,
+                assetSymbol: _selectedAsset!.symbol,
+                assetName: _selectedAsset!.name,
+                entryPrice: price,
+                quantity: 1,
+                isLong: isLong,
+                openedAt: DateTime.now(),
+              ),
+              balanceAfter: balAfter,
+            );
+
         setState(() {
-          _tradeMode = label == "BUY" ? TradeMode.long : TradeMode.short;
-          // Set Entry at latest candle Close (Center of latest candle)
-          // Ensure we have candles
-          if (_candles.isNotEmpty) {
-            _entryPrice = _candles.last.close;
-          } else {
-            _entryPrice = _selectedAsset!.currentPrice;
-          }
+          _tradeMode = isLong ? TradeMode.long : TradeMode.short;
+          _entryPrice = price;
           _slPrice = null;
           _tpPrice = null;
         });
@@ -1494,19 +1729,23 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
       // Let's Dock them to the LEFT of the Entry Control?
       // Or just stick them on the line at fixed visual offset.
       child: GestureDetector(
-        onVerticalDragStart: (_) {
-          // If dragging starts from docked, init price
+        behavior: HitTestBehavior.opaque,
+        onVerticalDragStart: (d) {
+          _dragStartGlobalY = d.globalPosition.dy;
+          _dragStartPrice = isActive ? activePrice! : currentPrice;
           if (!isActive) {
             onUpdate(currentPrice);
           }
         },
         onVerticalDragUpdate: (d) {
-          // d.globalPosition is absolute. We need relative logic or delta.
-          // Using delta on existing price is safest.
-          // visualY = topY + delta.
-          // newPrice = yToPrice(visualY).
-          final newY = topY + d.primaryDelta!;
-          onUpdate(yToPrice(newY));
+          if (_dragStartGlobalY == null || _dragStartPrice == null) return;
+          final totalDeltaY = d.globalPosition.dy - _dragStartGlobalY!;
+          final startY = priceToY(_dragStartPrice!);
+          onUpdate(yToPrice(startY + totalDeltaY));
+        },
+        onVerticalDragEnd: (_) {
+          _dragStartGlobalY = null;
+          _dragStartPrice = null;
         },
         onTap: () {
           // Click to spawn at defaults
@@ -1524,7 +1763,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
           }
         },
         child: Container(
-          height: 30,
+          height: 36,
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: const Color(0xFF131722),
