@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -9,10 +10,13 @@ import 'features/ledger/presentation/main_screen.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Load .env file (secrets) before any service initialization
+  await dotenv.load(fileName: '.env');
+
   // Initialize date formatting
   await initializeDateFormatting();
 
-  // Initialize Supabase
+  // Initialize Supabase with credentials from .env
   await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
 
   runApp(const ProviderScope(child: CyberFinanceApp()));

@@ -532,23 +532,34 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
       BarChartData(
         barGroups: _getBarChartData(incomes, expenses),
         borderData: FlBorderData(show: false),
-        gridData: const FlGridData(show: true),
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          getDrawingHorizontalLine:
+              (value) => FlLine(color: Colors.white10, strokeWidth: 1),
+        ),
         titlesData: FlTitlesData(
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
+              reservedSize: isCompact ? 24 : 28,
               getTitlesWidget: (value, meta) {
-                const titles = ['INCOME', 'EXPENSE'];
+                const labels = ['INC', 'EXP'];
+                const colors = [Color(0xFF00E676), Color(0xFFFF6D00)];
                 final idx = value.toInt();
-                if (idx >= 0 && idx < titles.length) {
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      titles[idx],
-                      style: TextStyle(
-                        color: idx == 0 ? Colors.green : Colors.orange,
-                        fontWeight: FontWeight.bold,
-                        fontSize: isCompact ? 8 : 10,
+                if (idx >= 0 && idx < labels.length) {
+                  return FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        labels[idx],
+                        style: TextStyle(
+                          color: colors[idx],
+                          fontWeight: FontWeight.bold,
+                          fontSize: isCompact ? 9 : 11,
+                          letterSpacing: 0.5,
+                        ),
                       ),
                     ),
                   );
@@ -560,15 +571,20 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: isCompact ? 30 : 38,
+              reservedSize: isCompact ? 32 : 42,
               getTitlesWidget: (value, meta) {
-                return Text(
-                  value >= 1000
-                      ? '${(value / 1000).toStringAsFixed(1)}k'
-                      : value.toInt().toString(),
-                  style: TextStyle(
-                    color: const Color(0xFFBBDEFF),
-                    fontSize: isCompact ? 7 : 9,
+                final label =
+                    value >= 1000
+                        ? '${(value / 1000).toStringAsFixed(1)}k'
+                        : value.toInt().toString();
+                return FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      color: const Color(0xFFBBDEFF),
+                      fontSize: isCompact ? 8 : 10,
+                    ),
                   ),
                 );
               },
@@ -587,14 +603,24 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
 
   Widget _buildGlassmorphContainer({required Widget child}) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(16),
       child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        filter: ui.ImageFilter.blur(sigmaX: 14, sigmaY: 14),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.3),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white24, width: 1),
+            color: Colors.black.withOpacity(0.35),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: const Color(0xFF00D9FF).withOpacity(0.25),
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF00D9FF).withOpacity(0.08),
+                blurRadius: 20,
+                spreadRadius: 2,
+              ),
+            ],
           ),
           child: child,
         ),
@@ -652,9 +678,20 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
   }) {
     if (items.isEmpty) {
       return Center(
-        child: Text(
-          emptyLabel,
-          style: const TextStyle(color: Color(0xFFBBDEFF), fontSize: 13),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.pie_chart_outline,
+              color: const Color(0xFF00D9FF).withOpacity(0.3),
+              size: 32,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              emptyLabel,
+              style: const TextStyle(color: Color(0xFFBBDEFF), fontSize: 12),
+            ),
+          ],
         ),
       );
     }
@@ -666,27 +703,37 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
     }
 
     const colors = [
-      Colors.cyan,
-      Colors.blue,
-      Colors.purple,
-      Colors.pink,
-      Colors.orange,
-      Colors.teal,
-      Colors.amber,
+      Color(0xFF00D9FF), // cyan
+      Color(0xFF7C4DFF), // purple
+      Color(0xFFFF6D00), // deep orange
+      Color(0xFF00E676), // green
+      Color(0xFFFF4081), // pink
+      Color(0xFF40C4FF), // light blue
+      Color(0xFFFFD740), // amber
     ];
 
+    final total = totals.values.fold(0.0, (s, v) => s + v);
     int idx = 0;
     final sections =
         totals.entries.map((entry) {
+          final pct = total > 0 ? (entry.value / total * 100) : 0;
+          // Only render label when the slice is large enough to fit text
+          final showTitle = pct >= 8;
           final s = PieChartSectionData(
             value: entry.value,
-            title: entry.key,
+            title:
+                showTitle
+                    ? (entry.key.length > 6
+                        ? '${entry.key.substring(0, 5)}…'
+                        : entry.key)
+                    : '',
             color: colors[idx % colors.length],
             radius: radius,
             titleStyle: TextStyle(
               color: Colors.white,
-              fontSize: radius < 80 ? 9 : 11,
+              fontSize: radius < 60 ? 8 : 10,
               fontWeight: FontWeight.bold,
+              shadows: const [Shadow(color: Colors.black54, blurRadius: 4)],
             ),
           );
           idx++;
@@ -697,7 +744,8 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
       PieChartData(
         sections: sections,
         centerSpaceRadius: centerSpaceRadius,
-        sectionsSpace: 2,
+        sectionsSpace: 3,
+        pieTouchData: PieTouchData(enabled: false),
       ),
     );
   }
@@ -888,77 +936,68 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
     return months[month - 1];
   }
 
+  /// Normalises [d] to midnight (00:00:00.000) so duration arithmetic
+  /// is never skewed by the time-of-day component of [_selectedDay].
+  DateTime _midnight(DateTime d) => DateTime(d.year, d.month, d.day);
+
   List<Expense> _filterExpensesByPeriod(List<Expense> expenses) {
+    final day = _midnight(_selectedDay);
     switch (_selectedPeriod) {
       case 'daily':
-        return expenses
-            .where((e) => isSameDay(e.timestamp, _selectedDay))
-            .toList();
+        return expenses.where((e) => isSameDay(e.timestamp, day)).toList();
       case 'weekly':
-        final weekStart = _selectedDay.subtract(
-          Duration(days: _selectedDay.weekday - 1),
-        );
-        final weekEnd = weekStart.add(const Duration(days: 6));
+        // Week starts on Monday 00:00, ends before the following Monday 00:00
+        final weekStart = day.subtract(Duration(days: day.weekday - 1));
+        final weekEnd = weekStart.add(const Duration(days: 7)); // exclusive
         return expenses
             .where(
               (e) =>
-                  e.timestamp.isAfter(
-                    weekStart.subtract(const Duration(seconds: 1)),
-                  ) &&
-                  e.timestamp.isBefore(weekEnd.add(const Duration(seconds: 1))),
+                  !e.timestamp.isBefore(weekStart) &&
+                  e.timestamp.isBefore(weekEnd),
             )
             .toList();
       case 'monthly':
         return expenses
             .where(
               (e) =>
-                  e.timestamp.year == _selectedDay.year &&
-                  e.timestamp.month == _selectedDay.month,
+                  e.timestamp.year == day.year &&
+                  e.timestamp.month == day.month,
             )
             .toList();
       case 'yearly':
-        return expenses
-            .where((e) => e.timestamp.year == _selectedDay.year)
-            .toList();
+        return expenses.where((e) => e.timestamp.year == day.year).toList();
       case 'alltime':
       default:
         return expenses;
     }
   }
 
-  // Mirrors _filterExpensesByPeriod for Income records
+  // Mirrors _filterExpensesByPeriod for Income records.
   List<Income> _filterIncomesByPeriod(List<Income> incomes) {
+    final day = _midnight(_selectedDay);
     switch (_selectedPeriod) {
       case 'daily':
-        return incomes
-            .where((i) => isSameDay(i.timestamp, _selectedDay))
-            .toList();
+        return incomes.where((i) => isSameDay(i.timestamp, day)).toList();
       case 'weekly':
-        final weekStart = _selectedDay.subtract(
-          Duration(days: _selectedDay.weekday - 1),
-        );
-        final weekEnd = weekStart.add(const Duration(days: 6));
+        final weekStart = day.subtract(Duration(days: day.weekday - 1));
+        final weekEnd = weekStart.add(const Duration(days: 7)); // exclusive
         return incomes
             .where(
               (i) =>
-                  i.timestamp.isAfter(
-                    weekStart.subtract(const Duration(seconds: 1)),
-                  ) &&
-                  i.timestamp.isBefore(weekEnd.add(const Duration(seconds: 1))),
+                  !i.timestamp.isBefore(weekStart) &&
+                  i.timestamp.isBefore(weekEnd),
             )
             .toList();
       case 'monthly':
         return incomes
             .where(
               (i) =>
-                  i.timestamp.year == _selectedDay.year &&
-                  i.timestamp.month == _selectedDay.month,
+                  i.timestamp.year == day.year &&
+                  i.timestamp.month == day.month,
             )
             .toList();
       case 'yearly':
-        return incomes
-            .where((i) => i.timestamp.year == _selectedDay.year)
-            .toList();
+        return incomes.where((i) => i.timestamp.year == day.year).toList();
       case 'alltime':
       default:
         return incomes;
@@ -1408,7 +1447,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
         );
   }
 
-  // Transaction Card Builder
+  // Transaction Card Builder — enhanced glassmorphism with accent bar
   Widget _buildTransactionCard({
     required String title,
     required String subtitle,
@@ -1417,55 +1456,113 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
     required Color amountColor,
     required bool isIncome,
   }) {
+    final accentColor =
+        isIncome
+            ? const Color(0xFF00E676) // green for income
+            : const Color(0xFFFF6D00); // orange for expense
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color:
-              isIncome
-                  ? const Color(0xFF4A5568).withOpacity(0.3)
-                  : Colors.black.withOpacity(0.3),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.white24, width: 1),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: Color(0xFFE0FFFF),
-                      fontWeight: FontWeight.bold,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      color: subtitleColor,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.4),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: accentColor.withOpacity(0.2), width: 1),
             ),
-            Text(
-              amount,
-              style: TextStyle(
-                color: amountColor,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
+            child: Row(
+              children: [
+                // Left accent bar
+                Container(
+                  width: 4,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: accentColor,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(10),
+                      bottomLeft: Radius.circular(10),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: accentColor.withOpacity(0.5),
+                        blurRadius: 6,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                // Content
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                title,
+                                style: const TextStyle(
+                                  color: Color(0xFFE0FFFF),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 3),
+                              // Pill-style subtitle badge
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: subtitleColor.withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(
+                                    color: subtitleColor.withOpacity(0.4),
+                                    width: 0.8,
+                                  ),
+                                ),
+                                child: Text(
+                                  subtitle,
+                                  style: TextStyle(
+                                    color: subtitleColor,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(right: 12),
+                          child: Text(
+                            amount,
+                            style: TextStyle(
+                              color: amountColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
