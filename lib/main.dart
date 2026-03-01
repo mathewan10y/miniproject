@@ -28,6 +28,7 @@ class CyberFinanceApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Stardust - Sci-Fi Finance',
       theme: ThemeData(
         brightness: Brightness.dark,
