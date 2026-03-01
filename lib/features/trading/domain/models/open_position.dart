@@ -1,4 +1,5 @@
 class OpenPosition {
+  final String id; // Unique position identifier
   final String assetId;
   final String assetSymbol;
   final String assetName;
@@ -7,7 +8,8 @@ class OpenPosition {
   final bool isLong; // true = BUY, false = SHORT
   final DateTime openedAt;
 
-  const OpenPosition({
+  OpenPosition({
+    String? id,
     required this.assetId,
     required this.assetSymbol,
     required this.assetName,
@@ -15,7 +17,7 @@ class OpenPosition {
     required this.quantity,
     required this.isLong,
     required this.openedAt,
-  });
+  }) : id = id ?? '${assetId}_${openedAt.microsecondsSinceEpoch}';
 
   /// Total capital locked (INR)
   double get totalCost => entryPrice * quantity;

@@ -17,7 +17,7 @@ final marketAssetsProvider = FutureProvider<List<MarketAsset>>((ref) async {
 
 abstract class MarketRepository {
   Future<List<MarketAsset>> fetchAssets();
-  Future<List<MockCandle>> getAssetHistory(String assetId, String interval);
+  Future<List<MockCandle>> getAssetHistory(String assetId, String interval, String range);
 
   /// Live USD → INR rate captured during the last Yahoo fetch.
   /// Falls back to 84.0 if Yahoo has not been called yet.
@@ -48,6 +48,25 @@ class MixedMarketService implements MarketRepository {
   // %5E = ^ (index prefix), %3D = = (futures suffix)
   final String _yahooApiUrl =
       'https://query1.finance.yahoo.com/v7/finance/quote?symbols=AAPL,RELIANCE.NS,%5EGSPC,%5EIXIC,GC%3DF,CL%3DF,INR%3DX';
+
+  // ─── Asset ID → Yahoo symbol mapping for chart history ───
+  static const Map<String, String> _yahooChartSymbols = {
+    'bitcoin': 'BTC-USD',
+    'ethereum': 'ETH-USD',
+    'dogecoin': 'DOGE-USD',
+    'aapl': 'AAPL',
+    'reliance': 'RELIANCE.NS',
+    'sp500': '%5EGSPC',
+    'nasdaq': '%5EIXIC',
+    'gold': 'GC%3DF',
+    'oil': 'CL%3DF',
+    'usdinr': 'INR%3DX',
+  };
+
+  // Symbols whose chart data is in USD and needs INR conversion
+  static const Set<String> _usdChartAssets = {
+    'aapl', 'sp500', 'nasdaq', 'gold', 'oil',
+  };
 
   @override
   Future<List<MarketAsset>> fetchAssets() async {
@@ -124,25 +143,18 @@ class MixedMarketService implements MarketRepository {
             final double price = _toInr(symbol, priceRaw);
 
             if (symbol == 'AAPL') {
-              // AAPL is on NYSE (USD) - converted to INR
               assets.add(_buildAsset('aapl', 'AAPL', 'Apple Inc. (INR)', price, change, AssetType.thruster, AssetSubType.stock, 3));
             } else if (symbol == 'RELIANCE.NS') {
-              // Reliance is on NSE (already INR)
               assets.add(_buildAsset('reliance', 'RELIANCE', 'Reliance Ind.', price, change, AssetType.thruster, AssetSubType.stock, 3));
             } else if (symbol == '^GSPC') {
-              // S&P 500 is USD - converted to INR
               assets.add(_buildAsset('sp500', 'SPX', 'S&P 500 (INR)', price, change, AssetType.fleet, AssetSubType.marketIndex, 4));
             } else if (symbol == '^IXIC') {
-              // NASDAQ is USD - converted to INR
               assets.add(_buildAsset('nasdaq', 'NDX', 'NASDAQ (INR)', price, change, AssetType.fleet, AssetSubType.marketIndex, 4));
             } else if (symbol == 'GC=F') {
-              // Gold is USD/oz - converted to INR
               assets.add(_buildAsset('gold', 'GOLD', 'Gold (INR/oz)', price, change, AssetType.lifeSupport, AssetSubType.forex, 2));
             } else if (symbol == 'CL=F') {
-              // Crude Oil is USD/bbl - converted to INR
               assets.add(_buildAsset('oil', 'OIL', 'Crude Oil (INR)', price, change, AssetType.lifeSupport, AssetSubType.forex, 2));
             } else if (symbol == 'INR=X') {
-              // USD/INR rate itself - show raw (not doubled)
               assets.add(_buildAsset('usdinr', 'USD/INR', 'USD/INR Rate', priceRaw, change, AssetType.lifeSupport, AssetSubType.forex, 1));
             }
           }
@@ -165,64 +177,89 @@ class MixedMarketService implements MarketRepository {
     return assets;
   }
 
+  // ─── Real Chart History via Yahoo Finance ─────────────────────────────────
+
   @override
-  Future<List<MockCandle>> getAssetHistory(String assetId, String interval) async {
-    // ... (keep existing implementation) ...
-    // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 500));
-    
-    // Generate realistic-looking random walk data
-    final List<MockCandle> candles = [];
-    final now = DateTime.now();
-    
-    // Base price depends on asset (rough hack for demo)
-    double price = 100.0;
-    if (assetId == 'bitcoin') price = 42000.0;
-    if (assetId == 'ethereum') price = 2200.0;
-    if (assetId == 'dogecoin') price = 0.15;
-    if (assetId == 'aapl') price = 185.0;
-    
-    // Determine number of points and interval duration
-    int points = 100;
-    Duration step = const Duration(hours: 1);
-    if (interval == '1D') step = const Duration(days: 1);
-    if (interval == '1W') step = const Duration(days: 7);
-    if (interval == '4H') step = const Duration(hours: 4);
-    if (interval == '1H') step = const Duration(hours: 1);
-    if (interval == '30M') step = const Duration(minutes: 30);
-    if (interval == '15M') step = const Duration(minutes: 15);
-    
-    DateTime currentStr = now.subtract(step * points);
-    
-    final random = Random();
-    
-    for (int i = 0; i < points; i++) {
-        // Random usage to generate O H L C
-        double volatility = price * 0.02; // 2% volatility
-        double change = (random.nextDouble() - 0.5) * volatility;
-        
-        double open = price;
-        double close = price + change;
-        double high = max(open, close) + random.nextDouble() * volatility * 0.5;
-        double low = min(open, close) - random.nextDouble() * volatility * 0.5;
-        
-        candles.add(MockCandle(
-          open: open, 
-          high: high, 
-          low: low, 
-          close: close, 
-          volume: 1000 + random.nextDouble() * 5000, 
-          timestamp: currentStr.millisecondsSinceEpoch,
-        ));
-        
-        price = close; // Next candle starts at this close
-        currentStr = currentStr.add(step);
+  Future<List<MockCandle>> getAssetHistory(String assetId, String interval, String range) async {
+    final yahooSymbol = _yahooChartSymbols[assetId];
+
+    if (yahooSymbol != null) {
+      try {
+        final candles = await _fetchYahooChart(assetId, yahooSymbol, interval, range);
+        if (candles.isNotEmpty) return candles;
+      } catch (e) {
+        print('[MarketService] Yahoo chart fetch failed for $assetId: $e');
+      }
     }
-    
+
+    // Fallback to mock random-walk if Yahoo fails
+    return _getMockCandleHistory(assetId, interval);
+  }
+
+  Future<List<MockCandle>> _fetchYahooChart(
+      String assetId, String yahooSymbol, String yahooInterval, String yahooRange) async {
+
+    final url =
+        'https://query1.finance.yahoo.com/v8/finance/chart/$yahooSymbol'
+        '?interval=$yahooInterval&range=$yahooRange';
+
+    final response = await _client.get(
+      Uri.parse(url),
+      headers: {
+        'User-Agent': 'Mozilla/5.0',
+        'Accept': 'application/json',
+      },
+    ).timeout(const Duration(seconds: 10));
+
+    if (response.statusCode != 200) return [];
+
+    final Map<String, dynamic> data = json.decode(response.body);
+    final result = data['chart']?['result'];
+    if (result == null || (result as List).isEmpty) return [];
+
+    final chartData = result[0];
+    final timestamps = chartData['timestamp'] as List<dynamic>?;
+    if (timestamps == null || timestamps.isEmpty) return [];
+
+    final quote = chartData['indicators']?['quote']?[0];
+    if (quote == null) return [];
+
+    final opens = quote['open'] as List<dynamic>?;
+    final highs = quote['high'] as List<dynamic>?;
+    final lows = quote['low'] as List<dynamic>?;
+    final closes = quote['close'] as List<dynamic>?;
+    final volumes = quote['volume'] as List<dynamic>?;
+
+    if (opens == null || highs == null || lows == null || closes == null) return [];
+
+    final bool needsInrConversion = _usdChartAssets.contains(assetId);
+    final double conversionRate = needsInrConversion ? _usdToInr : 1.0;
+
+    final List<MockCandle> candles = [];
+    for (int i = 0; i < timestamps.length; i++) {
+      final open = (opens[i] as num?)?.toDouble();
+      final high = (highs[i] as num?)?.toDouble();
+      final low = (lows[i] as num?)?.toDouble();
+      final close = (closes[i] as num?)?.toDouble();
+      final volume = (volumes?[i] as num?)?.toDouble() ?? 0;
+
+      // Skip null candles (market holidays / gaps)
+      if (open == null || high == null || low == null || close == null) continue;
+
+      candles.add(MockCandle(
+        open: open * conversionRate,
+        high: high * conversionRate,
+        low: low * conversionRate,
+        close: close * conversionRate,
+        volume: volume,
+        timestamp: (timestamps[i] as num).toInt() * 1000, // seconds → ms
+      ));
+    }
+
     return candles;
   }
 
-  // --- Helpers ---
+  // ─── Helpers ───────────────────────────────────────────────────────────────
 
   /// Symbols that are USD-denominated and need INR conversion.
   static const _usdSymbols = {'AAPL', '^GSPC', '^IXIC', 'GC=F', 'CL=F'};
@@ -250,7 +287,60 @@ class MixedMarketService implements MarketRepository {
     );
   }
 
-  // --- Mock Generators (fallback when network is unavailable) ---
+  // ─── Mock Fallback: Chart History ─────────────────────────────────────────
+
+  List<MockCandle> _getMockCandleHistory(String assetId, String interval) {
+    final List<MockCandle> candles = [];
+    final now = DateTime.now();
+
+    double price = 100.0;
+    if (assetId == 'bitcoin') price = 42000.0;
+    if (assetId == 'ethereum') price = 2200.0;
+    if (assetId == 'dogecoin') price = 0.15;
+    if (assetId == 'aapl') price = 185.0;
+    if (assetId == 'reliance') price = 2500.0;
+    if (assetId == 'gold') price = 2030.0;
+    if (assetId == 'oil') price = 78.0;
+    if (assetId == 'sp500') price = 4800.0;
+    if (assetId == 'nasdaq') price = 16800.0;
+    if (assetId == 'usdinr') price = 84.0;
+
+    int points = 500;
+    Duration step = const Duration(hours: 1);
+    if (interval == '1D') step = const Duration(days: 1);
+    if (interval == '1W') step = const Duration(days: 7);
+    if (interval == '4H') step = const Duration(hours: 4);
+    if (interval == '1H') step = const Duration(hours: 1);
+
+    DateTime currentStr = now.subtract(step * points);
+    final random = Random();
+
+    for (int i = 0; i < points; i++) {
+      double volatility = price * 0.02;
+      double change = (random.nextDouble() - 0.5) * volatility;
+
+      double open = price;
+      double close = price + change;
+      double high = max(open, close) + random.nextDouble() * volatility * 0.5;
+      double low = min(open, close) - random.nextDouble() * volatility * 0.5;
+
+      candles.add(MockCandle(
+        open: open,
+        high: high,
+        low: low,
+        close: close,
+        volume: 1000 + random.nextDouble() * 5000,
+        timestamp: currentStr.millisecondsSinceEpoch,
+      ));
+
+      price = close;
+      currentStr = currentStr.add(step);
+    }
+
+    return candles;
+  }
+
+  // ─── Mock Generators (fallback when network is unavailable) ───────────────
 
   List<MarketAsset> _getMockSectorC() {
     return [
@@ -263,23 +353,23 @@ class MixedMarketService implements MarketRepository {
   List<MarketAsset> _getMockSectorB_Fleets() {
     return [
       MarketAsset(
-        id: 'sp500', 
-        symbol: 'SPX', 
-        name: 'S&P 500 Fleet', 
-        currentPrice: 4800.0, 
-        percentChange24h: 0.5, 
+        id: 'sp500',
+        symbol: 'SPX',
+        name: 'S&P 500 Fleet',
+        currentPrice: 4800.0,
+        percentChange24h: 0.5,
         type: AssetType.fleet,
-        subType: AssetSubType.marketIndex, 
+        subType: AssetSubType.marketIndex,
         minLevelRequired: 4
       ),
       MarketAsset(
-        id: 'nasdaq', 
-        symbol: 'NDX', 
-        name: 'NASDAQ Fleet', 
-        currentPrice: 16800.0, 
-        percentChange24h: 0.8, 
+        id: 'nasdaq',
+        symbol: 'NDX',
+        name: 'NASDAQ Fleet',
+        currentPrice: 16800.0,
+        percentChange24h: 0.8,
         type: AssetType.fleet,
-        subType: AssetSubType.marketIndex, 
+        subType: AssetSubType.marketIndex,
         minLevelRequired: 4
       ),
     ];
@@ -287,29 +377,28 @@ class MixedMarketService implements MarketRepository {
 
   List<MarketAsset> _getMockSectorB_Thrusters() {
     final random = Random();
-    // Simulate volatility: -2% to +2% change roughly
-    double AAPL_Price = 185.0 + (random.nextDouble() - 0.5) * 5; 
-    double RELIANCE_Price = 2500.0 + (random.nextDouble() - 0.5) * 50;
+    double aaplPrice = 185.0 + (random.nextDouble() - 0.5) * 5;
+    double reliancePrice = 2500.0 + (random.nextDouble() - 0.5) * 50;
 
     return [
       MarketAsset(
-        id: 'aapl', 
-        symbol: 'AAPL', 
-        name: 'Apple Inc.', 
-        currentPrice: AAPL_Price, 
-        percentChange24h: (random.nextDouble() - 0.5) * 3.0, 
+        id: 'aapl',
+        symbol: 'AAPL',
+        name: 'Apple Inc.',
+        currentPrice: aaplPrice,
+        percentChange24h: (random.nextDouble() - 0.5) * 3.0,
         type: AssetType.thruster,
-        subType: AssetSubType.stock, 
+        subType: AssetSubType.stock,
         minLevelRequired: 3
       ),
       MarketAsset(
-        id: 'reliance', 
-        symbol: 'RELIANCE', 
-        name: 'Reliance Ind.', 
-        currentPrice: RELIANCE_Price, 
-        percentChange24h: (random.nextDouble() - 0.5) * 4.0, 
+        id: 'reliance',
+        symbol: 'RELIANCE',
+        name: 'Reliance Ind.',
+        currentPrice: reliancePrice,
+        percentChange24h: (random.nextDouble() - 0.5) * 4.0,
         type: AssetType.thruster,
-        subType: AssetSubType.stock, 
+        subType: AssetSubType.stock,
         minLevelRequired: 3
       ),
     ];
@@ -317,7 +406,7 @@ class MixedMarketService implements MarketRepository {
 
   MarketAsset _getMockSectorA(String id, String name, double basePrice, int level) {
     final random = Random();
-    double price = basePrice + (random.nextDouble() - 0.5) * (basePrice * 0.01); // 1% volatility
+    double price = basePrice + (random.nextDouble() - 0.5) * (basePrice * 0.01);
     return MarketAsset(
       id: id,
       symbol: name.toUpperCase(),
@@ -325,7 +414,7 @@ class MixedMarketService implements MarketRepository {
       currentPrice: price,
       percentChange24h: (random.nextDouble() - 0.5) * 1.5,
       type: AssetType.lifeSupport,
-      subType: AssetSubType.forex, // Defaulting to forex for simplicity
+      subType: AssetSubType.forex,
       minLevelRequired: level,
     );
   }
