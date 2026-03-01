@@ -193,9 +193,14 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
           if (_candles.length > 0) {
             final screenW = MediaQuery.of(context).size.width - 60;
             final targetVisible = _candles.length < 80 ? _candles.length : 80;
-            _candleWidth = (screenW / targetVisible).clamp(_minCandleWidth, _maxCandleWidth);
+            _candleWidth = (screenW / targetVisible).clamp(
+              _minCandleWidth,
+              _maxCandleWidth,
+            );
             _baseCandleWidth = _candleWidth;
-            print('[Chart] Loaded ${_candles.length} candles, showing $targetVisible, candleWidth=$_candleWidth');
+            print(
+              '[Chart] Loaded ${_candles.length} candles, showing $targetVisible, candleWidth=$_candleWidth',
+            );
           }
         });
       }
@@ -256,11 +261,13 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
 
   @override
   Widget build(BuildContext context) {
-    final system = ref.watch(refineryProvider);
+    final system = ref.watch(refineryProvider).valueOrNull;
     final assetsAsync = ref.watch(marketAssetsProvider);
 
     ref.listen(refineryProvider, (previous, next) {
-      if (next.refinedFuel > (previous?.refinedFuel ?? 0)) {
+      final nextFuel = next.valueOrNull?.refinedFuel ?? 0;
+      final prevFuel = previous?.valueOrNull?.refinedFuel ?? 0;
+      if (nextFuel > prevFuel) {
         _spawnIncomingParticles();
         _fuelAnimationController.forward(from: 0.0);
       }
@@ -846,7 +853,8 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                   setState(() => _slPrice = price);
                 },
                 onVerticalDragUpdate: (d) {
-                  if (_dragStartGlobalY == null || _dragStartPrice == null) return;
+                  if (_dragStartGlobalY == null || _dragStartPrice == null)
+                    return;
                   final totalDeltaY = d.globalPosition.dy - _dragStartGlobalY!;
                   final startY = priceToY(_dragStartPrice!);
                   setState(() => _slPrice = yToPrice(startY + totalDeltaY));
@@ -891,7 +899,8 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                   setState(() => _tpPrice = price);
                 },
                 onVerticalDragUpdate: (d) {
-                  if (_dragStartGlobalY == null || _dragStartPrice == null) return;
+                  if (_dragStartGlobalY == null || _dragStartPrice == null)
+                    return;
                   final totalDeltaY = d.globalPosition.dy - _dragStartGlobalY!;
                   final startY = priceToY(_dragStartPrice!);
                   setState(() => _tpPrice = yToPrice(startY + totalDeltaY));
@@ -1059,8 +1068,9 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
 
   void _showQuantityPopup() {
     final presets = [1, 5, 25, 100, 500, 1000];
-    final controller =
-        TextEditingController(text: _tradeQuantity.toStringAsFixed(0));
+    final controller = TextEditingController(
+      text: _tradeQuantity.toStringAsFixed(0),
+    );
 
     // Get button position to anchor the popup below it
     final RenderBox? box =
@@ -1084,7 +1094,10 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
             ),
             // Popup anchored below the button
             Positioned(
-              left: (btnPos.dx - 60).clamp(8.0, MediaQuery.of(context).size.width - 180),
+              left: (btnPos.dx - 60).clamp(
+                8.0,
+                MediaQuery.of(context).size.width - 180,
+              ),
               top: btnPos.dy + btnSize.height + 4,
               child: Material(
                 color: Colors.transparent,
@@ -1109,40 +1122,53 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Quantity',
-                              style: GoogleFonts.shareTechMono(
-                                  color: Colors.white54, fontSize: 10)),
+                          Text(
+                            'Quantity',
+                            style: GoogleFonts.shareTechMono(
+                              color: Colors.white54,
+                              fontSize: 10,
+                            ),
+                          ),
                           const SizedBox(height: 6),
                           // Text input
                           SizedBox(
                             height: 34,
                             child: TextField(
                               controller: controller,
-                              keyboardType: const TextInputType.numberWithOptions(
-                                  decimal: true),
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
                               style: GoogleFonts.shareTechMono(
-                                  color: Colors.white, fontSize: 14),
+                                color: Colors.white,
+                                fontSize: 14,
+                              ),
                               textAlign: TextAlign.center,
                               decoration: InputDecoration(
                                 filled: true,
                                 fillColor: Colors.white.withAlpha(10),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(3),
-                                  borderSide:
-                                      const BorderSide(color: Colors.white24),
+                                  borderSide: const BorderSide(
+                                    color: Colors.white24,
+                                  ),
                                 ),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(3),
-                                  borderSide:
-                                      const BorderSide(color: Colors.white24),
+                                  borderSide: const BorderSide(
+                                    color: Colors.white24,
+                                  ),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(3),
-                                  borderSide:
-                                      const BorderSide(color: Colors.cyan),
+                                  borderSide: const BorderSide(
+                                    color: Colors.cyan,
+                                  ),
                                 ),
                                 contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 6),
+                                  horizontal: 8,
+                                  vertical: 6,
+                                ),
                               ),
                             ),
                           ),
@@ -1154,7 +1180,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                                 child: _qtyActionBtn('\u2212', () {
                                   final v =
                                       (double.tryParse(controller.text) ?? 1) -
-                                          1;
+                                      1;
                                   if (v >= 1) {
                                     controller.text = v.toStringAsFixed(0);
                                     setPopupState(() {});
@@ -1166,7 +1192,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                                 child: _qtyActionBtn('+', () {
                                   final v =
                                       (double.tryParse(controller.text) ?? 0) +
-                                          1;
+                                      1;
                                   controller.text = v.toStringAsFixed(0);
                                   setPopupState(() {});
                                 }),
@@ -1184,12 +1210,18 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                                 children: [
                                   Expanded(
                                     child: _qtyPresetBtn(
-                                        a, controller, setPopupState),
+                                      a,
+                                      controller,
+                                      setPopupState,
+                                    ),
                                   ),
                                   const SizedBox(width: 4),
                                   Expanded(
                                     child: _qtyPresetBtn(
-                                        b, controller, setPopupState),
+                                      b,
+                                      controller,
+                                      setPopupState,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -1232,15 +1264,20 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                               onPressed: () {
                                 final val =
                                     double.tryParse(controller.text) ??
-                                        _tradeQuantity;
-                                setState(() => _tradeQuantity =
-                                    val.clamp(0.01, 100000));
+                                    _tradeQuantity;
+                                setState(
+                                  () =>
+                                      _tradeQuantity = val.clamp(0.01, 100000),
+                                );
                                 overlay.remove();
                               },
-                              child: Text('OK',
-                                  style: GoogleFonts.orbitron(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold)),
+                              child: Text(
+                                'OK',
+                                style: GoogleFonts.orbitron(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
                           ),
                         ],
@@ -1259,7 +1296,10 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
   }
 
   Widget _qtyPresetBtn(
-      int value, TextEditingController ctrl, StateSetter setS) {
+    int value,
+    TextEditingController ctrl,
+    StateSetter setS,
+  ) {
     return GestureDetector(
       onTap: () {
         ctrl.text = value.toString();
@@ -1273,11 +1313,14 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
           border: Border.all(color: Colors.white24),
           borderRadius: BorderRadius.circular(3),
         ),
-        child: Text(value.toString(),
-            style: GoogleFonts.shareTechMono(
-                color: Colors.white70,
-                fontSize: 12,
-                fontWeight: FontWeight.bold)),
+        child: Text(
+          value.toString(),
+          style: GoogleFonts.shareTechMono(
+            color: Colors.white70,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
     );
   }
@@ -1294,9 +1337,10 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
           border: Border.all(color: Colors.white24),
           borderRadius: BorderRadius.circular(4),
         ),
-        child: Text(label,
-            style: GoogleFonts.shareTechMono(
-                color: Colors.white70, fontSize: 14)),
+        child: Text(
+          label,
+          style: GoogleFonts.shareTechMono(color: Colors.white70, fontSize: 14),
+        ),
       ),
     );
   }
@@ -1354,12 +1398,14 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
   }
 
   Widget _buildTradeManagerPanel() {
-    final stats = ref.watch(userStatsProvider);
+    final stats = ref.watch(userStatsProvider).valueOrNull;
     final portfolioState = ref.watch(portfolioProvider);
-    final balance = stats.tradingCredits;
+    final balance = stats?.tradingCredits ?? 0.0;
     final currentPrice = _selectedAsset?.currentPrice ?? 0;
     final unrealizedPnl = portfolioState.positions.fold(
-        0.0, (sum, p) => sum + p.unrealizedPnl(currentPrice));
+      0.0,
+      (sum, p) => sum + p.unrealizedPnl(currentPrice),
+    );
     final realizedPnl = portfolioState.totalRealizedPnl;
     final equity = balance + unrealizedPnl;
 
@@ -1372,14 +1418,17 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
         children: [
           // HEADER — acts as drag handle for resizing
           GestureDetector(
-            onTap: () => setState(() {
-              _isPanelExpanded = !_isPanelExpanded;
-              _panelHeight = _isPanelExpanded ? 300.0 : _panelMinHeight;
-            }),
+            onTap:
+                () => setState(() {
+                  _isPanelExpanded = !_isPanelExpanded;
+                  _panelHeight = _isPanelExpanded ? 300.0 : _panelMinHeight;
+                }),
             onVerticalDragUpdate: (d) {
               setState(() {
-                _panelHeight = (_panelHeight - d.primaryDelta!)
-                    .clamp(_panelMinHeight, _panelMaxHeight);
+                _panelHeight = (_panelHeight - d.primaryDelta!).clamp(
+                  _panelMinHeight,
+                  _panelMaxHeight,
+                );
                 _isPanelExpanded = _panelHeight > _panelMinHeight + 10;
               });
             },
@@ -1403,7 +1452,8 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                 color: Colors.white.withAlpha(5),
                 border: Border(
                   bottom: BorderSide(
-                    color: _isPanelExpanded ? Colors.white10 : Colors.transparent,
+                    color:
+                        _isPanelExpanded ? Colors.white10 : Colors.transparent,
                   ),
                 ),
               ),
@@ -1449,18 +1499,23 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         _buildAccountStat(
-                            "Balance", "₹${balance.toStringAsFixed(0)}"),
+                          "Balance",
+                          "₹${balance.toStringAsFixed(0)}",
+                        ),
                         const SizedBox(width: 10),
                         _buildAccountStat(
                           "P&L",
                           "${realizedPnl >= 0 ? '+' : ''}₹${realizedPnl.toStringAsFixed(0)}",
-                          valueColor: realizedPnl >= 0
-                              ? Colors.greenAccent
-                              : Colors.redAccent,
+                          valueColor:
+                              realizedPnl >= 0
+                                  ? Colors.greenAccent
+                                  : Colors.redAccent,
                         ),
                         const SizedBox(width: 10),
                         _buildAccountStat(
-                            "Equity", "₹${equity.toStringAsFixed(0)}"),
+                          "Equity",
+                          "₹${equity.toStringAsFixed(0)}",
+                        ),
                       ],
                     ),
                   ),
@@ -1487,10 +1542,12 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 6),
         decoration: BoxDecoration(
-          border: isSelected
-              ? const Border(
-                  bottom: BorderSide(color: Colors.cyan, width: 2))
-              : null,
+          border:
+              isSelected
+                  ? const Border(
+                    bottom: BorderSide(color: Colors.cyan, width: 2),
+                  )
+                  : null,
         ),
         child: Text(
           label,
@@ -1508,27 +1565,36 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        Text(label,
-            style:
-                GoogleFonts.shareTechMono(color: Colors.white24, fontSize: 9)),
-        Text(value,
-            style: GoogleFonts.shareTechMono(
-              color: valueColor ?? Colors.white,
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-            )),
+        Text(
+          label,
+          style: GoogleFonts.shareTechMono(color: Colors.white24, fontSize: 9),
+        ),
+        Text(
+          value,
+          style: GoogleFonts.shareTechMono(
+            color: valueColor ?? Colors.white,
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ],
     );
   }
 
   Widget _buildPanelContent() {
     switch (_selectedTabIndex) {
-      case 0: return _buildPositionsPanel();
-      case 1: return _buildOrdersPanel();
-      case 2: return _buildHistoryPanel();
-      case 3: return _buildBalanceHistoryPanel();
-      case 4: return _buildJournalPanel();
-      default: return _buildPositionsPanel();
+      case 0:
+        return _buildPositionsPanel();
+      case 1:
+        return _buildOrdersPanel();
+      case 2:
+        return _buildHistoryPanel();
+      case 3:
+        return _buildBalanceHistoryPanel();
+      case 4:
+        return _buildJournalPanel();
+      default:
+        return _buildPositionsPanel();
     }
   }
 
@@ -1539,13 +1605,17 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
 
     if (positions.isEmpty) {
       return Center(
-        child: Text("NO ACTIVE POSITIONS",
-            style: GoogleFonts.orbitron(color: Colors.white24)),
+        child: Text(
+          "NO ACTIVE POSITIONS",
+          style: GoogleFonts.orbitron(color: Colors.white24),
+        ),
       );
     }
 
-    final headerStyle =
-        GoogleFonts.shareTechMono(color: Colors.white54, fontSize: 10);
+    final headerStyle = GoogleFonts.shareTechMono(
+      color: Colors.white54,
+      fontSize: 10,
+    );
 
     return ListView(
       padding: EdgeInsets.zero,
@@ -1570,8 +1640,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
         ...positions.map((pos) {
           final pnl = pos.unrealizedPnl(currentPrice);
           return Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: const BoxDecoration(
               border: Border(bottom: BorderSide(color: Colors.white10)),
             ),
@@ -1579,18 +1648,23 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
               children: [
                 Expanded(
                   flex: 2,
-                  child: Row(children: [
-                    Icon(Icons.token, color: Colors.cyan, size: 14),
-                    const SizedBox(width: 6),
-                    Flexible(
-                      child: Text(pos.assetSymbol,
+                  child: Row(
+                    children: [
+                      Icon(Icons.token, color: Colors.cyan, size: 14),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          pos.assetSymbol,
                           style: GoogleFonts.shareTechMono(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12),
-                          overflow: TextOverflow.ellipsis),
-                    ),
-                  ]),
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 Expanded(
                   flex: 1,
@@ -1604,21 +1678,33 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                 ),
                 Expanded(
                   flex: 1,
-                  child: Text(pos.quantity.toStringAsFixed(1),
-                      style: GoogleFonts.shareTechMono(
-                          color: Colors.white, fontSize: 11)),
+                  child: Text(
+                    pos.quantity.toStringAsFixed(1),
+                    style: GoogleFonts.shareTechMono(
+                      color: Colors.white,
+                      fontSize: 11,
+                    ),
+                  ),
                 ),
                 Expanded(
                   flex: 2,
-                  child: Text("₹${pos.entryPrice.toStringAsFixed(2)}",
-                      style: GoogleFonts.shareTechMono(
-                          color: Colors.white, fontSize: 11)),
+                  child: Text(
+                    "₹${pos.entryPrice.toStringAsFixed(2)}",
+                    style: GoogleFonts.shareTechMono(
+                      color: Colors.white,
+                      fontSize: 11,
+                    ),
+                  ),
                 ),
                 Expanded(
                   flex: 2,
-                  child: Text("₹${currentPrice.toStringAsFixed(2)}",
-                      style: GoogleFonts.shareTechMono(
-                          color: Colors.white, fontSize: 11)),
+                  child: Text(
+                    "₹${currentPrice.toStringAsFixed(2)}",
+                    style: GoogleFonts.shareTechMono(
+                      color: Colors.white,
+                      fontSize: 11,
+                    ),
+                  ),
                 ),
                 Expanded(
                   flex: 2,
@@ -1633,27 +1719,41 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                 ),
                 GestureDetector(
                   onTap: () {
-                    final p = ref.read(portfolioProvider.notifier)
+                    final p = ref
+                        .read(portfolioProvider.notifier)
                         .getPositionById(pos.id);
                     if (p == null) return;
                     final closePnl = p.realizedPnl(currentPrice);
-                    ref.read(userStatsProvider.notifier)
+                    ref
+                        .read(userStatsProvider.notifier)
                         .addFuel(p.totalCost + closePnl);
-                    final bal = ref.read(userStatsProvider).tradingCredits;
-                    ref.read(portfolioProvider.notifier)
+                    final bal =
+                        ref
+                            .read(userStatsProvider)
+                            .valueOrNull
+                            ?.tradingCredits ??
+                        0.0;
+                    ref
+                        .read(portfolioProvider.notifier)
                         .closePosition(pos.id, currentPrice, balanceAfter: bal);
                     _resetTrade();
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 4),
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       border: Border.all(color: Colors.redAccent),
                       borderRadius: BorderRadius.circular(4),
                     ),
-                    child: Text("✕",
-                        style: GoogleFonts.shareTechMono(
-                            color: Colors.redAccent, fontSize: 12)),
+                    child: Text(
+                      "✕",
+                      style: GoogleFonts.shareTechMono(
+                        color: Colors.redAccent,
+                        fontSize: 12,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -1670,13 +1770,17 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
 
     if (history.isEmpty) {
       return Center(
-        child: Text("NO TRADE HISTORY",
-            style: GoogleFonts.orbitron(color: Colors.white24)),
+        child: Text(
+          "NO TRADE HISTORY",
+          style: GoogleFonts.orbitron(color: Colors.white24),
+        ),
       );
     }
 
-    final headerStyle =
-        GoogleFonts.shareTechMono(color: Colors.white54, fontSize: 10);
+    final headerStyle = GoogleFonts.shareTechMono(
+      color: Colors.white54,
+      fontSize: 10,
+    );
 
     return ListView(
       padding: EdgeInsets.zero,
@@ -1697,8 +1801,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
         ),
         ...history.reversed.map((item) {
           return Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: const BoxDecoration(
               border: Border(bottom: BorderSide(color: Colors.white10)),
             ),
@@ -1706,11 +1809,14 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
               children: [
                 Expanded(
                   flex: 2,
-                  child: Text(item.assetSymbol,
-                      style: GoogleFonts.shareTechMono(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12)),
+                  child: Text(
+                    item.assetSymbol,
+                    style: GoogleFonts.shareTechMono(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
                 ),
                 Expanded(
                   flex: 1,
@@ -1724,30 +1830,43 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                 ),
                 Expanded(
                   flex: 1,
-                  child: Text(item.quantity.toStringAsFixed(1),
-                      style: GoogleFonts.shareTechMono(
-                          color: Colors.white, fontSize: 11)),
+                  child: Text(
+                    item.quantity.toStringAsFixed(1),
+                    style: GoogleFonts.shareTechMono(
+                      color: Colors.white,
+                      fontSize: 11,
+                    ),
+                  ),
                 ),
                 Expanded(
                   flex: 2,
-                  child: Text("₹${item.entryPrice.toStringAsFixed(2)}",
-                      style: GoogleFonts.shareTechMono(
-                          color: Colors.white, fontSize: 11)),
+                  child: Text(
+                    "₹${item.entryPrice.toStringAsFixed(2)}",
+                    style: GoogleFonts.shareTechMono(
+                      color: Colors.white,
+                      fontSize: 11,
+                    ),
+                  ),
                 ),
                 Expanded(
                   flex: 2,
-                  child: Text("₹${item.exitPrice.toStringAsFixed(2)}",
-                      style: GoogleFonts.shareTechMono(
-                          color: Colors.white, fontSize: 11)),
+                  child: Text(
+                    "₹${item.exitPrice.toStringAsFixed(2)}",
+                    style: GoogleFonts.shareTechMono(
+                      color: Colors.white,
+                      fontSize: 11,
+                    ),
+                  ),
                 ),
                 Expanded(
                   flex: 2,
                   child: Text(
                     "${item.realizedPnl >= 0 ? '+' : ''}₹${item.realizedPnl.toStringAsFixed(2)}",
                     style: GoogleFonts.shareTechMono(
-                      color: item.realizedPnl >= 0
-                          ? Colors.greenAccent
-                          : Colors.redAccent,
+                      color:
+                          item.realizedPnl >= 0
+                              ? Colors.greenAccent
+                              : Colors.redAccent,
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
                     ),
@@ -1768,12 +1887,18 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
         children: [
           Icon(Icons.receipt_long_outlined, color: Colors.white12, size: 36),
           const SizedBox(height: 8),
-          Text("NO PENDING ORDERS",
-              style: GoogleFonts.orbitron(color: Colors.white24, fontSize: 12)),
+          Text(
+            "NO PENDING ORDERS",
+            style: GoogleFonts.orbitron(color: Colors.white24, fontSize: 12),
+          ),
           const SizedBox(height: 4),
-          Text("All orders are filled instantly",
-              style: GoogleFonts.shareTechMono(
-                  color: Colors.white12, fontSize: 10)),
+          Text(
+            "All orders are filled instantly",
+            style: GoogleFonts.shareTechMono(
+              color: Colors.white12,
+              fontSize: 10,
+            ),
+          ),
         ],
       ),
     );
@@ -1785,13 +1910,17 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
 
     if (events.isEmpty) {
       return Center(
-        child: Text("NO BALANCE CHANGES",
-            style: GoogleFonts.orbitron(color: Colors.white24)),
+        child: Text(
+          "NO BALANCE CHANGES",
+          style: GoogleFonts.orbitron(color: Colors.white24),
+        ),
       );
     }
 
-    final headerStyle =
-        GoogleFonts.shareTechMono(color: Colors.white54, fontSize: 10);
+    final headerStyle = GoogleFonts.shareTechMono(
+      color: Colors.white54,
+      fontSize: 10,
+    );
 
     return ListView(
       padding: EdgeInsets.zero,
@@ -1811,8 +1940,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
         ...events.reversed.map((event) {
           final isPositive = event.delta >= 0;
           return Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: const BoxDecoration(
               border: Border(bottom: BorderSide(color: Colors.white10)),
             ),
@@ -1823,15 +1951,21 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                   child: Text(
                     '${event.timestamp.hour.toString().padLeft(2, '0')}:${event.timestamp.minute.toString().padLeft(2, '0')}',
                     style: GoogleFonts.shareTechMono(
-                        color: Colors.white54, fontSize: 11),
+                      color: Colors.white54,
+                      fontSize: 11,
+                    ),
                   ),
                 ),
                 Expanded(
                   flex: 3,
-                  child: Text(event.description,
-                      style: GoogleFonts.shareTechMono(
-                          color: Colors.white70, fontSize: 11),
-                      overflow: TextOverflow.ellipsis),
+                  child: Text(
+                    event.description,
+                    style: GoogleFonts.shareTechMono(
+                      color: Colors.white70,
+                      fontSize: 11,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
                 Expanded(
                   flex: 2,
@@ -1846,9 +1980,13 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                 ),
                 Expanded(
                   flex: 2,
-                  child: Text('₹${event.balanceAfter.toStringAsFixed(0)}',
-                      style: GoogleFonts.shareTechMono(
-                          color: Colors.white, fontSize: 11)),
+                  child: Text(
+                    '₹${event.balanceAfter.toStringAsFixed(0)}',
+                    style: GoogleFonts.shareTechMono(
+                      color: Colors.white,
+                      fontSize: 11,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -1875,12 +2013,16 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
               expands: true,
               textAlignVertical: TextAlignVertical.top,
               style: GoogleFonts.shareTechMono(
-                  color: Colors.white70, fontSize: 13),
+                color: Colors.white70,
+                fontSize: 13,
+              ),
               decoration: InputDecoration(
                 hintText:
                     'Why did I enter this trade? Thesis, risk/reward, lessons...',
                 hintStyle: GoogleFonts.shareTechMono(
-                    color: Colors.white12, fontSize: 12),
+                  color: Colors.white12,
+                  fontSize: 12,
+                ),
                 filled: true,
                 fillColor: Colors.white.withAlpha(8),
                 border: OutlineInputBorder(
@@ -1976,9 +2118,10 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
     return GestureDetector(
       onTap: () {
         final isLong = label == "BUY";
-        final price = _candles.isNotEmpty
-            ? _candles.last.close
-            : _selectedAsset!.currentPrice;
+        final price =
+            _candles.isNotEmpty
+                ? _candles.last.close
+                : _selectedAsset!.currentPrice;
 
         final cost = price * _tradeQuantity;
         final statsNotifier = ref.read(userStatsProvider.notifier);
@@ -1986,8 +2129,10 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
         if (!success) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Insufficient FUEL',
-                  style: GoogleFonts.shareTechMono(color: Colors.white)),
+              content: Text(
+                'Insufficient FUEL',
+                style: GoogleFonts.shareTechMono(color: Colors.white),
+              ),
               backgroundColor: Colors.redAccent,
               behavior: SnackBarBehavior.floating,
             ),
@@ -1995,8 +2140,11 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
           return;
         }
 
-        final balAfter = ref.read(userStatsProvider).tradingCredits;
-        ref.read(portfolioProvider.notifier).openPosition(
+        final balAfter =
+            ref.read(userStatsProvider).valueOrNull?.tradingCredits ?? 0.0;
+        ref
+            .read(portfolioProvider.notifier)
+            .openPosition(
               OpenPosition(
                 assetId: _selectedAsset!.id,
                 assetSymbol: _selectedAsset!.symbol,

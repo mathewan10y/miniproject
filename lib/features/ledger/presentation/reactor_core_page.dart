@@ -21,7 +21,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
     with SingleTickerProviderStateMixin {
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
-  
+
   // Refinery state
   Timer? _refineryTimer;
   bool _isRefining = false;
@@ -29,7 +29,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
   bool _isDisposed = false;
   List<Particle> _particles = [];
   List<CriticalText> _criticalTexts = [];
-  
+
   @override
   void initState() {
     super.initState();
@@ -55,19 +55,22 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
   Widget build(BuildContext context) {
     final expensesAsync = ref.watch(expenseProvider);
     final incomesAsync = ref.watch(incomeProvider);
-    final refineryState = ref.watch(refineryProvider);
+    // Unwrap AsyncValue — shows persisted values or zero defaults while loading
+    final refineryState = ref.watch(refineryProvider).valueOrNull;
 
     return expensesAsync.when(
       data: (expenses) {
         return incomesAsync.when(
           data: (incomes) {
-            // Use RefinerySystem data instead of calculating from income/expenses
-            final rawOre = refineryState.rawOre;
-            final refinedFuel = refineryState.refinedFuel;
-            final totalSavings = refineryState.totalSavings;
-            
+            final rawOre = refineryState?.rawOre ?? 0;
+            final refinedFuel = refineryState?.refinedFuel ?? 0.0;
+            final totalSavings = refineryState?.totalSavings ?? 0.0;
+
             // Calculate ore level for reactor gauge (0-1 based on raw ore)
-            double oreLevel = (rawOre / 10000.0).clamp(0.0, 1.0); // Max 10000 ore for full reactor
+            double oreLevel = (rawOre / 10000.0).clamp(
+              0.0,
+              1.0,
+            ); // Max 10000 ore for full reactor
 
             return Stack(
               fit: StackFit.expand,
@@ -86,78 +89,77 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
                 // Main content - centered layout
                 Column(
                   children: [
-                     const TopBar(title: "REACTOR CORE"),
-                     Expanded(
-                       child: Center(
-                         child: Column(
-                           mainAxisAlignment: MainAxisAlignment.center,
-                           children: [
-                               // UNREFINED ORE display (above reactor)
-                               _buildHolographicContainer(
-                                 child: Column(
-                                   mainAxisSize: MainAxisSize.min,
-                                   children: [
-                                     const Text(
-                                       'RAW ORE',
-                                       style: TextStyle(
-                                         color: Color(0xFF00D9FF),
-                                         fontSize: 16,
-                                         fontWeight: FontWeight.bold,
-                                         letterSpacing: 2,
-                                       ),
-                                     ),
-                                     const SizedBox(height: 8),
-                                     Column(
-                                       children: [
-                                         Text(
-                                           '$rawOre',
-                                           style: const TextStyle(
-                                             color: Colors.white,
-                                             fontSize: 40,
-                                             fontWeight: FontWeight.bold,
-                                             letterSpacing: 1,
-                                           ),
-                                         ),
-                                         const SizedBox(height: 8),
-                                         Text(
-                                           'REFINERY EFFICIENCY: 80%',
-                                           style: const TextStyle(
-                                             color: Color(0xFF00B8D4),
-                                             fontSize: 12,
-                                             letterSpacing: 1,
-                                           ),
-                                         ),
-                                       ],
-                                     ),
-                                   ],
-                                 ),
-                               ),
-                               const SizedBox(height: 20),
-                               // Reactor core with pulse animation and responsive sizing
-                               ScaleTransition(
-                                 scale: _pulseAnimation,
-                                 child: Builder(
-                                   builder: (context) {
-                                     final screenWidth = MediaQuery.of(context).size.width;
-                                     final reactorWidth = screenWidth * 0.8;
-      
-                                     return Container(
-                                       width: reactorWidth,
-                                       child: ReactorGauge(
-                                         fillPercent: oreLevel,
-                                       ),
-                                     );
-                                   },
-                                 ),
-                               ),
-                             ],
-                           ),
-                         ),
-                       ),
+                    const TopBar(title: "REACTOR CORE"),
+                    Expanded(
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // UNREFINED ORE display (above reactor)
+                            _buildHolographicContainer(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Text(
+                                    'RAW ORE',
+                                    style: TextStyle(
+                                      color: Color(0xFF00D9FF),
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 2,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Column(
+                                    children: [
+                                      Text(
+                                        '$rawOre',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 40,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 1,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'REFINERY EFFICIENCY: 80%',
+                                        style: const TextStyle(
+                                          color: Color(0xFF00B8D4),
+                                          fontSize: 12,
+                                          letterSpacing: 1,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            // Reactor core with pulse animation and responsive sizing
+                            ScaleTransition(
+                              scale: _pulseAnimation,
+                              child: Builder(
+                                builder: (context) {
+                                  final screenWidth =
+                                      MediaQuery.of(context).size.width;
+                                  final reactorWidth = screenWidth * 0.8;
+
+                                  return Container(
+                                    width: reactorWidth,
+                                    child: ReactorGauge(fillPercent: oreLevel),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 ),
                 // Top label removed
-           
+
                 // Particle effects overlay
                 ..._particles.map((particle) => _buildParticle(particle)),
                 // Critical hit texts
@@ -167,11 +169,9 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
                   bottom: 40,
                   left: 0,
                   right: 0,
-                  child: Center(
-                    child: _buildRefineButton(),
-                  ),
+                  child: Center(child: _buildRefineButton()),
                 ),
-                
+
                 // Chat Overlay
                 const BotChatPanel(),
               ],
@@ -239,21 +239,21 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
   // Refinery Methods
   void _startRefining() {
     if (_refineryTimer != null) return;
-    
+
     // STRICT HOLD: No immediate state change. Timer only.
     _refineryTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
       if (!mounted) {
         timer.cancel();
         return;
       }
-      
+
       // Update UI state on first tick
       if (!_isRefining) {
         setState(() {
           _isRefining = true;
         });
       }
-      
+
       _processRefinementTick();
     });
   }
@@ -261,7 +261,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
   void _stopRefining() {
     _refineryTimer?.cancel();
     _refineryTimer = null;
-    
+
     if (mounted && !_isDisposed) {
       try {
         setState(() {
@@ -278,21 +278,21 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
     if (!mounted) return;
 
     final refineryNotifier = ref.read(refineryProvider.notifier);
-    final refineryState = ref.read(refineryProvider);
-    
+    final refineryState = ref.read(refineryProvider).valueOrNull;
+
     // Stop if no ore left
-    if (refineryState.rawOre <= 0) {
+    if ((refineryState?.rawOre ?? 0) <= 0) {
       _stopRefining();
       return;
     }
-    
+
     // Use the existing processRefinementTick method which consumes 10 ore
     final result = refineryNotifier.processRefinementTick();
-    
+
     if (result.fuelAdded > 0) {
       // Trigger haptic feedback
       HapticFeedback.lightImpact(); // Lighter impact for rapid fire
-      
+
       // Handle critical hit
       if (result.isCritical) {
         if (mounted) {
@@ -300,7 +300,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
             _isCriticalHit = true;
           });
         }
-        
+
         // Flash effect
         Future.delayed(const Duration(milliseconds: 100), () {
           if (mounted) {
@@ -309,15 +309,15 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
             });
           }
         });
-        
+
         // Add critical text
         _addCriticalText();
       }
-      
+
       // Spawn particles
       _spawnParticles(result.isCritical);
     }
-    
+
     // Clean up old particles and texts
     _cleanupParticles();
   }
@@ -327,36 +327,45 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
     final screenSize = MediaQuery.of(context).size;
     // Spawn from Center (Reactor) instead of bottom
     final reactorPosition = Offset(screenSize.width / 2, screenSize.height / 2);
-    
+
     // Spawn cyan/gold particles flowing to the right side tab
-    for (int i = 0; i < 4; i++) { // Increased count slightly
+    for (int i = 0; i < 4; i++) {
+      // Increased count slightly
       // Strong positive X velocity (300 to 600) to ensure they fly off screen
       final velocityX = 300 + math.Random().nextDouble() * 300;
       // Spread vertical velocity (-100 to 100)
       final velocityY = (math.Random().nextDouble() - 0.5) * 200;
 
-      _particles.add(Particle(
-        position: reactorPosition,
-        velocity: Offset(velocityX, velocityY),
-        color: isCritical ? Colors.yellow : Colors.cyan.withOpacity(0.8),
-        size: isCritical ? 12.0 : 8.0 + math.Random().nextDouble() * 8.0, // Bigger size (8-16)
-        lifetime: 2.5, // Increased lifetime to reach edge
-      ));
+      _particles.add(
+        Particle(
+          position: reactorPosition,
+          velocity: Offset(velocityX, velocityY),
+          color: isCritical ? Colors.yellow : Colors.cyan.withOpacity(0.8),
+          size:
+              isCritical
+                  ? 12.0
+                  : 8.0 +
+                      math.Random().nextDouble() * 8.0, // Bigger size (8-16)
+          lifetime: 2.5, // Increased lifetime to reach edge
+        ),
+      );
     }
-    
+
     // Spawn waste smoke particles drifting down/right (only for non-critical)
     if (!isCritical) {
       for (int i = 0; i < 2; i++) {
         final velocityX = 50 + math.Random().nextDouble() * 50;
         final velocityY = 50 + math.Random().nextDouble() * 50;
 
-        _particles.add(Particle(
-          position: reactorPosition,
-          velocity: Offset(velocityX, velocityY),
-          color: Colors.grey.withOpacity(0.4),
-          size: 15.0, // Bigger smoke
-          lifetime: 3.0,
-        ));
+        _particles.add(
+          Particle(
+            position: reactorPosition,
+            velocity: Offset(velocityX, velocityY),
+            color: Colors.grey.withOpacity(0.4),
+            size: 15.0, // Bigger smoke
+            lifetime: 3.0,
+          ),
+        );
       }
     }
   }
@@ -364,24 +373,24 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
   void _addCriticalText() {
     if (!mounted) return;
     final screenSize = MediaQuery.of(context).size;
-    _criticalTexts.add(CriticalText(
-      position: Offset(screenSize.width / 2, screenSize.height / 2),
-      text: '+CRIT',
-    ));
+    _criticalTexts.add(
+      CriticalText(
+        position: Offset(screenSize.width / 2, screenSize.height / 2),
+        text: '+CRIT',
+      ),
+    );
   }
 
   void _cleanupParticles() {
     if (!mounted) return;
     final now = DateTime.now().millisecondsSinceEpoch / 1000.0;
-    
-    _particles.removeWhere((particle) => 
-      now - particle.createdAt > particle.lifetime
+
+    _particles.removeWhere(
+      (particle) => now - particle.createdAt > particle.lifetime,
     );
-    
-    _criticalTexts.removeWhere((text) => 
-      now - text.createdAt > 1.5
-    );
-    
+
+    _criticalTexts.removeWhere((text) => now - text.createdAt > 1.5);
+
     if (_particles.isNotEmpty || _criticalTexts.isNotEmpty) {
       setState(() {});
     }
@@ -413,9 +422,10 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
           child: Text(
             _isRefining ? 'REFINING...' : 'HOLD TO REFINE',
             style: TextStyle(
-              color: _isRefining 
-                ? (_isCriticalHit ? Colors.yellow : Colors.white)
-                : Colors.white,
+              color:
+                  _isRefining
+                      ? (_isCriticalHit ? Colors.yellow : Colors.white)
+                      : Colors.white,
               fontSize: 16,
               fontWeight: FontWeight.bold,
               letterSpacing: 2,
@@ -437,12 +447,12 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
     final now = DateTime.now().millisecondsSinceEpoch / 1000.0;
     final age = now - particle.createdAt;
     final progress = age / particle.lifetime;
-    
+
     final currentPosition = Offset(
       particle.position.dx + particle.velocity.dx * age,
       particle.position.dy + particle.velocity.dy * age,
     );
-    
+
     return Positioned(
       left: currentPosition.dx,
       top: currentPosition.dy,
@@ -456,7 +466,9 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
             decoration: BoxDecoration(
               color: particle.color,
               shape: BoxShape.rectangle, // Flaky look (square)
-              borderRadius: BorderRadius.circular(2), // Slightly rounded corners
+              borderRadius: BorderRadius.circular(
+                2,
+              ), // Slightly rounded corners
               boxShadow: [
                 BoxShadow(
                   color: particle.color,
@@ -475,7 +487,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
     final now = DateTime.now().millisecondsSinceEpoch / 1000.0;
     final age = now - text.createdAt;
     final progress = age / 1.5;
-    
+
     return AnimatedPositioned(
       duration: const Duration(milliseconds: 100),
       left: text.position.dx - 40,
@@ -489,12 +501,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
             fontSize: 24,
             fontWeight: FontWeight.bold,
             letterSpacing: 2,
-            shadows: [
-              Shadow(
-                color: Colors.yellow,
-                blurRadius: 10,
-              ),
-            ],
+            shadows: [Shadow(color: Colors.yellow, blurRadius: 10)],
           ),
         ),
       ),
@@ -518,7 +525,8 @@ class Particle {
     required this.size,
     required this.lifetime,
   }) : createdAt = DateTime.now().millisecondsSinceEpoch / 1000.0,
-       rotation = (math.Random().nextDouble() - 0.5) * 5; // Random rotation speed
+       rotation =
+           (math.Random().nextDouble() - 0.5) * 5; // Random rotation speed
 }
 
 class CriticalText {
@@ -526,8 +534,6 @@ class CriticalText {
   final String text;
   final double createdAt;
 
-  CriticalText({
-    required this.position,
-    required this.text,
-  }) : createdAt = DateTime.now().millisecondsSinceEpoch / 1000.0;
+  CriticalText({required this.position, required this.text})
+    : createdAt = DateTime.now().millisecondsSinceEpoch / 1000.0;
 }

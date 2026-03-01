@@ -22,10 +22,8 @@ class TopBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final winery = ref.watch(refineryProvider);
-    final fuel =
-        winery
-            .refinedFuel; // Assuming this is the "paper money" / fuel equivalent
+    final winery = ref.watch(refineryProvider).valueOrNull;
+    final fuel = winery?.refinedFuel ?? 0.0;
 
     return Container(
       height: 60,
