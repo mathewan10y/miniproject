@@ -10,6 +10,7 @@ import '../income_provider.dart';
 import 'add_expense_sheet.dart';
 import 'add_income_sheet.dart';
 import '../../gamification/presentation/widgets/top_bar.dart';
+import '../../sms_sync/presentation/sms_sync_button.dart';
 
 class LogisticsPage extends ConsumerStatefulWidget {
   const LogisticsPage({super.key});
@@ -53,7 +54,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
           child: Column(
             children: [
               // Header
-              const TopBar(title: 'LOGISTICS BAY'),
+              const TopBar(title: 'LOGISTICS BAY', actions: SmsSyncButton()),
               // Content area - Transaction list or Analytics
               Expanded(
                 child: expensesAsync.when(
