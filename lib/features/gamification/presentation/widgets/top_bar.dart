@@ -8,14 +8,22 @@ class TopBar extends ConsumerWidget {
   final String title;
   final VoidCallback? onVarsityToggle;
 
-  const TopBar({super.key, required this.title, this.onVarsityToggle});
+  /// Optional widget rendered on the right side of the TopBar, before the
+  /// fuel display. Useful for injecting page-specific action buttons without
+  /// modifying the shared TopBar layout.
+  final Widget? actions;
+
+  const TopBar({
+    super.key,
+    required this.title,
+    this.onVarsityToggle,
+    this.actions,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final winery = ref.watch(refineryProvider);
-    final fuel =
-        winery
-            .refinedFuel; // Assuming this is the "paper money" / fuel equivalent
+    final winery = ref.watch(refineryProvider).valueOrNull;
+    final fuel = winery?.refinedFuel ?? 0.0;
 
     return Container(
       height: 60,
@@ -51,9 +59,12 @@ class TopBar extends ConsumerWidget {
             ],
           ),
 
-          // Right Side: Fuel & Bots
+          // Right Side: (optional actions) + Fuel & Bots
           Row(
             children: [
+              // Page-specific action button (e.g. SmsSyncButton on Logistics)
+              if (actions != null) ...[actions!, const SizedBox(width: 8)],
+
               // Fuel Display
               Container(
                 padding: const EdgeInsets.symmetric(

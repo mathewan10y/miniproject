@@ -57,19 +57,25 @@ class _TradingPageState extends ConsumerState<TradingPage>
     setState(() => _isLoading = true);
     try {
       final service = ref.read(marketServiceProvider);
-      final history =
-          await service.getAssetHistory(widget.asset.id, _selectedInterval, '5d');
+      final history = await service.getAssetHistory(
+        widget.asset.id,
+        _selectedInterval,
+        '5d',
+      );
       setState(() {
-        _candles = history
-            .map((h) => CandleData(
-                  timestamp: h.timestamp,
-                  open: h.open,
-                  close: h.close,
-                  high: h.high,
-                  low: h.low,
-                  volume: h.volume,
-                ))
-            .toList();
+        _candles =
+            history
+                .map(
+                  (h) => CandleData(
+                    timestamp: h.timestamp,
+                    open: h.open,
+                    close: h.close,
+                    high: h.high,
+                    low: h.low,
+                    volume: h.volume,
+                  ),
+                )
+                .toList();
         _isLoading = false;
       });
     } catch (e) {
@@ -92,7 +98,8 @@ class _TradingPageState extends ConsumerState<TradingPage>
     final success = statsNotifier.deductFuel(cost);
 
     if (!success) {
-      final balance = ref.read(userStatsProvider).tradingCredits;
+      final balance =
+          ref.read(userStatsProvider).valueOrNull?.tradingCredits ?? 0.0;
       _showSnack(
         'Insufficient FUEL — need ₹${cost.toStringAsFixed(2)}, have ₹${balance.toStringAsFixed(2)}',
         _red,
@@ -100,8 +107,11 @@ class _TradingPageState extends ConsumerState<TradingPage>
       return;
     }
 
-    final balanceAfter = ref.read(userStatsProvider).tradingCredits;
-    ref.read(portfolioProvider.notifier).openPosition(
+    final balanceAfter =
+        ref.read(userStatsProvider).valueOrNull?.tradingCredits ?? 0.0;
+    ref
+        .read(portfolioProvider.notifier)
+        .openPosition(
           OpenPosition(
             assetId: widget.asset.id,
             assetSymbol: widget.asset.symbol,
@@ -133,7 +143,8 @@ class _TradingPageState extends ConsumerState<TradingPage>
     final success = statsNotifier.deductFuel(cost);
 
     if (!success) {
-      final balance = ref.read(userStatsProvider).tradingCredits;
+      final balance =
+          ref.read(userStatsProvider).valueOrNull?.tradingCredits ?? 0.0;
       _showSnack(
         'Insufficient FUEL — need ₹${cost.toStringAsFixed(2)}, have ₹${balance.toStringAsFixed(2)}',
         _red,
@@ -141,8 +152,11 @@ class _TradingPageState extends ConsumerState<TradingPage>
       return;
     }
 
-    final balanceAfter = ref.read(userStatsProvider).tradingCredits;
-    ref.read(portfolioProvider.notifier).openPosition(
+    final balanceAfter =
+        ref.read(userStatsProvider).valueOrNull?.tradingCredits ?? 0.0;
+    ref
+        .read(portfolioProvider.notifier)
+        .openPosition(
           OpenPosition(
             assetId: widget.asset.id,
             assetSymbol: widget.asset.symbol,
@@ -172,9 +186,13 @@ class _TradingPageState extends ConsumerState<TradingPage>
     final pnl = existing.realizedPnl(currentPrice);
     ref.read(userStatsProvider.notifier).addFuel(existing.totalCost + pnl);
 
-    final balanceAfter = ref.read(userStatsProvider).tradingCredits;
-    portfolio.closePosition(positionId, currentPrice,
-        balanceAfter: balanceAfter);
+    final balanceAfter =
+        ref.read(userStatsProvider).valueOrNull?.tradingCredits ?? 0.0;
+    portfolio.closePosition(
+      positionId,
+      currentPrice,
+      balanceAfter: balanceAfter,
+    );
 
     final pnlSign = pnl >= 0 ? '+' : '';
     final pnlColor = pnl >= 0 ? _green : _red;
@@ -188,9 +206,10 @@ class _TradingPageState extends ConsumerState<TradingPage>
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message,
-            style:
-                GoogleFonts.shareTechMono(color: Colors.white, fontSize: 13)),
+        content: Text(
+          message,
+          style: GoogleFonts.shareTechMono(color: Colors.white, fontSize: 13),
+        ),
         backgroundColor: color.withAlpha(220),
         duration: const Duration(seconds: 3),
         behavior: SnackBarBehavior.floating,
@@ -202,13 +221,15 @@ class _TradingPageState extends ConsumerState<TradingPage>
 
   @override
   Widget build(BuildContext context) {
-    final stats = ref.watch(userStatsProvider);
+    final stats = ref.watch(userStatsProvider).valueOrNull;
     final portfolioState = ref.watch(portfolioProvider);
 
     // Compute account stats
-    final balance = stats.tradingCredits;
-    final unrealizedPnl = portfolioState.positions.fold(0.0,
-        (sum, p) => sum + p.unrealizedPnl(widget.asset.currentPrice));
+    final balance = stats?.tradingCredits ?? 0.0;
+    final unrealizedPnl = portfolioState.positions.fold(
+      0.0,
+      (sum, p) => sum + p.unrealizedPnl(widget.asset.currentPrice),
+    );
     final realizedPnl = portfolioState.totalRealizedPnl;
     final equity = balance + unrealizedPnl;
 
@@ -222,11 +243,14 @@ class _TradingPageState extends ConsumerState<TradingPage>
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(widget.asset.symbol,
-                    style: GoogleFonts.inter(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15)),
+                Text(
+                  widget.asset.symbol,
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
+                ),
                 Text(
                   '₹${widget.asset.currentPrice.toStringAsFixed(2)}',
                   style: GoogleFonts.inter(
@@ -248,8 +272,7 @@ class _TradingPageState extends ConsumerState<TradingPage>
               child: Text(
                 '${widget.asset.percentChange24h >= 0 ? "+" : ""}${widget.asset.percentChange24h.toStringAsFixed(2)}%',
                 style: GoogleFonts.inter(
-                  color:
-                      widget.asset.percentChange24h >= 0 ? _green : _red,
+                  color: widget.asset.percentChange24h >= 0 ? _green : _red,
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
                 ),
@@ -263,29 +286,42 @@ class _TradingPageState extends ConsumerState<TradingPage>
         children: [
           // ── Chart fills background ──
           Positioned.fill(
-            child: _isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(
-                        color: _cyan, strokeWidth: 2))
-                : _candles.isEmpty
+            child:
+                _isLoading
+                    ? const Center(
+                      child: CircularProgressIndicator(
+                        color: _cyan,
+                        strokeWidth: 2,
+                      ),
+                    )
+                    : _candles.isEmpty
                     ? Center(
-                        child: Text('No chart data available',
-                            style: GoogleFonts.inter(
-                                color: Colors.white38, fontSize: 14)))
-                    : InteractiveChart(
-                        candles: _candles,
-                        style: ChartStyle(
-                          priceGainColor: _green,
-                          priceLossColor: _red,
-                          volumeColor: Colors.white.withAlpha(25),
-                          priceGridLineColor: Colors.white.withAlpha(8),
-                          timeLabelStyle:
-                              GoogleFonts.inter(color: Colors.white38, fontSize: 10),
-                          priceLabelStyle:
-                              GoogleFonts.inter(color: Colors.white38, fontSize: 10),
-                          overlayBackgroundColor: Colors.black.withAlpha(200),
+                      child: Text(
+                        'No chart data available',
+                        style: GoogleFonts.inter(
+                          color: Colors.white38,
+                          fontSize: 14,
                         ),
                       ),
+                    )
+                    : InteractiveChart(
+                      candles: _candles,
+                      style: ChartStyle(
+                        priceGainColor: _green,
+                        priceLossColor: _red,
+                        volumeColor: Colors.white.withAlpha(25),
+                        priceGridLineColor: Colors.white.withAlpha(8),
+                        timeLabelStyle: GoogleFonts.inter(
+                          color: Colors.white38,
+                          fontSize: 10,
+                        ),
+                        priceLabelStyle: GoogleFonts.inter(
+                          color: Colors.white38,
+                          fontSize: 10,
+                        ),
+                        overlayBackgroundColor: Colors.black.withAlpha(200),
+                      ),
+                    ),
           ),
 
           // ── Trading Terminal (DraggableScrollableSheet) ──
@@ -299,15 +335,18 @@ class _TradingPageState extends ConsumerState<TradingPage>
               return Container(
                 decoration: BoxDecoration(
                   color: _panelBg,
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(12)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(12),
+                  ),
                   border: Border(
-                      top: BorderSide(color: _panelBorder, width: 1)),
+                    top: BorderSide(color: _panelBorder, width: 1),
+                  ),
                   boxShadow: const [
                     BoxShadow(
-                        color: Colors.black54,
-                        blurRadius: 20,
-                        offset: Offset(0, -4)),
+                      color: Colors.black54,
+                      blurRadius: 20,
+                      offset: Offset(0, -4),
+                    ),
                   ],
                 ),
                 child: Column(
@@ -330,7 +369,11 @@ class _TradingPageState extends ConsumerState<TradingPage>
 
                     // ── Order entry + Account summary ──
                     _buildOrderAndAccountRow(
-                        balance, equity, realizedPnl, unrealizedPnl),
+                      balance,
+                      equity,
+                      realizedPnl,
+                      unrealizedPnl,
+                    ),
 
                     Container(height: 1, color: _panelBorder),
 
@@ -343,7 +386,9 @@ class _TradingPageState extends ConsumerState<TradingPage>
                       labelColor: Colors.white,
                       unselectedLabelColor: Colors.white38,
                       labelStyle: GoogleFonts.inter(
-                          fontSize: 12, fontWeight: FontWeight.w500),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
                       unselectedLabelStyle: GoogleFonts.inter(fontSize: 12),
                       tabAlignment: TabAlignment.start,
                       dividerColor: Colors.transparent,
@@ -364,12 +409,18 @@ class _TradingPageState extends ConsumerState<TradingPage>
                         controller: _tabController,
                         children: [
                           _buildPositionsTab(
-                              portfolioState.positions, scrollController),
+                            portfolioState.positions,
+                            scrollController,
+                          ),
                           _buildOrdersTab(scrollController),
                           _buildOrderHistoryTab(
-                              portfolioState.history, scrollController),
+                            portfolioState.history,
+                            scrollController,
+                          ),
                           _buildBalanceHistoryTab(
-                              portfolioState.balanceHistory, scrollController),
+                            portfolioState.balanceHistory,
+                            scrollController,
+                          ),
                           _buildJournalTab(scrollController),
                         ],
                       ),
@@ -387,7 +438,11 @@ class _TradingPageState extends ConsumerState<TradingPage>
   // ─── Order Entry + Account Summary ─────────────────────────────────────────
 
   Widget _buildOrderAndAccountRow(
-      double balance, double equity, double realizedPnl, double unrealizedPnl) {
+    double balance,
+    double equity,
+    double realizedPnl,
+    double unrealizedPnl,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: Column(
@@ -398,37 +453,43 @@ class _TradingPageState extends ConsumerState<TradingPage>
               _accountStat('Account Balance', '₹${balance.toStringAsFixed(2)}'),
               _accountStat('Equity', '₹${equity.toStringAsFixed(2)}'),
               _accountStat(
-                  'Realized P&L',
-                  '${realizedPnl >= 0 ? "+" : ""}₹${realizedPnl.toStringAsFixed(2)}',
-                  realizedPnl >= 0 ? _green : _red),
+                'Realized P&L',
+                '${realizedPnl >= 0 ? "+" : ""}₹${realizedPnl.toStringAsFixed(2)}',
+                realizedPnl >= 0 ? _green : _red,
+              ),
               _accountStat(
-                  'Unrealized P&L',
-                  '${unrealizedPnl >= 0 ? "+" : ""}₹${unrealizedPnl.toStringAsFixed(2)}',
-                  unrealizedPnl >= 0 ? _green : _red),
+                'Unrealized P&L',
+                '${unrealizedPnl >= 0 ? "+" : ""}₹${unrealizedPnl.toStringAsFixed(2)}',
+                unrealizedPnl >= 0 ? _green : _red,
+              ),
             ],
           ),
           const SizedBox(height: 6),
           // Order entry row
           Row(
             children: [
-              Text('QTY',
-                  style: GoogleFonts.inter(color: Colors.white54, fontSize: 10)),
+              Text(
+                'QTY',
+                style: GoogleFonts.inter(color: Colors.white54, fontSize: 10),
+              ),
               const SizedBox(width: 6),
               SizedBox(
                 width: 70,
                 child: TextField(
                   controller: _quantityController,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))
+                    FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
                   ],
-                  style:
-                      GoogleFonts.inter(color: Colors.white, fontSize: 13),
+                  style: GoogleFonts.inter(color: Colors.white, fontSize: 13),
                   decoration: InputDecoration(
                     isDense: true,
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 6,
+                    ),
                     filled: true,
                     fillColor: const Color(0xFF1E222D),
                     border: OutlineInputBorder(
@@ -444,11 +505,14 @@ class _TradingPageState extends ConsumerState<TradingPage>
                       borderSide: const BorderSide(color: _cyan),
                     ),
                     hintText: '0.00',
-                    hintStyle:
-                        GoogleFonts.inter(color: Colors.white24, fontSize: 12),
+                    hintStyle: GoogleFonts.inter(
+                      color: Colors.white24,
+                      fontSize: 12,
+                    ),
                   ),
-                  onChanged: (v) =>
-                      setState(() => _quantity = double.tryParse(v) ?? 0),
+                  onChanged:
+                      (v) =>
+                          setState(() => _quantity = double.tryParse(v) ?? 0),
                 ),
               ),
               const SizedBox(width: 6),
@@ -472,13 +536,18 @@ class _TradingPageState extends ConsumerState<TradingPage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label,
-              style: GoogleFonts.inter(color: Colors.white38, fontSize: 9)),
-          Text(value,
-              style: GoogleFonts.inter(
-                  color: valueColor ?? Colors.white,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500)),
+          Text(
+            label,
+            style: GoogleFonts.inter(color: Colors.white38, fontSize: 9),
+          ),
+          Text(
+            value,
+            style: GoogleFonts.inter(
+              color: valueColor ?? Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ],
       ),
     );
@@ -496,9 +565,10 @@ class _TradingPageState extends ConsumerState<TradingPage>
           padding: const EdgeInsets.symmetric(horizontal: 12),
           elevation: 0,
         ),
-        child: Text(label,
-            style: GoogleFonts.inter(
-                fontWeight: FontWeight.w600, fontSize: 11)),
+        child: Text(
+          label,
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 11),
+        ),
       ),
     );
   }
@@ -506,7 +576,9 @@ class _TradingPageState extends ConsumerState<TradingPage>
   // ─── 1. Positions Tab ─────────────────────────────────────────────────────
 
   Widget _buildPositionsTab(
-      List<OpenPosition> positions, ScrollController scrollController) {
+    List<OpenPosition> positions,
+    ScrollController scrollController,
+  ) {
     if (positions.isEmpty) {
       return Center(
         child: Column(
@@ -514,8 +586,10 @@ class _TradingPageState extends ConsumerState<TradingPage>
           children: [
             Icon(Icons.inbox_outlined, color: Colors.white12, size: 40),
             const SizedBox(height: 8),
-            Text('No open positions',
-                style: GoogleFonts.inter(color: Colors.white24, fontSize: 13)),
+            Text(
+              'No open positions',
+              style: GoogleFonts.inter(color: Colors.white24, fontSize: 13),
+            ),
           ],
         ),
       );
@@ -529,9 +603,10 @@ class _TradingPageState extends ConsumerState<TradingPage>
         if (index == 0) return _positionsHeader();
         final pos = positions[index - 1];
         final pnl = pos.unrealizedPnl(widget.asset.currentPrice);
-        final pnlPct = pos.entryPrice > 0
-            ? (pnl / (pos.entryPrice * pos.quantity)) * 100
-            : 0.0;
+        final pnlPct =
+            pos.entryPrice > 0
+                ? (pnl / (pos.entryPrice * pos.quantity)) * 100
+                : 0.0;
         final pnlColor = pnl >= 0 ? _green : _red;
 
         return Container(
@@ -562,15 +637,22 @@ class _TradingPageState extends ConsumerState<TradingPage>
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(pos.assetSymbol,
-                            style: GoogleFonts.inter(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500)),
-                        Text(pos.assetName,
-                            style: GoogleFonts.inter(
-                                color: Colors.white30, fontSize: 9),
-                            overflow: TextOverflow.ellipsis),
+                        Text(
+                          pos.assetSymbol,
+                          style: GoogleFonts.inter(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Text(
+                          pos.assetName,
+                          style: GoogleFonts.inter(
+                            color: Colors.white30,
+                            fontSize: 9,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ],
                     ),
                   ],
@@ -591,17 +673,17 @@ class _TradingPageState extends ConsumerState<TradingPage>
               // Qty
               Expanded(
                 flex: 1,
-                child: Text(pos.quantity.toStringAsFixed(2),
-                    style: GoogleFonts.inter(
-                        color: Colors.white70, fontSize: 11)),
+                child: Text(
+                  pos.quantity.toStringAsFixed(2),
+                  style: GoogleFonts.inter(color: Colors.white70, fontSize: 11),
+                ),
               ),
               // Avg Fill
               Expanded(
                 flex: 2,
                 child: Text(
                   '₹${pos.entryPrice.toStringAsFixed(2)}',
-                  style: GoogleFonts.inter(
-                      color: Colors.white70, fontSize: 11),
+                  style: GoogleFonts.inter(color: Colors.white70, fontSize: 11),
                 ),
               ),
               // Unrealized P&L
@@ -613,14 +695,14 @@ class _TradingPageState extends ConsumerState<TradingPage>
                     Text(
                       '${pnl >= 0 ? "+" : ""}₹${pnl.toStringAsFixed(2)}',
                       style: GoogleFonts.inter(
-                          color: pnlColor,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600),
+                        color: pnlColor,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     Text(
                       '${pnlPct >= 0 ? "+" : ""}${pnlPct.toStringAsFixed(2)}%',
-                      style: GoogleFonts.inter(
-                          color: pnlColor, fontSize: 9),
+                      style: GoogleFonts.inter(color: pnlColor, fontSize: 9),
                     ),
                   ],
                 ),
@@ -632,18 +714,20 @@ class _TradingPageState extends ConsumerState<TradingPage>
                   onPressed: () => _closePositionById(pos.id),
                   style: TextButton.styleFrom(
                     backgroundColor: _red.withAlpha(20),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10),
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(4),
                       side: BorderSide(color: _red.withAlpha(80)),
                     ),
                   ),
-                  child: Text('Close',
-                      style: GoogleFonts.inter(
-                          color: _red,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500)),
+                  child: Text(
+                    'Close',
+                    style: GoogleFonts.inter(
+                      color: _red,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -679,11 +763,15 @@ class _TradingPageState extends ConsumerState<TradingPage>
         children: [
           Icon(Icons.receipt_long_outlined, color: Colors.white12, size: 40),
           const SizedBox(height: 8),
-          Text('No pending orders',
-              style: GoogleFonts.inter(color: Colors.white24, fontSize: 13)),
+          Text(
+            'No pending orders',
+            style: GoogleFonts.inter(color: Colors.white24, fontSize: 13),
+          ),
           const SizedBox(height: 4),
-          Text('All orders are filled instantly (market orders)',
-              style: GoogleFonts.inter(color: Colors.white12, fontSize: 11)),
+          Text(
+            'All orders are filled instantly (market orders)',
+            style: GoogleFonts.inter(color: Colors.white12, fontSize: 11),
+          ),
         ],
       ),
     );
@@ -692,7 +780,9 @@ class _TradingPageState extends ConsumerState<TradingPage>
   // ─── 3. Order History Tab ─────────────────────────────────────────────────
 
   Widget _buildOrderHistoryTab(
-      List<TradeHistoryItem> historyItems, ScrollController scrollController) {
+    List<TradeHistoryItem> historyItems,
+    ScrollController scrollController,
+  ) {
     if (historyItems.isEmpty) {
       return Center(
         child: Column(
@@ -700,8 +790,10 @@ class _TradingPageState extends ConsumerState<TradingPage>
           children: [
             Icon(Icons.history_outlined, color: Colors.white12, size: 40),
             const SizedBox(height: 8),
-            Text('No closed trades yet',
-                style: GoogleFonts.inter(color: Colors.white24, fontSize: 13)),
+            Text(
+              'No closed trades yet',
+              style: GoogleFonts.inter(color: Colors.white24, fontSize: 13),
+            ),
           ],
         ),
       );
@@ -725,46 +817,55 @@ class _TradingPageState extends ConsumerState<TradingPage>
             children: [
               Expanded(
                 flex: 2,
-                child: Text(item.assetSymbol,
-                    style: GoogleFonts.inter(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500)),
+                child: Text(
+                  item.assetSymbol,
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ),
               Expanded(
                 flex: 1,
                 child: Text(
                   item.isLong ? 'Buy' : 'Sell',
                   style: GoogleFonts.inter(
-                      color: item.isLong ? _green : _red, fontSize: 11),
+                    color: item.isLong ? _green : _red,
+                    fontSize: 11,
+                  ),
                 ),
               ),
               Expanded(
                 flex: 1,
-                child: Text(item.quantity.toStringAsFixed(2),
-                    style: GoogleFonts.inter(
-                        color: Colors.white70, fontSize: 11)),
+                child: Text(
+                  item.quantity.toStringAsFixed(2),
+                  style: GoogleFonts.inter(color: Colors.white70, fontSize: 11),
+                ),
               ),
               Expanded(
                 flex: 2,
-                child: Text('₹${item.entryPrice.toStringAsFixed(2)}',
-                    style: GoogleFonts.inter(
-                        color: Colors.white70, fontSize: 11)),
+                child: Text(
+                  '₹${item.entryPrice.toStringAsFixed(2)}',
+                  style: GoogleFonts.inter(color: Colors.white70, fontSize: 11),
+                ),
               ),
               Expanded(
                 flex: 2,
-                child: Text('₹${item.exitPrice.toStringAsFixed(2)}',
-                    style: GoogleFonts.inter(
-                        color: Colors.white70, fontSize: 11)),
+                child: Text(
+                  '₹${item.exitPrice.toStringAsFixed(2)}',
+                  style: GoogleFonts.inter(color: Colors.white70, fontSize: 11),
+                ),
               ),
               Expanded(
                 flex: 2,
                 child: Text(
                   '${item.realizedPnl >= 0 ? "+" : ""}₹${item.realizedPnl.toStringAsFixed(2)}',
                   style: GoogleFonts.inter(
-                      color: pnlColor,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600),
+                    color: pnlColor,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
@@ -794,17 +895,24 @@ class _TradingPageState extends ConsumerState<TradingPage>
   // ─── 4. Balance History Tab ───────────────────────────────────────────────
 
   Widget _buildBalanceHistoryTab(
-      List<BalanceEvent> events, ScrollController scrollController) {
+    List<BalanceEvent> events,
+    ScrollController scrollController,
+  ) {
     if (events.isEmpty) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.account_balance_wallet_outlined,
-                color: Colors.white12, size: 40),
+            Icon(
+              Icons.account_balance_wallet_outlined,
+              color: Colors.white12,
+              size: 40,
+            ),
             const SizedBox(height: 8),
-            Text('No balance changes yet',
-                style: GoogleFonts.inter(color: Colors.white24, fontSize: 13)),
+            Text(
+              'No balance changes yet',
+              style: GoogleFonts.inter(color: Colors.white24, fontSize: 13),
+            ),
           ],
         ),
       );
@@ -830,16 +938,16 @@ class _TradingPageState extends ConsumerState<TradingPage>
                 flex: 2,
                 child: Text(
                   _formatTime(event.timestamp),
-                  style: GoogleFonts.inter(
-                      color: Colors.white54, fontSize: 11),
+                  style: GoogleFonts.inter(color: Colors.white54, fontSize: 11),
                 ),
               ),
               Expanded(
                 flex: 3,
-                child: Text(event.description,
-                    style: GoogleFonts.inter(
-                        color: Colors.white70, fontSize: 11),
-                    overflow: TextOverflow.ellipsis),
+                child: Text(
+                  event.description,
+                  style: GoogleFonts.inter(color: Colors.white70, fontSize: 11),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
               Expanded(
                 flex: 2,
@@ -856,8 +964,7 @@ class _TradingPageState extends ConsumerState<TradingPage>
                 flex: 2,
                 child: Text(
                   '₹${event.balanceAfter.toStringAsFixed(2)}',
-                  style: GoogleFonts.inter(
-                      color: Colors.white, fontSize: 11),
+                  style: GoogleFonts.inter(color: Colors.white, fontSize: 11),
                 ),
               ),
             ],
@@ -898,9 +1005,10 @@ class _TradingPageState extends ConsumerState<TradingPage>
               Text(
                 'Trade Notes — ${widget.asset.symbol}',
                 style: GoogleFonts.inter(
-                    color: Colors.white38,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500),
+                  color: Colors.white38,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ],
           ),
@@ -912,8 +1020,7 @@ class _TradingPageState extends ConsumerState<TradingPage>
             decoration: InputDecoration(
               hintText:
                   'Why did I enter this trade? What was the thesis?\nRisk:Reward ratio, setup quality, lessons learned...',
-              hintStyle: GoogleFonts.inter(
-                  color: Colors.white12, fontSize: 12),
+              hintStyle: GoogleFonts.inter(color: Colors.white12, fontSize: 12),
               filled: true,
               fillColor: const Color(0xFF1E222D),
               border: OutlineInputBorder(
@@ -940,11 +1047,14 @@ class _TradingPageState extends ConsumerState<TradingPage>
   Widget _headerCell(String text, int flex) {
     return Expanded(
       flex: flex,
-      child: Text(text,
-          style: GoogleFonts.inter(
-              color: Colors.white38,
-              fontSize: 10,
-              fontWeight: FontWeight.w500)),
+      child: Text(
+        text,
+        style: GoogleFonts.inter(
+          color: Colors.white38,
+          fontSize: 10,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
     );
   }
 
@@ -959,36 +1069,35 @@ class _TradingPageState extends ConsumerState<TradingPage>
   Widget _buildIntervalSelector() {
     final intervals = ['1H', '4H', '1D', '1W'];
     return Row(
-      children: intervals.map((interval) {
-        final isSelected = _selectedInterval == interval;
-        return GestureDetector(
-          onTap: () {
-            setState(() => _selectedInterval = interval);
-            _loadHistory();
-          },
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 2),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? _cyan.withAlpha(30)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(4),
-              border: Border.all(
-                color: isSelected ? _cyan : Colors.transparent,
+      children:
+          intervals.map((interval) {
+            final isSelected = _selectedInterval == interval;
+            return GestureDetector(
+              onTap: () {
+                setState(() => _selectedInterval = interval);
+                _loadHistory();
+              },
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: isSelected ? _cyan.withAlpha(30) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(
+                    color: isSelected ? _cyan : Colors.transparent,
+                  ),
+                ),
+                child: Text(
+                  interval,
+                  style: GoogleFonts.inter(
+                    color: isSelected ? _cyan : Colors.white54,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 12,
+                  ),
+                ),
               ),
-            ),
-            child: Text(
-              interval,
-              style: GoogleFonts.inter(
-                color: isSelected ? _cyan : Colors.white54,
-                fontWeight: FontWeight.w500,
-                fontSize: 12,
-              ),
-            ),
-          ),
-        );
-      }).toList(),
+            );
+          }).toList(),
     );
   }
 }

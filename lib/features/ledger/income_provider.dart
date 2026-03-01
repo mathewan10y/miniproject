@@ -4,7 +4,6 @@ import 'package:uuid/uuid.dart';
 import '../../core/database/database.dart';
 import '../../core/providers/refinery_provider.dart';
 
-// The AsyncNotifier for our incomes
 class IncomeNotifier extends AsyncNotifier<List<Income>> {
   late AppDatabase _db;
 
@@ -14,7 +13,8 @@ class IncomeNotifier extends AsyncNotifier<List<Income>> {
     return await _db.getAllIncomes();
   }
 
-  // Add a new income
+  /// Adds an income, persists to Supabase, then prepends directly to state —
+  /// no full re-fetch so the UI responds instantly without a loading spinner.
   Future<void> addIncome(double amount, String category) async {
     final newIncome = Income(
       id: const Uuid().v4(),
@@ -23,34 +23,25 @@ class IncomeNotifier extends AsyncNotifier<List<Income>> {
       timestamp: DateTime.now(),
     );
 
-    // Update the state to loading
-    state = const AsyncValue.loading();
+    // Persist to Supabase first (throws on network error)
+    await _db.addIncome(newIncome);
 
-    state = await AsyncValue.guard(() async {
-      // 1. Save to local DB
-      await _db.addIncome(newIncome);
+    // Process through gamification (convert savings to ore)
+    ref.read(refineryProvider.notifier).processIncome(amount);
 
-      // 2. Process income through RefinerySystem (convert savings to ore)
-      final refineryNotifier = ref.read(refineryProvider.notifier);
-      refineryNotifier.processIncome(amount);
-
-      // 3. Return the updated list of incomes
-      return await _db.getAllIncomes();
-    });
+    // O(1) state update — prepend new item, no round-trip query needed
+    final current = state.valueOrNull ?? [];
+    state = AsyncData([newIncome, ...current]);
   }
 
-  // Delete an income
+  /// Deletes an income from Supabase and removes it from state in-place.
   Future<void> deleteIncome(String id) async {
-    state = const AsyncValue.loading();
-
-    state = await AsyncValue.guard(() async {
-      await _db.deleteIncome(id);
-      return await _db.getAllIncomes();
-    });
+    await _db.deleteIncome(id);
+    final current = state.valueOrNull ?? [];
+    state = AsyncData(current.where((i) => i.id != id).toList());
   }
 }
 
-// The provider for the IncomeNotifier
 final incomeProvider = AsyncNotifierProvider<IncomeNotifier, List<Income>>(() {
   return IncomeNotifier();
 });

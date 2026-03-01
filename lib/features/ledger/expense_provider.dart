@@ -4,7 +4,6 @@ import 'package:uuid/uuid.dart';
 import '../../core/database/database.dart';
 import '../../core/providers/refinery_provider.dart';
 
-// The AsyncNotifier for our expenses
 class ExpenseNotifier extends AsyncNotifier<List<Expense>> {
   late AppDatabase _db;
 
@@ -14,7 +13,8 @@ class ExpenseNotifier extends AsyncNotifier<List<Expense>> {
     return await _db.getAllExpenses();
   }
 
-  // Add a new expense
+  /// Adds an expense, persists to Supabase, then appends directly to state —
+  /// no full re-fetch so the UI responds instantly without a loading spinner.
   Future<void> addExpense(double amount, String category, bool isWant) async {
     final newExpense = Expense(
       id: const Uuid().v4(),
@@ -24,34 +24,27 @@ class ExpenseNotifier extends AsyncNotifier<List<Expense>> {
       timestamp: DateTime.now(),
     );
 
-    // Update the state to loading
-    state = const AsyncValue.loading();
+    // Persist to Supabase first (throws on network error)
+    await _db.addExpense(newExpense);
 
-    state = await AsyncValue.guard(() async {
-      // 1. Save to local DB
-      await _db.addExpense(newExpense);
+    // Process through gamification (deduct from savings)
+    ref.read(refineryProvider.notifier).processExpense(amount);
 
-      // 2. Process expense through RefinerySystem (deduct from savings)
-      final refineryNotifier = ref.read(refineryProvider.notifier);
-      refineryNotifier.processExpense(amount);
-
-      // 3. Return the updated list of expenses
-      return await _db.getAllExpenses();
-    });
+    // O(1) state update — prepend new item, no round-trip query needed
+    final current = state.valueOrNull ?? [];
+    state = AsyncData([newExpense, ...current]);
   }
 
-  // Delete an expense
+  /// Deletes an expense from Supabase and removes it from state in-place.
   Future<void> deleteExpense(String id) async {
-    state = const AsyncValue.loading();
-
-    state = await AsyncValue.guard(() async {
-      await _db.deleteExpense(id);
-      return await _db.getAllExpenses();
-    });
+    await _db.deleteExpense(id);
+    final current = state.valueOrNull ?? [];
+    state = AsyncData(current.where((e) => e.id != id).toList());
   }
 }
 
-// The provider for the ExpenseNotifier
-final expenseProvider = AsyncNotifierProvider<ExpenseNotifier, List<Expense>>(() {
-  return ExpenseNotifier();
-});
+final expenseProvider = AsyncNotifierProvider<ExpenseNotifier, List<Expense>>(
+  () {
+    return ExpenseNotifier();
+  },
+);

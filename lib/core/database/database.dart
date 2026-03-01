@@ -1,167 +1,10 @@
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../../core/models/expense_model.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-class AppDatabase {
-  static const _expensesKey = 'db_expenses';
-  static const _incomesKey = 'db_incomes';
+// ─── Re-export models so existing providers don't need import changes ─────────
+export '../../core/models/expense_model.dart' show ExpenseModel;
+export '../../core/models/income_model.dart' show Income, IncomeModel;
 
-  // In-memory cache populated from SharedPreferences on first use
-  final List<Expense> _expenses = [];
-  final List<Income> _incomes = [];
-  bool _initialized = false;
-
-  // ─── Initialisation ──────────────────────────────────────────────────────
-
-  Future<void> initialize() async {
-    if (_initialized) return;
-    _initialized = true;
-    final prefs = await SharedPreferences.getInstance();
-
-    // Load expenses
-    final expJson = prefs.getString(_expensesKey);
-    if (expJson != null) {
-      try {
-        final list = jsonDecode(expJson) as List<dynamic>;
-        _expenses
-          ..clear()
-          ..addAll(
-            list.map((e) => Expense.fromJson(e as Map<String, dynamic>)),
-          );
-      } catch (_) {
-        _expenses.clear();
-      }
-    }
-
-    // Load incomes
-    final incJson = prefs.getString(_incomesKey);
-    if (incJson != null) {
-      try {
-        final list = jsonDecode(incJson) as List<dynamic>;
-        _incomes
-          ..clear()
-          ..addAll(list.map((i) => Income.fromJson(i as Map<String, dynamic>)));
-      } catch (_) {
-        _incomes.clear();
-      }
-    }
-  }
-
-  // ─── Persistence helpers ──────────────────────────────────────────────────
-
-  Future<void> _saveExpenses() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      _expensesKey,
-      jsonEncode(_expenses.map((e) => e.toJson()).toList()),
-    );
-  }
-
-  Future<void> _saveIncomes() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      _incomesKey,
-      jsonEncode(_incomes.map((i) => i.toJson()).toList()),
-    );
-  }
-
-  // ─── Expense API ─────────────────────────────────────────────────────────
-
-  // Alias for backwards compatibility
-  List<dynamic> get expenses => _expenses;
-
-  Future<void> addExpense(Expense expense) async {
-    await initialize();
-    _expenses.add(expense);
-    await _saveExpenses();
-  }
-
-  Future<List<Expense>> getAllExpenses() async {
-    await initialize();
-    return List.from(_expenses);
-  }
-
-  Future<void> deleteExpense(String id) async {
-    await initialize();
-    _expenses.removeWhere((e) => e.id == id);
-    await _saveExpenses();
-  }
-
-  Future<void> updateExpense(Expense expense) async {
-    await initialize();
-    final index = _expenses.indexWhere((e) => e.id == expense.id);
-    if (index >= 0) {
-      _expenses[index] = expense;
-      await _saveExpenses();
-    }
-  }
-
-  Future<List<Expense>> getExpensesByCategory(String category) async {
-    await initialize();
-    return _expenses.where((e) => e.category == category).toList();
-  }
-
-  Future<List<Expense>> getExpensesByDateRange(
-    DateTime startDate,
-    DateTime endDate,
-  ) async {
-    await initialize();
-    return _expenses
-        .where(
-          (e) =>
-              e.timestamp.isAfter(startDate) && e.timestamp.isBefore(endDate),
-        )
-        .toList();
-  }
-
-  // ─── Income API ───────────────────────────────────────────────────────────
-
-  Future<void> addIncome(Income income) async {
-    await initialize();
-    _incomes.add(income);
-    await _saveIncomes();
-  }
-
-  Future<List<Income>> getAllIncomes() async {
-    await initialize();
-    return List.from(_incomes);
-  }
-
-  Future<void> deleteIncome(String id) async {
-    await initialize();
-    _incomes.removeWhere((i) => i.id == id);
-    await _saveIncomes();
-  }
-
-  Future<void> updateIncome(Income income) async {
-    await initialize();
-    final index = _incomes.indexWhere((i) => i.id == income.id);
-    if (index >= 0) {
-      _incomes[index] = income;
-      await _saveIncomes();
-    }
-  }
-
-  Future<List<Income>> getIncomesByCategory(String category) async {
-    await initialize();
-    return _incomes.where((i) => i.category == category).toList();
-  }
-
-  Future<List<Income>> getIncomesByDateRange(
-    DateTime startDate,
-    DateTime endDate,
-  ) async {
-    await initialize();
-    return _incomes
-        .where(
-          (i) =>
-              i.timestamp.isAfter(startDate) && i.timestamp.isBefore(endDate),
-        )
-        .toList();
-  }
-}
-
-// ─── Models ───────────────────────────────────────────────────────────────────
+// ─── Expense model (used by providers via database.dart import) ───────────────
 
 class Expense {
   final String id;
@@ -180,27 +23,24 @@ class Expense {
     this.isSynced = false,
   });
 
-  // Convert to JSON
   Map<String, dynamic> toJson() => {
     'id': id,
     'amount': amount,
     'category': category,
-    'isWant': isWant,
+    'is_want': isWant, // snake_case for Supabase column names
     'timestamp': timestamp.toIso8601String(),
-    'isSynced': isSynced,
+    'is_synced': isSynced,
   };
 
-  // Create from JSON
   factory Expense.fromJson(Map<String, dynamic> json) => Expense(
     id: json['id'] as String,
     amount: (json['amount'] as num).toDouble(),
     category: json['category'] as String,
-    isWant: json['isWant'] as bool,
+    isWant: json['is_want'] as bool? ?? false,
     timestamp: DateTime.parse(json['timestamp'] as String),
-    isSynced: json['isSynced'] as bool? ?? false,
+    isSynced: json['is_synced'] as bool? ?? false,
   );
 
-  // Copy with method
   Expense copyWith({
     String? id,
     double? amount,
@@ -218,6 +58,8 @@ class Expense {
   );
 }
 
+// ─── Income model ─────────────────────────────────────────────────────────────
+
 class Income {
   final String id;
   final double amount;
@@ -233,25 +75,22 @@ class Income {
     this.isSynced = false,
   });
 
-  // Convert to JSON
   Map<String, dynamic> toJson() => {
     'id': id,
     'amount': amount,
     'category': category,
     'timestamp': timestamp.toIso8601String(),
-    'isSynced': isSynced,
+    'is_synced': isSynced,
   };
 
-  // Create from JSON
   factory Income.fromJson(Map<String, dynamic> json) => Income(
     id: json['id'] as String,
     amount: (json['amount'] as num).toDouble(),
     category: json['category'] as String,
     timestamp: DateTime.parse(json['timestamp'] as String),
-    isSynced: json['isSynced'] as bool? ?? false,
+    isSynced: json['is_synced'] as bool? ?? false,
   );
 
-  // Copy with method
   Income copyWith({
     String? id,
     double? amount,
@@ -265,4 +104,161 @@ class Income {
     timestamp: timestamp ?? this.timestamp,
     isSynced: isSynced ?? this.isSynced,
   );
+}
+
+// ─── AppDatabase — Supabase-backed CRUD ──────────────────────────────────────
+
+class AppDatabase {
+  SupabaseClient get _client => Supabase.instance.client;
+
+  // ── Expense API ─────────────────────────────────────────────────────────────
+
+  Future<void> addExpense(Expense expense) async {
+    try {
+      await _client.from('expenses').insert(expense.toJson());
+    } catch (e) {
+      throw Exception('Failed to add expense: $e');
+    }
+  }
+
+  Future<List<Expense>> getAllExpenses() async {
+    try {
+      final rows = await _client
+          .from('expenses')
+          .select()
+          .order('timestamp', ascending: false);
+      return (rows as List)
+          .map((r) => Expense.fromJson(r as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to load expenses: $e');
+    }
+  }
+
+  Future<void> deleteExpense(String id) async {
+    try {
+      await _client.from('expenses').delete().eq('id', id);
+    } catch (e) {
+      throw Exception('Failed to delete expense: $e');
+    }
+  }
+
+  Future<void> updateExpense(Expense expense) async {
+    try {
+      await _client
+          .from('expenses')
+          .update(expense.toJson())
+          .eq('id', expense.id);
+    } catch (e) {
+      throw Exception('Failed to update expense: $e');
+    }
+  }
+
+  Future<List<Expense>> getExpensesByCategory(String category) async {
+    try {
+      final rows = await _client
+          .from('expenses')
+          .select()
+          .eq('category', category)
+          .order('timestamp', ascending: false);
+      return (rows as List)
+          .map((r) => Expense.fromJson(r as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to get expenses by category: $e');
+    }
+  }
+
+  Future<List<Expense>> getExpensesByDateRange(
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
+    try {
+      final rows = await _client
+          .from('expenses')
+          .select()
+          .gte('timestamp', startDate.toIso8601String())
+          .lte('timestamp', endDate.toIso8601String())
+          .order('timestamp', ascending: false);
+      return (rows as List)
+          .map((r) => Expense.fromJson(r as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to get expenses by date range: $e');
+    }
+  }
+
+  // ── Income API ──────────────────────────────────────────────────────────────
+
+  Future<void> addIncome(Income income) async {
+    try {
+      await _client.from('incomes').insert(income.toJson());
+    } catch (e) {
+      throw Exception('Failed to add income: $e');
+    }
+  }
+
+  Future<List<Income>> getAllIncomes() async {
+    try {
+      final rows = await _client
+          .from('incomes')
+          .select()
+          .order('timestamp', ascending: false);
+      return (rows as List)
+          .map((r) => Income.fromJson(r as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to load incomes: $e');
+    }
+  }
+
+  Future<void> deleteIncome(String id) async {
+    try {
+      await _client.from('incomes').delete().eq('id', id);
+    } catch (e) {
+      throw Exception('Failed to delete income: $e');
+    }
+  }
+
+  Future<void> updateIncome(Income income) async {
+    try {
+      await _client.from('incomes').update(income.toJson()).eq('id', income.id);
+    } catch (e) {
+      throw Exception('Failed to update income: $e');
+    }
+  }
+
+  Future<List<Income>> getIncomesByCategory(String category) async {
+    try {
+      final rows = await _client
+          .from('incomes')
+          .select()
+          .eq('category', category)
+          .order('timestamp', ascending: false);
+      return (rows as List)
+          .map((r) => Income.fromJson(r as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to get incomes by category: $e');
+    }
+  }
+
+  Future<List<Income>> getIncomesByDateRange(
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
+    try {
+      final rows = await _client
+          .from('incomes')
+          .select()
+          .gte('timestamp', startDate.toIso8601String())
+          .lte('timestamp', endDate.toIso8601String())
+          .order('timestamp', ascending: false);
+      return (rows as List)
+          .map((r) => Income.fromJson(r as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to get incomes by date range: $e');
+    }
+  }
 }
