@@ -9,11 +9,33 @@ final marketServiceProvider = Provider<MarketRepository>((ref) {
   return MixedMarketService();
 });
 
-// FutureProvider for fetching assets
+// FutureProvider for fetching assets (initial load)
 final marketAssetsProvider = FutureProvider<List<MarketAsset>>((ref) async {
   final service = ref.watch(marketServiceProvider);
   return service.fetchAssets();
 });
+
+// StreamProvider that polls the real APIs every 30 seconds for live prices.
+// The initial fetch happens immediately, then again every 30 seconds.
+// This powers real-time price updates and SL/TP auto-trigger logic.
+final liveMarketAssetsProvider = StreamProvider<List<MarketAsset>>((ref) async* {
+  final service = ref.read(marketServiceProvider);
+
+  // Fetch immediately on first listen
+  try {
+    yield await service.fetchAssets();
+  } catch (_) {}
+
+  // Then refetch every 30 seconds
+  await for (final _ in Stream.periodic(const Duration(seconds: 30))) {
+    try {
+      yield await service.fetchAssets();
+    } catch (_) {
+      // On failure, keep last known value — don't yield anything
+    }
+  }
+});
+
 
 abstract class MarketRepository {
   Future<List<MarketAsset>> fetchAssets();

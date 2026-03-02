@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -28,6 +28,10 @@ class _TradingPageState extends ConsumerState<TradingPage>
   final _quantityController = TextEditingController(text: '1');
   double _quantity = 1.0;
 
+  // Stop Loss / Take Profit
+  final _slController = TextEditingController();
+  final _tpController = TextEditingController();
+
   late final TabController _tabController;
   final _journalController = TextEditingController();
 
@@ -48,6 +52,8 @@ class _TradingPageState extends ConsumerState<TradingPage>
   @override
   void dispose() {
     _quantityController.dispose();
+    _slController.dispose();
+    _tpController.dispose();
     _tabController.dispose();
     _journalController.dispose();
     super.dispose();
@@ -83,7 +89,7 @@ class _TradingPageState extends ConsumerState<TradingPage>
     }
   }
 
-  // ─── Order Execution ──────────────────────────────────────────────────────
+  // â”€â”€â”€ Order Execution â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   void _onBuy() {
     final qty = double.tryParse(_quantityController.text.trim()) ?? 0;
@@ -91,7 +97,12 @@ class _TradingPageState extends ConsumerState<TradingPage>
       _showSnack('Enter a valid quantity', Colors.orange);
       return;
     }
-    final price = widget.asset.currentPrice;
+    final latestAssets = ref.read(liveMarketAssetsProvider).valueOrNull ?? [];
+    final currentAsset = latestAssets.firstWhere(
+      (a) => a.id == widget.asset.id, 
+      orElse: () => widget.asset
+    );
+    final price = currentAsset.currentPrice;
     final cost = price * qty;
 
     final statsNotifier = ref.read(userStatsProvider.notifier);
@@ -101,7 +112,7 @@ class _TradingPageState extends ConsumerState<TradingPage>
       final balance =
           ref.read(userStatsProvider).valueOrNull?.tradingCredits ?? 0.0;
       _showSnack(
-        'Insufficient FUEL — need ₹${cost.toStringAsFixed(2)}, have ₹${balance.toStringAsFixed(2)}',
+        'Insufficient FUEL â€” need â‚¹${cost.toStringAsFixed(2)}, have â‚¹${balance.toStringAsFixed(2)}',
         _red,
       );
       return;
@@ -109,6 +120,9 @@ class _TradingPageState extends ConsumerState<TradingPage>
 
     final balanceAfter =
         ref.read(userStatsProvider).valueOrNull?.tradingCredits ?? 0.0;
+    final sl = double.tryParse(_slController.text.trim());
+    final tp = double.tryParse(_tpController.text.trim());
+
     ref
         .read(portfolioProvider.notifier)
         .openPosition(
@@ -120,12 +134,14 @@ class _TradingPageState extends ConsumerState<TradingPage>
             quantity: qty,
             isLong: true,
             openedAt: DateTime.now(),
+            stopLoss: sl,
+            takeProfit: tp,
           ),
           balanceAfter: balanceAfter,
         );
 
     _showSnack(
-      'LONG ${qty.toStringAsFixed(2)} ${widget.asset.symbol} @ ₹${price.toStringAsFixed(2)}',
+      'LONG ${qty.toStringAsFixed(2)} ${widget.asset.symbol} @ â‚¹${price.toStringAsFixed(2)}',
       _green,
     );
   }
@@ -136,7 +152,12 @@ class _TradingPageState extends ConsumerState<TradingPage>
       _showSnack('Enter a valid quantity', Colors.orange);
       return;
     }
-    final price = widget.asset.currentPrice;
+    final latestAssets = ref.read(liveMarketAssetsProvider).valueOrNull ?? [];
+    final currentAsset = latestAssets.firstWhere(
+      (a) => a.id == widget.asset.id, 
+      orElse: () => widget.asset
+    );
+    final price = currentAsset.currentPrice;
     final cost = price * qty;
 
     final statsNotifier = ref.read(userStatsProvider.notifier);
@@ -146,7 +167,7 @@ class _TradingPageState extends ConsumerState<TradingPage>
       final balance =
           ref.read(userStatsProvider).valueOrNull?.tradingCredits ?? 0.0;
       _showSnack(
-        'Insufficient FUEL — need ₹${cost.toStringAsFixed(2)}, have ₹${balance.toStringAsFixed(2)}',
+        'Insufficient FUEL â€” need â‚¹${cost.toStringAsFixed(2)}, have â‚¹${balance.toStringAsFixed(2)}',
         _red,
       );
       return;
@@ -154,6 +175,9 @@ class _TradingPageState extends ConsumerState<TradingPage>
 
     final balanceAfter =
         ref.read(userStatsProvider).valueOrNull?.tradingCredits ?? 0.0;
+    final sl = double.tryParse(_slController.text.trim());
+    final tp = double.tryParse(_tpController.text.trim());
+
     ref
         .read(portfolioProvider.notifier)
         .openPosition(
@@ -165,23 +189,30 @@ class _TradingPageState extends ConsumerState<TradingPage>
             quantity: qty,
             isLong: false,
             openedAt: DateTime.now(),
+            stopLoss: sl,
+            takeProfit: tp,
           ),
           balanceAfter: balanceAfter,
         );
 
     _showSnack(
-      'SHORT ${qty.toStringAsFixed(2)} ${widget.asset.symbol} @ ₹${price.toStringAsFixed(2)}',
+      'SHORT ${qty.toStringAsFixed(2)} ${widget.asset.symbol} @ â‚¹${price.toStringAsFixed(2)}',
       _red,
     );
   }
 
-  /// Close a specific position by its unique ID.
   void _closePositionById(String positionId) {
     final portfolio = ref.read(portfolioProvider.notifier);
     final existing = portfolio.getPositionById(positionId);
     if (existing == null) return;
 
-    final currentPrice = widget.asset.currentPrice;
+    final latestAssets = ref.read(liveMarketAssetsProvider).valueOrNull ?? [];
+    final currentAsset = latestAssets.firstWhere(
+      (a) => a.id == widget.asset.id, 
+      orElse: () => widget.asset
+    );
+    final currentPrice = currentAsset.currentPrice;
+    
     // Return capital + P&L first
     final pnl = existing.realizedPnl(currentPrice);
     ref.read(userStatsProvider.notifier).addFuel(existing.totalCost + pnl);
@@ -197,7 +228,7 @@ class _TradingPageState extends ConsumerState<TradingPage>
     final pnlSign = pnl >= 0 ? '+' : '';
     final pnlColor = pnl >= 0 ? _green : _red;
     _showSnack(
-      'Closed ${existing.assetSymbol} — P&L: $pnlSign₹${pnl.toStringAsFixed(2)}',
+      'Closed ${existing.assetSymbol} â€” P&L: $pnlSignâ‚¹${pnl.toStringAsFixed(2)}',
       pnlColor,
     );
   }
@@ -217,10 +248,22 @@ class _TradingPageState extends ConsumerState<TradingPage>
     );
   }
 
-  // ─── Build ─────────────────────────────────────────────────────────────────
+  // â”€â”€â”€ Build â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   @override
   Widget build(BuildContext context) {
+    // 1. THIS IS CRUCIAL: Keep your SL/TP automated watcher alive while on this page!
+    ref.watch(autoTradeWatcherProvider);
+
+    // 2. Watch the live stream of assets
+    final liveAssetsAsync = ref.watch(liveMarketAssetsProvider);
+    
+    // 3. Find the live version of the asset you are looking at.
+    final liveAsset = liveAssetsAsync.valueOrNull?.firstWhere(
+      (a) => a.id == widget.asset.id,
+      orElse: () => widget.asset,
+    ) ?? widget.asset;
+
     final stats = ref.watch(userStatsProvider).valueOrNull;
     final portfolioState = ref.watch(portfolioProvider);
 
@@ -228,7 +271,7 @@ class _TradingPageState extends ConsumerState<TradingPage>
     final balance = stats?.tradingCredits ?? 0.0;
     final unrealizedPnl = portfolioState.positions.fold(
       0.0,
-      (sum, p) => sum + p.unrealizedPnl(widget.asset.currentPrice),
+      (sum, p) => sum + p.unrealizedPnl(liveAsset.currentPrice),
     );
     final realizedPnl = portfolioState.totalRealizedPnl;
     final equity = balance + unrealizedPnl;
@@ -252,9 +295,9 @@ class _TradingPageState extends ConsumerState<TradingPage>
                   ),
                 ),
                 Text(
-                  '₹${widget.asset.currentPrice.toStringAsFixed(2)}',
+                  'â‚¹${liveAsset.currentPrice.toStringAsFixed(2)}',
                   style: GoogleFonts.inter(
-                    color: widget.asset.percentChange24h >= 0 ? _green : _red,
+                    color: liveAsset.percentChange24h >= 0 ? _green : _red,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -265,14 +308,14 @@ class _TradingPageState extends ConsumerState<TradingPage>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: (widget.asset.percentChange24h >= 0 ? _green : _red)
+                color: (liveAsset.percentChange24h >= 0 ? _green : _red)
                     .withAlpha(30),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
-                '${widget.asset.percentChange24h >= 0 ? "+" : ""}${widget.asset.percentChange24h.toStringAsFixed(2)}%',
+                '${liveAsset.percentChange24h >= 0 ? "+" : ""}${liveAsset.percentChange24h.toStringAsFixed(2)}%',
                 style: GoogleFonts.inter(
-                  color: widget.asset.percentChange24h >= 0 ? _green : _red,
+                  color: liveAsset.percentChange24h >= 0 ? _green : _red,
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
                 ),
@@ -284,7 +327,7 @@ class _TradingPageState extends ConsumerState<TradingPage>
       ),
       body: Stack(
         children: [
-          // ── Chart fills background ──
+          // â”€â”€ Chart fills background â”€â”€
           Positioned.fill(
             child:
                 _isLoading
@@ -324,7 +367,7 @@ class _TradingPageState extends ConsumerState<TradingPage>
                     ),
           ),
 
-          // ── Trading Terminal (DraggableScrollableSheet) ──
+          // â”€â”€ Trading Terminal (DraggableScrollableSheet) â”€â”€
           DraggableScrollableSheet(
             initialChildSize: 0.38,
             minChildSize: 0.08,
@@ -351,7 +394,7 @@ class _TradingPageState extends ConsumerState<TradingPage>
                 ),
                 child: Column(
                   children: [
-                    // ── Drag handle ──
+                    // â”€â”€ Drag handle â”€â”€
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -367,17 +410,18 @@ class _TradingPageState extends ConsumerState<TradingPage>
                       ),
                     ),
 
-                    // ── Order entry + Account summary ──
+                    // â”€â”€ Order entry + Account summary â”€â”€
                     _buildOrderAndAccountRow(
                       balance,
                       equity,
                       realizedPnl,
                       unrealizedPnl,
+                      liveAsset.currentPrice,
                     ),
 
                     Container(height: 1, color: _panelBorder),
 
-                    // ── TabBar ──
+                    // â”€â”€ TabBar â”€â”€
                     TabBar(
                       controller: _tabController,
                       isScrollable: true,
@@ -403,7 +447,7 @@ class _TradingPageState extends ConsumerState<TradingPage>
 
                     Container(height: 1, color: _panelBorder),
 
-                    // ── TabBarView ──
+                    // â”€â”€ TabBarView â”€â”€
                     Expanded(
                       child: TabBarView(
                         controller: _tabController,
@@ -411,6 +455,7 @@ class _TradingPageState extends ConsumerState<TradingPage>
                           _buildPositionsTab(
                             portfolioState.positions,
                             scrollController,
+                            liveAsset.currentPrice,
                           ),
                           _buildOrdersTab(scrollController),
                           _buildOrderHistoryTab(
@@ -435,13 +480,14 @@ class _TradingPageState extends ConsumerState<TradingPage>
     );
   }
 
-  // ─── Order Entry + Account Summary ─────────────────────────────────────────
+  // â”€â”€â”€ Order Entry + Account Summary â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _buildOrderAndAccountRow(
     double balance,
     double equity,
     double realizedPnl,
     double unrealizedPnl,
+    double currentPrice,
   ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -450,22 +496,22 @@ class _TradingPageState extends ConsumerState<TradingPage>
           // Account summary bar
           Row(
             children: [
-              _accountStat('Account Balance', '₹${balance.toStringAsFixed(2)}'),
-              _accountStat('Equity', '₹${equity.toStringAsFixed(2)}'),
+              _accountStat('Account Balance', 'â‚¹${balance.toStringAsFixed(2)}'),
+              _accountStat('Equity', 'â‚¹${equity.toStringAsFixed(2)}'),
               _accountStat(
                 'Realized P&L',
-                '${realizedPnl >= 0 ? "+" : ""}₹${realizedPnl.toStringAsFixed(2)}',
+                '${realizedPnl >= 0 ? "+" : ""}â‚¹${realizedPnl.toStringAsFixed(2)}',
                 realizedPnl >= 0 ? _green : _red,
               ),
               _accountStat(
                 'Unrealized P&L',
-                '${unrealizedPnl >= 0 ? "+" : ""}₹${unrealizedPnl.toStringAsFixed(2)}',
+                '${unrealizedPnl >= 0 ? "+" : ""}â‚¹${unrealizedPnl.toStringAsFixed(2)}',
                 unrealizedPnl >= 0 ? _green : _red,
               ),
             ],
           ),
           const SizedBox(height: 6),
-          // Order entry row
+          // â”€â”€ Order entry row â”€â”€
           Row(
             children: [
               Text(
@@ -477,19 +523,14 @@ class _TradingPageState extends ConsumerState<TradingPage>
                 width: 70,
                 child: TextField(
                   controller: _quantityController,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   inputFormatters: [
                     FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
                   ],
                   style: GoogleFonts.inter(color: Colors.white, fontSize: 13),
                   decoration: InputDecoration(
                     isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 6,
-                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                     filled: true,
                     fillColor: const Color(0xFF1E222D),
                     border: OutlineInputBorder(
@@ -505,25 +546,94 @@ class _TradingPageState extends ConsumerState<TradingPage>
                       borderSide: const BorderSide(color: _cyan),
                     ),
                     hintText: '0.00',
-                    hintStyle: GoogleFonts.inter(
-                      color: Colors.white24,
-                      fontSize: 12,
-                    ),
+                    hintStyle: GoogleFonts.inter(color: Colors.white24, fontSize: 12),
                   ),
-                  onChanged:
-                      (v) =>
-                          setState(() => _quantity = double.tryParse(v) ?? 0),
+                  onChanged: (v) => setState(() => _quantity = double.tryParse(v) ?? 0),
                 ),
               ),
               const SizedBox(width: 6),
               Text(
-                '≈₹${(widget.asset.currentPrice * _quantity).toStringAsFixed(0)}',
+                'â‰ˆâ‚¹${(currentPrice * _quantity).toStringAsFixed(0)}',
                 style: GoogleFonts.inter(color: Colors.white30, fontSize: 10),
               ),
               const Spacer(),
               _orderButton('BUY / LONG', _green, _onBuy),
               const SizedBox(width: 6),
               _orderButton('SELL / SHORT', _red, _onSell),
+            ],
+          ),
+          const SizedBox(height: 5),
+          // â”€â”€ Stop Loss / Take Profit row â”€â”€
+          Row(
+            children: [
+              Text('SL', style: GoogleFonts.inter(color: _red, fontSize: 10, fontWeight: FontWeight.w600)),
+              const SizedBox(width: 5),
+              SizedBox(
+                width: 90,
+                child: TextField(
+                  controller: _slController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
+                  style: GoogleFonts.inter(color: Colors.white, fontSize: 11),
+                  decoration: InputDecoration(
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                    filled: true,
+                    fillColor: _red.withAlpha(15),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(4),
+                      borderSide: BorderSide(color: _red.withAlpha(80)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(4),
+                      borderSide: BorderSide(color: _red.withAlpha(80)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(4),
+                      borderSide: BorderSide(color: _red),
+                    ),
+                    hintText: 'Stop Loss â‚¹',
+                    hintStyle: GoogleFonts.inter(color: Colors.white24, fontSize: 10),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text('TP', style: GoogleFonts.inter(color: _green, fontSize: 10, fontWeight: FontWeight.w600)),
+              const SizedBox(width: 5),
+              SizedBox(
+                width: 90,
+                child: TextField(
+                  controller: _tpController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
+                  style: GoogleFonts.inter(color: Colors.white, fontSize: 11),
+                  decoration: InputDecoration(
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                    filled: true,
+                    fillColor: _green.withAlpha(15),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(4),
+                      borderSide: BorderSide(color: _green.withAlpha(80)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(4),
+                      borderSide: BorderSide(color: _green.withAlpha(80)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(4),
+                      borderSide: BorderSide(color: _green),
+                    ),
+                    hintText: 'Take Profit â‚¹',
+                    hintStyle: GoogleFonts.inter(color: Colors.white24, fontSize: 10),
+                  ),
+                ),
+              ),
+              const Spacer(),
+              Text(
+                'auto-closes on trigger',
+                style: GoogleFonts.inter(color: Colors.white24, fontSize: 9),
+              ),
             ],
           ),
         ],
@@ -573,11 +683,12 @@ class _TradingPageState extends ConsumerState<TradingPage>
     );
   }
 
-  // ─── 1. Positions Tab ─────────────────────────────────────────────────────
+  // â”€â”€â”€ 1. Positions Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _buildPositionsTab(
     List<OpenPosition> positions,
     ScrollController scrollController,
+    double currentPrice,
   ) {
     if (positions.isEmpty) {
       return Center(
@@ -602,7 +713,7 @@ class _TradingPageState extends ConsumerState<TradingPage>
       itemBuilder: (context, index) {
         if (index == 0) return _positionsHeader();
         final pos = positions[index - 1];
-        final pnl = pos.unrealizedPnl(widget.asset.currentPrice);
+        final pnl = pos.unrealizedPnl(currentPrice);
         final pnlPct =
             pos.entryPrice > 0
                 ? (pnl / (pos.entryPrice * pos.quantity)) * 100
@@ -682,7 +793,7 @@ class _TradingPageState extends ConsumerState<TradingPage>
               Expanded(
                 flex: 2,
                 child: Text(
-                  '₹${pos.entryPrice.toStringAsFixed(2)}',
+                  'â‚¹${pos.entryPrice.toStringAsFixed(2)}',
                   style: GoogleFonts.inter(color: Colors.white70, fontSize: 11),
                 ),
               ),
@@ -693,7 +804,7 @@ class _TradingPageState extends ConsumerState<TradingPage>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${pnl >= 0 ? "+" : ""}₹${pnl.toStringAsFixed(2)}',
+                      '${pnl >= 0 ? "+" : ""}â‚¹${pnl.toStringAsFixed(2)}',
                       style: GoogleFonts.inter(
                         color: pnlColor,
                         fontSize: 11,
@@ -754,7 +865,7 @@ class _TradingPageState extends ConsumerState<TradingPage>
     );
   }
 
-  // ─── 2. Orders Tab (placeholder) ──────────────────────────────────────────
+  // â”€â”€â”€ 2. Orders Tab (placeholder) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _buildOrdersTab(ScrollController scrollController) {
     return Center(
@@ -777,7 +888,7 @@ class _TradingPageState extends ConsumerState<TradingPage>
     );
   }
 
-  // ─── 3. Order History Tab ─────────────────────────────────────────────────
+  // â”€â”€â”€ 3. Order History Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _buildOrderHistoryTab(
     List<TradeHistoryItem> historyItems,
@@ -846,21 +957,21 @@ class _TradingPageState extends ConsumerState<TradingPage>
               Expanded(
                 flex: 2,
                 child: Text(
-                  '₹${item.entryPrice.toStringAsFixed(2)}',
+                  'â‚¹${item.entryPrice.toStringAsFixed(2)}',
                   style: GoogleFonts.inter(color: Colors.white70, fontSize: 11),
                 ),
               ),
               Expanded(
                 flex: 2,
                 child: Text(
-                  '₹${item.exitPrice.toStringAsFixed(2)}',
+                  'â‚¹${item.exitPrice.toStringAsFixed(2)}',
                   style: GoogleFonts.inter(color: Colors.white70, fontSize: 11),
                 ),
               ),
               Expanded(
                 flex: 2,
                 child: Text(
-                  '${item.realizedPnl >= 0 ? "+" : ""}₹${item.realizedPnl.toStringAsFixed(2)}',
+                  '${item.realizedPnl >= 0 ? "+" : ""}â‚¹${item.realizedPnl.toStringAsFixed(2)}',
                   style: GoogleFonts.inter(
                     color: pnlColor,
                     fontSize: 11,
@@ -892,7 +1003,7 @@ class _TradingPageState extends ConsumerState<TradingPage>
     );
   }
 
-  // ─── 4. Balance History Tab ───────────────────────────────────────────────
+  // â”€â”€â”€ 4. Balance History Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _buildBalanceHistoryTab(
     List<BalanceEvent> events,
@@ -952,7 +1063,7 @@ class _TradingPageState extends ConsumerState<TradingPage>
               Expanded(
                 flex: 2,
                 child: Text(
-                  '${isPositive ? "+" : ""}₹${event.delta.toStringAsFixed(2)}',
+                  '${isPositive ? "+" : ""}â‚¹${event.delta.toStringAsFixed(2)}',
                   style: GoogleFonts.inter(
                     color: isPositive ? _green : _red,
                     fontSize: 11,
@@ -963,7 +1074,7 @@ class _TradingPageState extends ConsumerState<TradingPage>
               Expanded(
                 flex: 2,
                 child: Text(
-                  '₹${event.balanceAfter.toStringAsFixed(2)}',
+                  'â‚¹${event.balanceAfter.toStringAsFixed(2)}',
                   style: GoogleFonts.inter(color: Colors.white, fontSize: 11),
                 ),
               ),
@@ -989,7 +1100,7 @@ class _TradingPageState extends ConsumerState<TradingPage>
     );
   }
 
-  // ─── 5. Trading Journal Tab ───────────────────────────────────────────────
+  // â”€â”€â”€ 5. Trading Journal Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _buildJournalTab(ScrollController scrollController) {
     return SingleChildScrollView(
@@ -1003,7 +1114,7 @@ class _TradingPageState extends ConsumerState<TradingPage>
               Icon(Icons.edit_note, color: Colors.white38, size: 18),
               const SizedBox(width: 6),
               Text(
-                'Trade Notes — ${widget.asset.symbol}',
+                'Trade Notes â€” ${widget.asset.symbol}',
                 style: GoogleFonts.inter(
                   color: Colors.white38,
                   fontSize: 12,
@@ -1042,7 +1153,7 @@ class _TradingPageState extends ConsumerState<TradingPage>
     );
   }
 
-  // ─── Shared Helpers ───────────────────────────────────────────────────────
+  // â”€â”€â”€ Shared Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _headerCell(String text, int flex) {
     return Expanded(

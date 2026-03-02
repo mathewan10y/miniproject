@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/models/open_position.dart';
 import '../domain/models/trade_history_item.dart';
+import 'market_service.dart';
+import '../../gamification/user_stats_provider.dart';
 
 /// Holds active positions, closed-trade history, and balance events.
 class PortfolioState {
@@ -119,3 +121,60 @@ final portfolioProvider =
     NotifierProvider<PortfolioNotifier, PortfolioState>(() {
   return PortfolioNotifier();
 });
+
+/// Watches live prices via [liveMarketAssetsProvider] and auto-closes any
+/// position whose [stopLoss] or [takeProfit] price level has been breached.
+///
+/// Use [ref.watch(autoTradeWatcherProvider)] inside any widget's build method
+/// to keep this listener alive and active.
+final autoTradeWatcherProvider = Provider<void>((ref) {
+  // ref.listen is safe here — it defers mutations to after the current build.
+  ref.listen<AsyncValue<List<dynamic>>>(
+    liveMarketAssetsProvider,
+    (_, next) {
+      final liveAssets = next.valueOrNull;
+      if (liveAssets == null) return;
+
+      final portfolioNotifier = ref.read(portfolioProvider.notifier);
+      final positions = ref.read(portfolioProvider).positions;
+
+      for (final position in positions) {
+        try {
+          final asset = liveAssets.firstWhere((a) => a.id == position.assetId);
+          final currentPrice = (asset.currentPrice as double);
+
+          bool shouldClose = false;
+          if (position.isLong) {
+            if (position.stopLoss != null && currentPrice <= position.stopLoss!) {
+              shouldClose = true;
+            }
+            if (position.takeProfit != null && currentPrice >= position.takeProfit!) {
+              shouldClose = true;
+            }
+          } else {
+            if (position.stopLoss != null && currentPrice >= position.stopLoss!) {
+              shouldClose = true;
+            }
+            if (position.takeProfit != null && currentPrice <= position.takeProfit!) {
+              shouldClose = true;
+            }
+          }
+
+          if (shouldClose && portfolioNotifier.getPositionById(position.id) != null) {
+            final pnl = position.realizedPnl(currentPrice);
+            ref.read(userStatsProvider.notifier).addFuel(position.totalCost + pnl);
+            final stats = ref.read(userStatsProvider).valueOrNull;
+            portfolioNotifier.closePosition(
+              position.id,
+              currentPrice,
+              balanceAfter: stats?.tradingCredits ?? 0.0,
+            );
+          }
+        } catch (_) {
+          // Position asset not in the live list — skip
+        }
+      }
+    },
+  );
+});
+
