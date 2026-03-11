@@ -90,12 +90,12 @@ class MixedMarketService implements MarketRepository {
 
   // CoinGecko API for Crypto
   final String _cryptoApiUrl =
-      'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin,ethereum,dogecoin&order=market_cap_desc&per_page=10&page=1&sparkline=false';
+      'https://corsproxy.io/?https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin,ethereum,dogecoin&order=market_cap_desc&per_page=10&page=1&sparkline=false';
 
   // Yahoo Finance API - single batch call for Stocks, Indices, Commodities, Forex
   // %5E = ^ (index prefix), %3D = = (futures suffix)
   final String _yahooApiUrl =
-      'https://query1.finance.yahoo.com/v7/finance/quote?symbols=AAPL,RELIANCE.NS,%5EGSPC,%5EIXIC,GC%3DF,CL%3DF,INR%3DX';
+      'https://corsproxy.io/?https://query1.finance.yahoo.com/v7/finance/quote?symbols=AAPL,RELIANCE.NS,%5EGSPC,%5EIXIC,GC%3DF,CL%3DF,INR%3DX';
 
   // ─── Asset ID → Yahoo symbol mapping for chart history ───
   static const Map<String, String> _yahooChartSymbols = {
@@ -248,7 +248,7 @@ class MixedMarketService implements MarketRepository {
       String assetId, String yahooSymbol, String yahooInterval, String yahooRange) async {
 
     final url =
-        'https://query1.finance.yahoo.com/v8/finance/chart/$yahooSymbol'
+        'https://corsproxy.io/?https://query1.finance.yahoo.com/v8/finance/chart/$yahooSymbol'
         '?interval=$yahooInterval&range=$yahooRange';
 
     final response = await _client.get(

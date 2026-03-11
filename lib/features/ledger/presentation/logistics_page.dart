@@ -11,6 +11,7 @@ import 'add_expense_sheet.dart';
 import 'add_income_sheet.dart';
 import '../../gamification/presentation/widgets/top_bar.dart';
 import '../../sms_sync/presentation/sms_sync_button.dart';
+import '../../gamification/services/tutorial_keys.dart';
 
 class LogisticsPage extends ConsumerStatefulWidget {
   const LogisticsPage({super.key});
@@ -1200,21 +1201,27 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildResponsiveActionButton(
-              onPressed: () => _openAddIncomeSheet(context),
-              icon: Icons.download,
-              label: 'INCOME',
-              color: Colors.cyan,
-              compact: true,
+            Container(
+              key: isMobile ? TutorialKeys.addIncomeBtnKey : ValueKey('mobile_income'),
+              child: _buildResponsiveActionButton(
+                onPressed: () => _openAddIncomeSheet(context),
+                icon: Icons.download,
+                label: 'INCOME',
+                color: Colors.cyan,
+                compact: true,
+              ),
             ),
             SizedBox(height: spacing),
-            _buildResponsiveActionButton(
-              onPressed: () => _openAddExpenseSheet(context),
-              icon: Icons.upload,
-              label: 'EXPENSE',
-              color: Colors.orange,
-              showGlow: false,
-              compact: true,
+            Container(
+              key: isMobile ? TutorialKeys.addExpenseBtnKey : ValueKey('mobile_expense'),
+              child: _buildResponsiveActionButton(
+                onPressed: () => _openAddExpenseSheet(context),
+                icon: Icons.upload,
+                label: 'EXPENSE',
+                color: Colors.orange,
+                showGlow: false,
+                compact: true,
+              ),
             ),
           ],
         ),
@@ -1227,23 +1234,29 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Flexible(
-              child: _buildResponsiveActionButton(
-                onPressed: () => _openAddIncomeSheet(context),
-                icon: Icons.download,
-                label: 'INCOME',
-                color: Colors.cyan,
-                compact: isCompact,
+              child: Container(
+                key: !isMobile ? TutorialKeys.addIncomeBtnKey : ValueKey('desktop_income'),
+                child: _buildResponsiveActionButton(
+                  onPressed: () => _openAddIncomeSheet(context),
+                  icon: Icons.download,
+                  label: 'INCOME',
+                  color: Colors.cyan,
+                  compact: isCompact,
+                ),
               ),
             ),
             SizedBox(width: spacing),
             Flexible(
-              child: _buildResponsiveActionButton(
-                onPressed: () => _openAddExpenseSheet(context),
-                icon: Icons.upload,
-                label: 'EXPENSE',
-                color: Colors.orange,
-                showGlow: false,
-                compact: isCompact,
+              child: Container(
+                key: !isMobile ? TutorialKeys.addExpenseBtnKey : ValueKey('desktop_expense'),
+                child: _buildResponsiveActionButton(
+                  onPressed: () => _openAddExpenseSheet(context),
+                  icon: Icons.upload,
+                  label: 'EXPENSE',
+                  color: Colors.orange,
+                  showGlow: false,
+                  compact: isCompact,
+                ),
               ),
             ),
           ],

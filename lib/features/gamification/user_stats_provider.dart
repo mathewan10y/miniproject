@@ -3,6 +3,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/models/user_stats_model.dart';
 
 const _kTradeCreditsKey = 'user_trading_credits';
+const _kXpKey = 'user_xp';
+const _kLevelKey = 'user_level';
 const _kDefaultCredits = 5000.0;
 
 class UserStatsNotifier extends AsyncNotifier<UserStatsModel> {
@@ -16,12 +18,21 @@ class UserStatsNotifier extends AsyncNotifier<UserStatsModel> {
   Future<UserStatsModel> _load() async {
     final prefs = await SharedPreferences.getInstance();
     final credits = prefs.getDouble(_kTradeCreditsKey) ?? _kDefaultCredits;
-    return UserStatsModel(userId: 'default_user', tradingCredits: credits);
+    final xp = prefs.getInt(_kXpKey) ?? 0;
+    final level = prefs.getInt(_kLevelKey) ?? 1;
+    return UserStatsModel(
+      userId: 'default_user', 
+      tradingCredits: credits,
+      xp: xp,
+      currentLevel: level,
+    );
   }
 
   Future<void> _save(UserStatsModel s) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble(_kTradeCreditsKey, s.tradingCredits);
+    await prefs.setInt(_kXpKey, s.xp);
+    await prefs.setInt(_kLevelKey, s.currentLevel);
   }
 
   // ── Public API ────────────────────────────────────────────────────────────
@@ -29,6 +40,18 @@ class UserStatsNotifier extends AsyncNotifier<UserStatsModel> {
   void updateUserStats(UserStatsModel newStats) {
     state = AsyncData(newStats);
     _save(newStats);
+  }
+
+  void addExperience(int amount) {
+    final current = state.valueOrNull;
+    if (current == null) return;
+    updateUserStats(current.copyWith(xp: current.xp + amount));
+  }
+
+  void levelUp() {
+    final current = state.valueOrNull;
+    if (current == null) return;
+    updateUserStats(current.copyWith(currentLevel: current.currentLevel + 1));
   }
 
   /// Deduct [amount] of FUEL (INR) from trading credits.

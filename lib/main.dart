@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'features/gamification/services/tutorial_engine_service.dart';
 import 'core/config/app_secrets.dart';
 import 'features/ledger/presentation/main_screen.dart';
 
@@ -30,7 +32,16 @@ Future<void> main() async {
     }
   }
 
-  runApp(const ProviderScope(child: CyberFinanceApp()));
+  final prefs = await SharedPreferences.getInstance();
+
+  runApp(
+    ProviderScope(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+      ],
+      child: const CyberFinanceApp(),
+    ),
+  );
 }
 
 class CyberFinanceApp extends StatelessWidget {

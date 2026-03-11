@@ -9,6 +9,7 @@ import '../../../widgets/reactor_gauge.dart';
 import '../../../core/providers/refinery_provider.dart';
 import '../../gamification/presentation/widgets/top_bar.dart';
 import '../../gamification/presentation/widgets/levels_panel.dart';
+import '../../gamification/services/tutorial_keys.dart';
 
 class ReactorCorePage extends ConsumerStatefulWidget {
   const ReactorCorePage({super.key});
@@ -142,7 +143,13 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
                                       child: SizedBox(
                                         width: reactorSize,
                                         height: reactorSize,
-                                        child: ReactorGauge(fillPercent: oreLevel),
+                                        child: Container(
+                                          key: TutorialKeys.reactorCenterKey,
+                                          child: ReactorGauge(
+                                            key: TutorialKeys.reactorGaugeKey,
+                                            fillPercent: oreLevel,
+                                          ),
+                                        ),
                                       ),
                                     ),
                                     // Space for the refine button below

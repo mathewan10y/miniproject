@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -68,6 +68,7 @@ class _TradingPageState extends ConsumerState<TradingPage>
         _selectedInterval,
         '5d',
       );
+      if (!mounted) return;
       setState(() {
         _candles =
             history
@@ -85,6 +86,7 @@ class _TradingPageState extends ConsumerState<TradingPage>
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() => _isLoading = false);
     }
   }
@@ -260,6 +262,7 @@ class _TradingPageState extends ConsumerState<TradingPage>
 
     // 3. Sync the chart with every live price tick
     ref.listen<AsyncValue<List<MarketAsset>>>(liveMarketAssetsProvider, (_, next) {
+      if (!mounted) return;
       final assets = next.valueOrNull;
       if (assets == null || _candles.isEmpty) return;
       try {

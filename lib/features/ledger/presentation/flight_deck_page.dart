@@ -13,6 +13,9 @@ import '../../gamification/presentation/widgets/top_bar.dart';
 
 import '../../gamification/presentation/widgets/varsity_orbit_panel.dart';
 import '../../gamification/user_stats_provider.dart';
+import '../../gamification/services/tutorial_keys.dart';
+import '../../gamification/services/tutorial_engine_service.dart';
+import '../../gamification/presentation/tutorials/phase3_micro_learning.dart';
 import '../../trading/data/portfolio_provider.dart';
 import '../../trading/domain/models/open_position.dart';
 
@@ -83,6 +86,14 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
       duration: const Duration(seconds: 4),
       vsync: this,
     )..repeat();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final engine = ref.read(tutorialEngineProvider);
+      if (!engine.hasSeenLevel1Applied && engine.hasSeenPhase1) {
+        Phase3MicroLearning.startFlightDeck(context, ref);
+      }
+    });
 
     _particleTimer = Timer.periodic(const Duration(milliseconds: 32), (timer) {
       _updateParticles();
@@ -290,16 +301,25 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                     () =>
                         setState(() => _showVarsityPanel = !_showVarsityPanel),
               ),
-              Expanded(flex: 8, child: _buildTelemetryPanel()),
+              Expanded(
+                flex: 8, 
+                child: Container(
+                  key: TutorialKeys.stockChartKey,
+                  child: _buildTelemetryPanel(),
+                )
+              ),
               SizedBox(
                 height: 80,
-                child: assetsAsync.when(
-                  data: (assets) => _buildControlDock(context, assets),
-                  loading:
-                      () => const Center(
-                        child: CircularProgressIndicator(color: Colors.cyan),
-                      ),
-                  error: (_, __) => const SizedBox(),
+                child: Container(
+                  key: TutorialKeys.flightDeckAssetListKey,
+                  child: assetsAsync.when(
+                    data: (assets) => _buildControlDock(context, assets),
+                    loading:
+                        () => const Center(
+                          child: CircularProgressIndicator(color: Colors.cyan),
+                        ),
+                    error: (_, __) => const SizedBox(),
+                  ),
                 ),
               ),
             ],
@@ -1036,31 +1056,34 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
   }
 
   Widget _buildQuantitySelector() {
-    return GestureDetector(
-      key: _qtyButtonKey,
-      onTap: () => _showQuantityPopup(),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-        decoration: BoxDecoration(
-          color: const Color(0xFF131722),
-          border: Border.all(color: Colors.white24),
-          borderRadius: BorderRadius.circular(3),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              _tradeQuantity % 1 == 0
-                  ? _tradeQuantity.toInt().toString()
-                  : _tradeQuantity.toStringAsFixed(1),
-              style: GoogleFonts.shareTechMono(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
+    return Container(
+      key: TutorialKeys.orderQuantityInputKey,
+      child: GestureDetector(
+        key: _qtyButtonKey,
+        onTap: () => _showQuantityPopup(),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xFF131722),
+            border: Border.all(color: Colors.white24),
+            borderRadius: BorderRadius.circular(3),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _tradeQuantity % 1 == 0
+                    ? _tradeQuantity.toInt().toString()
+                    : _tradeQuantity.toStringAsFixed(1),
+                style: GoogleFonts.shareTechMono(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            const Icon(Icons.arrow_drop_down, color: Colors.white54, size: 14),
-          ],
+              const Icon(Icons.arrow_drop_down, color: Colors.white54, size: 14),
+            ],
+          ),
         ),
       ),
     );

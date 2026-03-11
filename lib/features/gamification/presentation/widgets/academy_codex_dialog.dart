@@ -4,6 +4,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../user_stats_provider.dart';
+import '../../services/tutorial_engine_service.dart';
+import '../../data/tutorial_scripts.dart';
+import 'tutorial_overlay_widget.dart';
+import 'mini_quiz_sheet.dart';
+import '../pages/boss_fight_screen.dart';
 
 // ─── Level metadata ────────────────────────────────────────────
 
@@ -74,10 +79,30 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
   void dispose() { _fadeCtrl.dispose(); _navCtrl.dispose(); super.dispose(); }
 
   void _select(int level) {
-    _fadeCtrl.reverse().then((_) {
+    _fadeCtrl.reverse().then((_) async {
       if (!mounted) return;
       setState(() => _selectedLevel = level);
       _fadeCtrl.forward();
+      
+      // Trigger On-Demand Conversation
+      final engine = ref.read(tutorialEngineProvider);
+      if (!engine.hasSeenCodexLevel(level)) {
+         final script = TutorialScripts.getCodexScript(level);
+         if (script.isNotEmpty) {
+             await showGeneralDialog(
+                 context: context,
+                 barrierColor: Colors.black87,
+                 pageBuilder: (ctx, anim1, anim2) => Scaffold(
+                     backgroundColor: Colors.transparent, 
+                     body: TutorialOverlayWidget(
+                         dialogs: script, 
+                         onComplete: () => Navigator.pop(ctx)
+                     )
+                 ),
+             );
+             engine.markCodexLevelSeen(level);
+         }
+      }
     });
   }
 
@@ -243,46 +268,112 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
   Widget _navItem(_LevelMeta m, int maxLvl, bool narrow) {
     final sel    = _selectedLevel == m.level;
     final locked = m.level > maxLvl;
-    return GestureDetector(
-      onTap: locked ? null : () {
-        _select(m.level);
-        if (narrow && !_navCollapsed) _toggleNav();
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-        decoration: BoxDecoration(
-          color: sel ? m.accent.withOpacity(0.1) : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-          border: Border(left: BorderSide(color: sel ? m.accent : Colors.transparent, width: 3)),
-        ),
-        child: Row(children: [
-          Container(
-            width: 28, height: 28,
+    
+    // Sub-level logic
+    final engine = ref.read(tutorialEngineProvider);
+    final completed = engine.getCompletedSubLevels(m.level);
+    final raw = _loadedContent[m.level] ?? '';
+    final subLevelTitles = raw.split('\n## ').skip(1).map((s) => s.split('\n').first.replaceAll('## ', '').trim()).toList();
+    final allCompleted = subLevelTitles.isNotEmpty && completed.length >= subLevelTitles.length;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        GestureDetector(
+          onTap: locked ? null : () {
+            _select(m.level);
+            if (narrow && !_navCollapsed) _toggleNav();
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
             decoration: BoxDecoration(
-              color: locked ? Colors.white.withOpacity(0.03) : m.accent.withOpacity(sel ? 0.18 : 0.06),
-              border: Border.all(color: locked ? Colors.white12 : m.accent.withOpacity(sel ? 0.6 : 0.18)),
-              borderRadius: BorderRadius.circular(6),
+              color: sel ? m.accent.withOpacity(0.1) : Colors.transparent,
+              borderRadius: BorderRadius.circular(8),
+              border: Border(left: BorderSide(color: sel ? m.accent : Colors.transparent, width: 3)),
             ),
-            child: locked
-                ? const Icon(Icons.lock, color: Colors.white24, size: 12)
-                : Center(child: Icon(m.icon, color: m.accent.withOpacity(sel ? 1 : 0.5), size: 13)),
+            child: Row(children: [
+              Container(
+                width: 28, height: 28,
+                decoration: BoxDecoration(
+                  color: locked ? Colors.white.withOpacity(0.03) : m.accent.withOpacity(sel ? 0.18 : 0.06),
+                  border: Border.all(color: locked ? Colors.white12 : m.accent.withOpacity(sel ? 0.6 : 0.18)),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: locked
+                    ? const Icon(Icons.lock, color: Colors.white24, size: 12)
+                    : Center(child: Icon(m.icon, color: m.accent.withOpacity(sel ? 1 : 0.5), size: 13)),
+              ),
+              const SizedBox(width: 10),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(m.title,
+                  style: GoogleFonts.orbitron(
+                    color: locked ? Colors.white24 : sel ? m.accent : Colors.white54,
+                    fontSize: 8, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                  overflow: TextOverflow.ellipsis),
+                Text(locked ? 'LOCKED' : m.subtitle,
+                  style: GoogleFonts.shareTechMono(
+                    color: locked ? Colors.white12 : Colors.white30, fontSize: 8),
+                  overflow: TextOverflow.ellipsis),
+              ])),
+            ]),
           ),
-          const SizedBox(width: 10),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(m.title,
-              style: GoogleFonts.orbitron(
-                color: locked ? Colors.white24 : sel ? m.accent : Colors.white54,
-                fontSize: 8, fontWeight: FontWeight.bold, letterSpacing: 0.5),
-              overflow: TextOverflow.ellipsis),
-            Text(locked ? 'LOCKED' : m.subtitle,
-              style: GoogleFonts.shareTechMono(
-                color: locked ? Colors.white12 : Colors.white30, fontSize: 8),
-              overflow: TextOverflow.ellipsis),
-          ])),
-        ]),
-      ),
+        ),
+        
+        // Render sub-level progress and boss tile if selected
+        if (sel && subLevelTitles.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.only(left: 32, top: 4, bottom: 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: subLevelTitles.map((title) {
+                final isDone = completed.contains(title);
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    children: [
+                      Icon(isDone ? Icons.check_circle : Icons.circle_outlined, size: 10, color: isDone ? m.accent : Colors.white24),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(title, style: GoogleFonts.shareTechMono(color: isDone ? m.accent : Colors.white54, fontSize: 8)),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          // Boss Encounter Tile
+          Padding(
+            padding: const EdgeInsets.only(left: 32, right: 8, top: 4, bottom: 12),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              decoration: BoxDecoration(
+                color: allCompleted ? Colors.redAccent.withOpacity(0.1) : Colors.white10.withOpacity(0.05),
+                border: Border.all(color: allCompleted ? Colors.redAccent.withOpacity(0.5) : Colors.white24),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.security, size: 12, color: allCompleted ? Colors.redAccent : Colors.white24),
+                  const SizedBox(width: 6),
+                  Text(
+                    allCompleted ? "BOSS ENCOUNTER" : "BOSS LOCKED",
+                    style: GoogleFonts.orbitron(
+                      color: allCompleted ? Colors.redAccent : Colors.white24,
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -313,7 +404,7 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
       else
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
-          sliver: SliverList(delegate: SliverChildListDelegate(_parseContent(raw, meta.accent))),
+          sliver: SliverList(delegate: SliverChildListDelegate(_parseContent(meta))),
         ),
     ]);
   }
@@ -373,7 +464,38 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
   ]);
 
   // ── Text parser ─────────────────────────────────────────────────
-  List<Widget> _parseContent(String raw, Color accent) {
+  List<Widget> _parseContent(_LevelMeta meta) {
+    final raw = _loadedContent[meta.level] ?? '';
+    final parts = raw.split('\n## ');
+    final widgets = <Widget>[];
+    final engine = ref.read(tutorialEngineProvider);
+    final completed = engine.getCompletedSubLevels(meta.level);
+    
+    // Parse Intro
+    widgets.addAll(_parseInnerContent(parts[0], meta.accent));
+    
+    // Parse Sublevels
+    int totalSubLevels = parts.length > 1 ? parts.length - 1 : 0;
+    for (int i = 1; i < parts.length; i++) {
+       final sectionText = '## ' + parts[i];
+       final lines = sectionText.split('\n');
+       final titleLine = lines.first.replaceAll('## ', '').trim();
+       
+       widgets.addAll(_parseInnerContent(sectionText, meta.accent));
+       
+       // Add Cadet Evaluation Button
+       final isDone = completed.contains(titleLine);
+       widgets.add(_buildCadetEvalButton(meta.level, titleLine, i - 1, meta.accent, isDone));
+    }
+    
+    // Boss Fight Button
+    final allDone = totalSubLevels > 0 && completed.length >= totalSubLevels;
+    widgets.add(_buildBossFightButton(meta.level, allDone));
+    
+    return widgets;
+  }
+
+  List<Widget> _parseInnerContent(String raw, Color accent) {
     final widgets = <Widget>[];
     final lines   = raw.split('\n');
     final buf     = StringBuffer();
@@ -398,6 +520,7 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
       // Section headings
       final isSection = buf.toString().trim().isEmpty &&
           (RegExp(r'^\d+\.\d+\s').hasMatch(line) ||
+           RegExp(r'^#+\s').hasMatch(line) ||
            RegExp(r'^LEVEL\s+\d+').hasMatch(line) ||
            (line.endsWith(':') && line.length < 60));
       if (isSection) { flush(); widgets.add(_section(line, accent)); continue; }
@@ -406,6 +529,80 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
     }
     flush();
     return widgets;
+  }
+
+  Widget _buildCadetEvalButton(int levelId, String subLevelTitle, int subLevelIndex, Color accent, bool isCompleted) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      child: ElevatedButton.icon(
+        onPressed: isCompleted ? null : () async {
+          // Open Mini Quiz Sheet
+          await showModalBottomSheet(
+            context: context,
+            backgroundColor: Colors.transparent,
+            isScrollControlled: true,
+            builder: (ctx) => MiniQuizSheetWrapper(levelId: levelId, subLevelTitle: subLevelTitle, subLevelIndex: subLevelIndex),
+          );
+          // Refresh state
+          setState(() {});
+        },
+        icon: Icon(isCompleted ? Icons.check_circle : Icons.psychology, size: 18),
+        label: Text(isCompleted ? "EVALUATION PASSED" : "[ RUN DIAGNOSTIC: CADET EVALUATION ]"),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isCompleted ? Colors.green.withOpacity(0.2) : accent.withOpacity(0.1),
+          foregroundColor: isCompleted ? Colors.green : accent,
+          side: BorderSide(color: isCompleted ? Colors.green.withOpacity(0.5) : accent.withOpacity(0.5)),
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+          alignment: Alignment.centerLeft,
+          textStyle: GoogleFonts.shareTechMono(fontWeight: FontWeight.bold, letterSpacing: 1),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBossFightButton(int levelId, bool isUnlocked) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 40, bottom: 20),
+      child: InkWell(
+        onTap: isUnlocked ? () {
+          Navigator.of(context).push(MaterialPageRoute(builder: (_) => BossFightScreen(levelId: levelId))).then((_) {
+            setState((){}); // refresh UI bounds if we level up
+          });
+        } : () {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Complete all CADET EVALUATIONS in this level first.')));
+        },
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 24),
+          decoration: BoxDecoration(
+            color: isUnlocked ? Colors.redAccent.withOpacity(0.15) : Colors.white10.withOpacity(0.05),
+            border: Border.all(color: isUnlocked ? Colors.redAccent : Colors.white24, width: 2),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: isUnlocked ? [BoxShadow(color: Colors.redAccent.withOpacity(0.2), blurRadius: 20)] : [],
+          ),
+          child: Column(
+            children: [
+              Icon(Icons.security, size: 36, color: isUnlocked ? Colors.redAccent : Colors.white38),
+              const SizedBox(height: 12),
+              Text(
+                isUnlocked ? "INITIATE BOSS FIGHT" : "BOSS ENCOUNTER LOCKED",
+                style: GoogleFonts.orbitron(
+                  color: isUnlocked ? Colors.redAccent : Colors.white38,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                isUnlocked ? "WARNING: POTENTIALLY FATAL TO FUEL RESERVES" : "Pass all diagnostics to unlock",
+                style: GoogleFonts.shareTechMono(color: isUnlocked ? Colors.redAccent.withOpacity(0.7) : Colors.white24, fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _section(String text, Color accent) => Padding(

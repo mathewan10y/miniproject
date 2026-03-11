@@ -178,6 +178,7 @@ class _VarsityOrbitPanelState extends ConsumerState<VarsityOrbitPanel> {
     
     // Small delay to make it feel natural after opening
     Future.delayed(const Duration(milliseconds: 300), () {
+       if (!mounted) return;
        ref.read(botChatProvider.notifier).injectBotResponse(type, message);
     });
   }
