@@ -544,12 +544,12 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
           child: _buildTimeframeSelector(),
         ),
 
-        // Analyze Button — bottom-left of chart, right of timeframe selector
+        // Analyze Button — top-left of chart
         AnimatedPositioned(
           duration: const Duration(milliseconds: 100),
           curve: Curves.easeOut,
-          right: 50,
-          bottom: _panelHeight + 30,
+          left: 10,
+          top: 75,
           child:
               _selectedAsset != null
                   ? GestureDetector(
@@ -1569,7 +1569,6 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                           color: Colors.white54,
                           size: 20,
                         ),
-                        const SizedBox(width: 6),
                         Flexible(
                           child: Text(
                             "PAPER TRADING",
@@ -1581,7 +1580,6 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        const SizedBox(width: 6),
                         _buildPanelTab("Positions", 0),
                         _buildPanelTab("Orders", 1),
                         _buildPanelTab("History", 2),
@@ -1591,29 +1589,29 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                     ),
                   ),
                   // Live Account Stats
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _buildAccountStat(
-                        "Balance",
-                        "₹${balance.toStringAsFixed(0)}",
-                      ),
-                      const SizedBox(width: 10),
-                      _buildAccountStat(
-                        "P&L",
-                        "${realizedPnl >= 0 ? '+' : ''}₹${realizedPnl.toStringAsFixed(0)}",
-                        valueColor:
-                            realizedPnl >= 0
-                                ? Colors.greenAccent
-                                : Colors.redAccent,
-                      ),
-                      const SizedBox(width: 10),
-                      _buildAccountStat(
-                        "Equity",
-                        "₹${equity.toStringAsFixed(0)}",
-                      ),
-                    ],
-                  ),
+                  // Row(
+                  //   mainAxisSize: MainAxisSize.min,
+                  //   children: [
+                  //     _buildAccountStat(
+                  //       "Balance",
+                  //       "₹${balance.toStringAsFixed(0)}",
+                  //     ),
+                  //     const SizedBox(width: 10),
+                  //     _buildAccountStat(
+                  //       "P&L",
+                  //       "${realizedPnl >= 0 ? '+' : ''}₹${realizedPnl.toStringAsFixed(0)}",
+                  //       valueColor:
+                  //           realizedPnl >= 0
+                  //               ? Colors.greenAccent
+                  //               : Colors.redAccent,
+                  //     ),
+                  //     const SizedBox(width: 10),
+                  //     _buildAccountStat(
+                  //       "Equity",
+                  //       "₹${equity.toStringAsFixed(0)}",
+                  //     ),
+                  //   ],
+                  // ),
                 ],
               ),
             ),
