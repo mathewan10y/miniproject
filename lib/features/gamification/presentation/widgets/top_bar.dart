@@ -51,7 +51,21 @@ class TopBar extends ConsumerWidget {
                       tooltip: "Varsity Orbit",
                     ),
                   ),
-                // CODEX button — opens Captain's Log
+                // Page title
+                Flexible(
+                  child: Text(
+                    title,
+                    style: GoogleFonts.orbitron(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 2,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // CODEX button — right of the title
                 GestureDetector(
                   onTap: () {
                     showDialog(
@@ -61,7 +75,6 @@ class TopBar extends ConsumerWidget {
                     );
                   },
                   child: Container(
-                    margin: const EdgeInsets.only(right: 12),
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
                       color: const Color(0xFF00D9FF).withOpacity(0.08),
@@ -93,18 +106,6 @@ class TopBar extends ConsumerWidget {
                         ),
                       ],
                     ),
-                  ),
-                ),
-                Flexible(
-                  child: Text(
-                    title,
-                    style: GoogleFonts.orbitron(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 2,
-                    ),
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
