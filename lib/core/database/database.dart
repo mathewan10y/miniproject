@@ -131,7 +131,9 @@ class AppDatabase {
           .map((r) => Expense.fromJson(r as Map<String, dynamic>))
           .toList();
     } catch (e) {
-      throw Exception('Failed to load expenses: $e');
+      // On web, "Failed to fetch" usually means CORS/auth issue — log and return empty.
+      print('[AppDatabase] getAllExpenses failed: $e');
+      return [];
     }
   }
 

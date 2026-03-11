@@ -257,12 +257,35 @@ class _TradingPageState extends ConsumerState<TradingPage>
 
     // 2. Watch the live stream of assets
     final liveAssetsAsync = ref.watch(liveMarketAssetsProvider);
-    
-    // 3. Find the live version of the asset you are looking at.
+
+    // 3. Sync the chart with every live price tick
+    ref.listen<AsyncValue<List<MarketAsset>>>(liveMarketAssetsProvider, (_, next) {
+      final assets = next.valueOrNull;
+      if (assets == null || _candles.isEmpty) return;
+      try {
+        final liveAsset = assets.firstWhere((a) => a.id == widget.asset.id);
+        final newPrice = liveAsset.currentPrice;
+        setState(() {
+          final lastIdx = _candles.length - 1;
+          final last = _candles[lastIdx];
+          _candles[lastIdx] = CandleData(
+            timestamp: last.timestamp,
+            open: last.open,
+            high: newPrice > (last.high ?? newPrice) ? newPrice : last.high,
+            low:  newPrice < (last.low  ?? newPrice) ? newPrice : last.low,
+            close: newPrice,
+            volume: last.volume,
+          );
+        });
+      } catch (_) {}
+    });
+
+    // 4. Find the live version of the asset you are looking at.
     final liveAsset = liveAssetsAsync.valueOrNull?.firstWhere(
       (a) => a.id == widget.asset.id,
       orElse: () => widget.asset,
     ) ?? widget.asset;
+
 
     final stats = ref.watch(userStatsProvider).valueOrNull;
     final portfolioState = ref.watch(portfolioProvider);

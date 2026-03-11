@@ -127,99 +127,121 @@ class LevelsPanel extends StatefulWidget {
 
 class _LevelsPanelState extends State<LevelsPanel> {
   int? _expandedLevel; // Which level is currently expanded
-  bool _isCollapsed = false; // Whether the whole panel is collapsed
+  bool _isCollapsed = true; // Start collapsed by default
 
   @override
   Widget build(BuildContext context) {
     final screenW = MediaQuery.of(context).size.width;
-    // Responsive panel width: 28% of screen, but at least 260px and at most 450px
-    final panelWidth = (screenW * 0.28).clamp(260.0, 450.0); 
-    final collapsedWidth = 40.0; // Just enough for the expand button
-    final currentWidth = _isCollapsed ? collapsedWidth : panelWidth;
+    final screenH = MediaQuery.of(context).size.height;
+    final panelWidth = (screenW * 0.28).clamp(260.0, 400.0);
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
-      width: currentWidth,
-      decoration: BoxDecoration(
-        color: const Color(0xFF0A0E17).withAlpha(230),
-        border: const Border(
-          right: BorderSide(color: Color(0xFF1A2A3A), width: 1),
-        ),
-      ),
-      child: ClipRect(
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          physics: const NeverScrollableScrollPhysics(),
-          child: SizedBox(
-            width: panelWidth,
-            child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      width: _isCollapsed ? 36.0 : panelWidth,
+      height: screenH,
+      child: Row(
         children: [
-          const SizedBox(height: 60), // Space for TopBar
-          
-          // Collapse / Expand toggle button
-          GestureDetector(
-            onTap: () {
-              setState(() {
-                _isCollapsed = !_isCollapsed;
-              });
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-              color: Colors.transparent,
-              child: Row(
-                mainAxisAlignment: _isCollapsed ? MainAxisAlignment.center : MainAxisAlignment.spaceBetween,
-                children: [
-                   if (!_isCollapsed) ...[
-                      const Icon(Icons.account_tree_outlined,
-                          color: Color(0xFF00D9FF), size: 18),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'MISSION LEVELS',
-                          style: GoogleFonts.orbitron(
-                            color: const Color(0xFF00D9FF),
-                            fontSize: 12, // Increased font
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.2,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                   ],
-                   Icon(
-                     _isCollapsed ? Icons.chevron_right : Icons.chevron_left,
-                     color: const Color(0xFF00D9FF),
-                     size: 24, // Bigger arrow
-                   )
-                ],
-              ),
-            ),
-          ),
-          
-          Container(
-            height: 1,
-            margin: const EdgeInsets.symmetric(horizontal: 12),
-            color: const Color(0xFF1A2A3A),
-          ),
-          
-          // Level list (hidden if collapsed)
+          // ── Expanded Panel content ─────────────────────────────────────
           if (!_isCollapsed)
             Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                itemCount: _levels.length,
-                itemBuilder: (ctx, i) => _buildLevelTile(_levels[i]),
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Color(0xFF0A0E17),
+                  border: Border(
+                    right: BorderSide(color: Color(0xFF1A2A3A), width: 1),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 60), // Space for TopBar
+
+                    // Header row with title + collapse button
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 10),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.account_tree_outlined,
+                              color: Color(0xFF00D9FF), size: 18),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'MISSION LEVELS',
+                              style: GoogleFonts.orbitron(
+                                color: const Color(0xFF00D9FF),
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.2,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          // Collapse button in header
+                          GestureDetector(
+                            onTap: () =>
+                                setState(() => _isCollapsed = true),
+                            child: const Icon(Icons.chevron_left,
+                                color: Color(0xFF00D9FF), size: 24),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    Container(
+                      height: 1,
+                      margin: const EdgeInsets.symmetric(horizontal: 12),
+                      color: const Color(0xFF1A2A3A),
+                    ),
+
+                    // Level list
+                    Expanded(
+                      child: ListView.builder(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        itemCount: _levels.length,
+                        itemBuilder: (ctx, i) => _buildLevelTile(_levels[i]),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-        ],
-      ),
+
+          // ── Toggle Tab — always within bounds & always hittable ────────
+          GestureDetector(
+            onTap: () => setState(() => _isCollapsed = !_isCollapsed),
+            child: Container(
+              width: 36,
+              height: double.infinity,
+              color: Colors.transparent,
+              alignment: Alignment.center,
+              child: Container(
+                width: 36,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0A0E17).withAlpha(230),
+                  border: Border.all(
+                      color: const Color(0xFF1A2A3A), width: 1),
+                  borderRadius: const BorderRadius.only(
+                    topRight: Radius.circular(8),
+                    bottomRight: Radius.circular(8),
+                  ),
+                ),
+                child: Icon(
+                  _isCollapsed ? Icons.chevron_right : Icons.chevron_left,
+                  color: const Color(0xFF00D9FF),
+                  size: 22,
+                ),
+              ),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
+
+
 
   Widget _buildLevelTile(LevelData level) {
     final isExpanded = _expandedLevel == level.number;

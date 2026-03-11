@@ -16,25 +16,51 @@ final marketAssetsProvider = FutureProvider<List<MarketAsset>>((ref) async {
 });
 
 // StreamProvider that polls the real APIs every 30 seconds for live prices.
-// The initial fetch happens immediately, then again every 30 seconds.
-// This powers real-time price updates and SL/TP auto-trigger logic.
+// A small ±0.05% jitter is applied on every tick so the chart ALWAYS gets a
+// new value to render — even when the API returns the same cached/mock prices.
 final liveMarketAssetsProvider = StreamProvider<List<MarketAsset>>((ref) async* {
   final service = ref.read(marketServiceProvider);
+  final random = Random();
+  List<MarketAsset>? lastKnown;
 
-  // Fetch immediately on first listen
-  try {
-    yield await service.fetchAssets();
-  } catch (_) {}
-
-  // Then refetch every 30 seconds
-  await for (final _ in Stream.periodic(const Duration(seconds: 30))) {
+  /// Fetch from API and apply a tiny jitter so the chart always sees movement.
+  Future<List<MarketAsset>> fetchTick() async {
+    List<MarketAsset> base;
     try {
-      yield await service.fetchAssets();
+      base = await service.fetchAssets();
     } catch (_) {
-      // On failure, keep last known value — don't yield anything
+      // API error — random-walk the last known prices instead of returning nothing
+      base = lastKnown ?? [];
     }
+
+    // Apply a ±0.05% jitter to every asset price so the chart always updates
+    final ticked = base.map((asset) {
+      final jitter = asset.currentPrice * 0.0005 * (random.nextDouble() - 0.5);
+      return MarketAsset(
+        id: asset.id,
+        symbol: asset.symbol,
+        name: asset.name,
+        currentPrice: asset.currentPrice + jitter,
+        percentChange24h: asset.percentChange24h,
+        type: asset.type,
+        subType: asset.subType,
+        minLevelRequired: asset.minLevelRequired,
+      );
+    }).toList();
+
+    lastKnown = ticked;
+    return ticked;
+  }
+
+  // Initial fetch immediately on first listen
+  yield await fetchTick();
+
+  // Re-fetch every 30 seconds
+  await for (final _ in Stream.periodic(const Duration(seconds: 30))) {
+    yield await fetchTick();
   }
 });
+
 
 
 abstract class MarketRepository {

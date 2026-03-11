@@ -19,6 +19,17 @@ Future<void> main() async {
   // Initialize Supabase with credentials from .env
   await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
 
+  // Ensure an auth session exists — required for RLS on Flutter Web.
+  // If already signed in (persisted session), this is a no-op.
+  final auth = Supabase.instance.client.auth;
+  if (auth.currentSession == null) {
+    try {
+      await auth.signInAnonymously();
+    } catch (e) {
+      debugPrint('[Auth] Anonymous sign-in failed: $e');
+    }
+  }
+
   runApp(const ProviderScope(child: CyberFinanceApp()));
 }
 

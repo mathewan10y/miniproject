@@ -73,3 +73,6 @@ final userStatsProvider =
     AsyncNotifierProvider<UserStatsNotifier, UserStatsModel>(
       UserStatsNotifier.new,
     );
+
+/// When true, all levels are unlocked regardless of userStats.currentLevel.
+final devModeProvider = StateProvider<bool>((ref) => false);

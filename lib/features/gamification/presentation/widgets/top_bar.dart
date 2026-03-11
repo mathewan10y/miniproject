@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:stardust/core/providers/refinery_provider.dart';
 import '../providers/bot_chat_provider.dart';
+import 'academy_codex_dialog.dart';
+import '../../user_stats_provider.dart';
 
 class TopBar extends ConsumerWidget {
   final String title;
@@ -36,27 +38,77 @@ class TopBar extends ConsumerWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // Title & Left Controls
-          Row(
-            children: [
-              if (onVarsityToggle != null)
-                Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: IconButton(
-                    icon: const Icon(Icons.school, color: Colors.cyan),
-                    onPressed: onVarsityToggle,
-                    tooltip: "Varsity Orbit",
+          Flexible(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (onVarsityToggle != null)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: IconButton(
+                      icon: const Icon(Icons.school, color: Colors.cyan),
+                      onPressed: onVarsityToggle,
+                      tooltip: "Varsity Orbit",
+                    ),
+                  ),
+                // CODEX button — opens Captain's Log
+                GestureDetector(
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      barrierColor: Colors.black87,
+                      builder: (_) => const AcademyCodexDialog(),
+                    );
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00D9FF).withOpacity(0.08),
+                      border: Border.all(
+                          color: const Color(0xFF00D9FF).withOpacity(0.35), width: 1),
+                      borderRadius: BorderRadius.circular(6),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF00D9FF).withOpacity(0.12),
+                          blurRadius: 8,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.auto_stories_outlined,
+                            color: Color(0xFF00D9FF), size: 16),
+                        const SizedBox(width: 6),
+                        Text(
+                          'CODEX',
+                          style: GoogleFonts.orbitron(
+                            color: const Color(0xFF00D9FF),
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              Text(
-                title,
-                style: GoogleFonts.orbitron(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 2,
+                Flexible(
+                  child: Text(
+                    title,
+                    style: GoogleFonts.orbitron(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 2,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
 
           // Right Side: (optional actions) + Fuel & Bots
@@ -64,6 +116,10 @@ class TopBar extends ConsumerWidget {
             children: [
               // Page-specific action button (e.g. SmsSyncButton on Logistics)
               if (actions != null) ...[actions!, const SizedBox(width: 8)],
+
+              // Dev / User mode toggle
+              _DevModeToggle(),
+              const SizedBox(width: 8),
 
               // Fuel Display
               Container(
@@ -487,5 +543,65 @@ class _BotChatPanelState extends ConsumerState<BotChatPanel> {
         ),
       );
     }
+  }
+}
+
+// ─── Dev / User Mode Toggle ───────────────────────────────────────────────────
+
+class _DevModeToggle extends ConsumerWidget {
+  const _DevModeToggle();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDevMode = ref.watch(devModeProvider);
+
+    return GestureDetector(
+      onTap: () => ref.read(devModeProvider.notifier).state = !isDevMode,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: isDevMode
+              ? Colors.amber.withOpacity(0.12)
+              : Colors.white.withOpacity(0.04),
+          border: Border.all(
+            color: isDevMode
+                ? Colors.amber.withOpacity(0.6)
+                : Colors.white.withOpacity(0.15),
+            width: 1,
+          ),
+          borderRadius: BorderRadius.circular(6),
+          boxShadow: isDevMode
+              ? [
+                  BoxShadow(
+                    color: Colors.amber.withOpacity(0.2),
+                    blurRadius: 8,
+                    spreadRadius: 1,
+                  ),
+                ]
+              : [],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isDevMode ? Icons.developer_mode : Icons.person_outline,
+              color: isDevMode ? Colors.amber : Colors.white38,
+              size: 14,
+            ),
+            const SizedBox(width: 5),
+            Text(
+              isDevMode ? 'DEV' : 'USER',
+              style: GoogleFonts.orbitron(
+                color: isDevMode ? Colors.amber : Colors.white38,
+                fontSize: 9,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
