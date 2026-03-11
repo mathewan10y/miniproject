@@ -30,12 +30,50 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
   // Controls which chart type to display on compact screens
   String _analyticsChartShow = 'pie'; // 'pie' | 'bar'
 
+  // ── Week Strip (mobile) ────────────────────────────────────────────────────
+  static const double _podWidth = 62.0;
+  static const int _pastDays = 365;
+  static const int _futureDays = 0; // Disabled future dates per user request
+
+  // 730-day list: index 0 = 365 days ago, index 365 = today
+  late final List<DateTime> _dateList;
+  late final ScrollController _weekStripController;
+
+  // Month currently shown in the nav header (independent of _selectedDay)
+  late DateTime _focusedMonth;
+
   // Responsive breakpoints
   static const double _mobileBreakpoint = 600;
   static const double _tabletBreakpoint = 900;
 
   bool _isCompactLayout(double width) => width < _tabletBreakpoint;
   bool _isMobileLayout(double width) => width < _mobileBreakpoint;
+
+  @override
+  void initState() {
+    super.initState();
+    // Build date list centred on today
+    final today = DateTime.now();
+    _focusedMonth = DateTime(today.year, today.month);
+    _dateList = List.generate(
+      _pastDays + _futureDays + 1,
+      (i) => DateTime(
+        today.year,
+        today.month,
+        today.day,
+      ).add(Duration(days: i - _pastDays)),
+    );
+    // Auto-scroll so today (which is now the last item at index _pastDays) is visible
+    // We intentionally scroll to the maximum possible extent.
+    final initialOffset = (_pastDays * (_podWidth + 8)).toDouble();
+    _weekStripController = ScrollController(initialScrollOffset: initialOffset);
+  }
+
+  @override
+  void dispose() {
+    _weekStripController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -187,17 +225,18 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
         Widget calendarPanel = _buildGlassmorphContainer(
           child: Column(
             children: [
-              Expanded(child: _buildResponsiveCalendar(isCompact: isCompact)),
+              _buildResponsiveCalendar(isCompact: isCompact),
               SizedBox(height: isCompact ? 8 : 12),
-              // Toggle Analytics Button
-              _buildCustomButton(
-                onPressed: () {
-                  setState(() {
-                    _showAnalytics = !_showAnalytics;
-                  });
-                },
-                size: isCompact ? 60 : 80,
-                label: 'SHOW ANALYTICS',
+              // Premium Analytics Toggle Button
+              Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: isCompact ? 10 : 14,
+                  vertical: 4,
+                ),
+                child: _buildAnalyticsToggleButton(
+                  isAnalytics: false,
+                  isCompact: isCompact,
+                ),
               ),
               SizedBox(height: isCompact ? 8 : 12),
             ],
@@ -217,16 +256,16 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
         );
 
         if (isMobile) {
-          // Vertical layout for mobile devices
+          // Mobile: compact week strip at top, full-height transaction panel below
           return Padding(
             padding: EdgeInsets.symmetric(horizontal: padding),
             child: Column(
               children: [
-                // Calendar takes less space on mobile
-                Expanded(flex: 2, child: calendarPanel),
-                const SizedBox(height: 12),
-                // Transaction list with buttons inside
-                Expanded(flex: 3, child: transactionPanel),
+                // ── Week Strip + toggle row ──
+                _buildMobileHeader(isAnalytics: false, isCompact: isCompact),
+                const SizedBox(height: 8),
+                // Transaction list fills remaining space
+                Expanded(child: transactionPanel),
               ],
             ),
           );
@@ -264,17 +303,18 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
         Widget calendarPanel = _buildGlassmorphContainer(
           child: Column(
             children: [
-              Expanded(child: _buildResponsiveCalendar(isCompact: isCompact)),
+              _buildResponsiveCalendar(isCompact: isCompact),
               SizedBox(height: isCompact ? 8 : 12),
-              // Toggle Analytics Button
-              _buildCustomButton(
-                onPressed: () {
-                  setState(() {
-                    _showAnalytics = !_showAnalytics;
-                  });
-                },
-                size: isCompact ? 60 : 80,
-                label: 'HIDE ANALYTICS',
+              // Premium Analytics Toggle Button
+              Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: isCompact ? 10 : 14,
+                  vertical: 4,
+                ),
+                child: _buildAnalyticsToggleButton(
+                  isAnalytics: true,
+                  isCompact: isCompact,
+                ),
               ),
               SizedBox(height: isCompact ? 8 : 12),
             ],
@@ -290,16 +330,16 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
         );
 
         if (isMobile) {
-          // Vertical layout for mobile devices
+          // Mobile: compact week strip at top, full-height analytics panel below
           return Padding(
             padding: EdgeInsets.symmetric(horizontal: padding),
             child: Column(
               children: [
-                // Calendar takes less space on mobile
-                Expanded(flex: 2, child: calendarPanel),
-                const SizedBox(height: 12),
-                // Analytics with buttons inside
-                Expanded(flex: 3, child: analyticsPanel),
+                // ── Week Strip + toggle row ──
+                _buildMobileHeader(isAnalytics: true, isCompact: isCompact),
+                const SizedBox(height: 8),
+                // Analytics fills remaining space
+                Expanded(child: analyticsPanel),
               ],
             ),
           );
@@ -356,8 +396,8 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
     final filteredExpenses = _filterExpensesByPeriod(expenses);
     final filteredIncomes = _filterIncomesByPeriod(incomes);
 
-    final double pieRadius = isCompact ? 50.0 : 80.0;
-    final double centerSpace = isCompact ? 20.0 : 32.0;
+    final double pieRadius = isCompact ? 80.0 : 130.0;
+    final double centerSpace = isCompact ? 28.0 : 46.0;
 
     // Build inner pie chart widget
     Widget pieWidget = _buildPieChart(
@@ -385,7 +425,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // ── Top controls bar ────────────────────────────────────────
+        // ── Top controls bar: period display + EXP/INC toggle + chart type ──
         Padding(
           padding: EdgeInsets.fromLTRB(
             isCompact ? 8 : 12,
@@ -395,20 +435,20 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
           ),
           child: Row(
             children: [
-              // Period display
+              // Period display text
               Expanded(
                 child: Text(
                   _getPeriodDisplayText(),
                   style: TextStyle(
                     color: const Color(0xFF00D9FF),
-                    fontSize: isCompact ? 10 : 13,
+                    fontSize: isCompact ? 9 : 11,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 0.8,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              // Pie-mode chips (always visible)
+              // EXP / INC pie-mode chips
               _buildMiniChip(
                 label: 'EXP',
                 active: _pieChartMode == 'expenses',
@@ -416,17 +456,17 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
                 onTap: () => setState(() => _pieChartMode = 'expenses'),
                 isCompact: isCompact,
               ),
-              SizedBox(width: isCompact ? 4 : 6),
+              const SizedBox(width: 4),
               _buildMiniChip(
                 label: 'INC',
                 active: _pieChartMode == 'incomes',
-                activeColor: Colors.green,
+                activeColor: const Color(0xFF00E676),
                 onTap: () => setState(() => _pieChartMode = 'incomes'),
                 isCompact: isCompact,
               ),
               // Chart-type toggle (compact only)
               if (isCompact) ...[
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 _buildMiniChip(
                   label: 'PIE',
                   active: _analyticsChartShow == 'pie',
@@ -434,7 +474,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
                   onTap: () => setState(() => _analyticsChartShow = 'pie'),
                   isCompact: isCompact,
                 ),
-                SizedBox(width: 4),
+                const SizedBox(width: 4),
                 _buildMiniChip(
                   label: 'BAR',
                   active: _analyticsChartShow == 'bar',
@@ -446,24 +486,27 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
             ],
           ),
         ),
-        SizedBox(height: isCompact ? 4 : 6),
-        // ── Period filter buttons ────────────────────────────────────
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: isCompact ? 6.0 : 10.0),
-          child: Wrap(
-            spacing: isCompact ? 3 : 6,
-            runSpacing: isCompact ? 3 : 6,
-            alignment: WrapAlignment.center,
+        const SizedBox(height: 6),
+        // ── Period filter chips: horizontal scroll row ─────────────────────
+        SizedBox(
+          height: 34,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: EdgeInsets.symmetric(horizontal: isCompact ? 6 : 10),
             children: [
-              _buildPeriodButton('DAILY', 'daily', isCompact: isCompact),
-              _buildPeriodButton('WEEKLY', 'weekly', isCompact: isCompact),
-              _buildPeriodButton('MONTHLY', 'monthly', isCompact: isCompact),
-              _buildPeriodButton('YEARLY', 'yearly', isCompact: isCompact),
-              _buildPeriodButton('ALL', 'alltime', isCompact: isCompact),
+              _buildNeonPeriodChip('DAY', 'daily'),
+              const SizedBox(width: 6),
+              _buildNeonPeriodChip('WEEK', 'weekly'),
+              const SizedBox(width: 6),
+              _buildNeonPeriodChip('MONTH', 'monthly'),
+              const SizedBox(width: 6),
+              _buildNeonPeriodChip('YEAR', 'yearly'),
+              const SizedBox(width: 6),
+              _buildNeonPeriodChip('ALL', 'alltime'),
             ],
           ),
         ),
-        SizedBox(height: isCompact ? 4 : 8),
+        const SizedBox(height: 6),
         // ── Chart area ───────────────────────────────────────────────
         Expanded(
           child: Padding(
@@ -496,33 +539,91 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
   }) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: isCompact ? 6 : 9,
-          vertical: isCompact ? 3 : 5,
-        ),
-        decoration: BoxDecoration(
-          color: active ? activeColor.withOpacity(0.2) : Colors.black38,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: active ? activeColor : Colors.white24,
-            width: active ? 1.5 : 1,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: active ? activeColor : const Color(0xFFBBDEFF),
-            fontSize: isCompact ? 8.5 : 10,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 0.4,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: isCompact ? 7 : 10,
+              vertical: isCompact ? 3 : 5,
+            ),
+            decoration: BoxDecoration(
+              color: active ? activeColor.withOpacity(0.18) : Colors.black38,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: active ? activeColor : Colors.white24,
+                width: active ? 1.5 : 1,
+              ),
+              boxShadow:
+                  active
+                      ? [
+                        BoxShadow(
+                          color: activeColor.withOpacity(0.4),
+                          blurRadius: 8,
+                          spreadRadius: 0,
+                        ),
+                      ]
+                      : [],
+            ),
+            child: Text(
+              label,
+              style: TextStyle(
+                color: active ? activeColor : const Color(0xFFBBDEFF),
+                fontSize: isCompact ? 8.5 : 10,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.4,
+              ),
+            ),
           ),
         ),
       ),
     );
   }
 
-  // Extracted bar chart widget so it can be used independently
+  /// Neon period filter chip used in the horizontal scroll row.
+  Widget _buildNeonPeriodChip(String label, String period) {
+    final isActive = _selectedPeriod == period;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedPeriod = period),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color:
+              isActive
+                  ? const Color(0xFF00D9FF).withOpacity(0.15)
+                  : Colors.black.withOpacity(0.35),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isActive ? const Color(0xFF00D9FF) : Colors.white24,
+            width: isActive ? 1.5 : 1.0,
+          ),
+          boxShadow:
+              isActive
+                  ? [
+                    BoxShadow(
+                      color: const Color(0xFF00D9FF).withOpacity(0.45),
+                      blurRadius: 10,
+                      spreadRadius: 0,
+                    ),
+                  ]
+                  : [],
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isActive ? const Color(0xFF00D9FF) : const Color(0xFFBBDEFF),
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.0,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Neon Data Rod Bar Chart
   Widget _buildBarChartWidget(
     List<Income> incomes,
     List<Expense> expenses, {
@@ -532,34 +633,27 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
       BarChartData(
         barGroups: _getBarChartData(incomes, expenses),
         borderData: FlBorderData(show: false),
-        gridData: FlGridData(
-          show: true,
-          drawVerticalLine: false,
-          getDrawingHorizontalLine:
-              (value) => FlLine(color: Colors.white10, strokeWidth: 1),
-        ),
+        gridData: const FlGridData(show: false),
+        backgroundColor: Colors.transparent,
         titlesData: FlTitlesData(
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
               reservedSize: isCompact ? 24 : 28,
               getTitlesWidget: (value, meta) {
-                const labels = ['INC', 'EXP'];
-                const colors = [Color(0xFF00E676), Color(0xFFFF6D00)];
+                const labels = ['INCOME', 'EXPENSE'];
+                const colors = [Color(0xFF00E5FF), Color(0xFFFF6D00)];
                 final idx = value.toInt();
                 if (idx >= 0 && idx < labels.length) {
-                  return FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        labels[idx],
-                        style: TextStyle(
-                          color: colors[idx],
-                          fontWeight: FontWeight.bold,
-                          fontSize: isCompact ? 9 : 11,
-                          letterSpacing: 0.5,
-                        ),
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(
+                      labels[idx],
+                      style: TextStyle(
+                        color: colors[idx],
+                        fontWeight: FontWeight.bold,
+                        fontSize: isCompact ? 8 : 9,
+                        letterSpacing: 0.8,
                       ),
                     ),
                   );
@@ -571,20 +665,19 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: isCompact ? 32 : 42,
+              reservedSize: isCompact ? 38 : 48,
               getTitlesWidget: (value, meta) {
+                if (value == meta.min || value == meta.max)
+                  return const SizedBox();
                 final label =
                     value >= 1000
                         ? '${(value / 1000).toStringAsFixed(1)}k'
                         : value.toInt().toString();
-                return FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      color: const Color(0xFFBBDEFF),
-                      fontSize: isCompact ? 8 : 10,
-                    ),
+                return Text(
+                  label,
+                  style: TextStyle(
+                    color: const Color(0xFFBBDEFF).withOpacity(0.6),
+                    fontSize: isCompact ? 8 : 9,
                   ),
                 );
               },
@@ -667,7 +760,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
     );
   }
 
-  // Generic pie chart – works for both Expense and Income lists.
+  // Holographic Donut Chart with legend
   Widget _buildPieChart({
     required List<dynamic> items,
     required String Function(dynamic) categoryFn,
@@ -682,20 +775,21 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Icons.pie_chart_outline,
+              Icons.donut_large_outlined,
               color: const Color(0xFF00D9FF).withOpacity(0.3),
-              size: 32,
+              size: 48,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Text(
               emptyLabel,
-              style: const TextStyle(color: Color(0xFFBBDEFF), fontSize: 12),
+              style: const TextStyle(color: Color(0xFFBBDEFF), fontSize: 13),
             ),
           ],
         ),
       );
     }
 
+    // Aggregate by category
     final Map<String, double> totals = {};
     for (final item in items) {
       final cat = categoryFn(item);
@@ -703,69 +797,193 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
     }
 
     const colors = [
-      Color(0xFF00D9FF), // cyan
-      Color(0xFF7C4DFF), // purple
-      Color(0xFFFF6D00), // deep orange
-      Color(0xFF00E676), // green
-      Color(0xFFFF4081), // pink
-      Color(0xFF40C4FF), // light blue
-      Color(0xFFFFD740), // amber
+      Color(0xFF00D9FF),
+      Color(0xFF7C4DFF),
+      Color(0xFFFF6D00),
+      Color(0xFF00E676),
+      Color(0xFFFF4081),
+      Color(0xFF40C4FF),
+      Color(0xFFFFD740),
+      Color(0xFFE040FB),
     ];
 
     final total = totals.values.fold(0.0, (s, v) => s + v);
-    int idx = 0;
+    final entries = totals.entries.toList();
+
+    // Sections — thin donut ring
     final sections =
-        totals.entries.map((entry) {
-          final pct = total > 0 ? (entry.value / total * 100) : 0;
-          // Only render label when the slice is large enough to fit text
-          final showTitle = pct >= 8;
-          final s = PieChartSectionData(
+        entries.asMap().entries.map((e) {
+          final i = e.key;
+          final entry = e.value;
+          return PieChartSectionData(
             value: entry.value,
-            title:
-                showTitle
-                    ? (entry.key.length > 6
-                        ? '${entry.key.substring(0, 5)}…'
-                        : entry.key)
-                    : '',
-            color: colors[idx % colors.length],
-            radius: radius,
-            titleStyle: TextStyle(
-              color: Colors.white,
-              fontSize: radius < 60 ? 8 : 10,
-              fontWeight: FontWeight.bold,
-              shadows: const [Shadow(color: Colors.black54, blurRadius: 4)],
-            ),
+            title: '',
+            showTitle: false,
+            color: colors[i % colors.length],
+            radius: radius * 0.38, // thin donut ring
+            borderSide: const BorderSide(color: Colors.transparent, width: 0),
           );
-          idx++;
-          return s;
         }).toList();
 
-    return PieChart(
-      PieChartData(
-        sections: sections,
-        centerSpaceRadius: centerSpaceRadius,
-        sectionsSpace: 3,
-        pieTouchData: PieTouchData(enabled: false),
-      ),
+    // Center label
+    final totalStr =
+        total >= 1000
+            ? '₹${(total / 1000).toStringAsFixed(1)}k'
+            : '₹${total.toStringAsFixed(0)}';
+
+    return Column(
+      children: [
+        // ── Donut + centered total ──
+        Expanded(
+          flex: 6,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              PieChart(
+                PieChartData(
+                  sections: sections,
+                  centerSpaceRadius: centerSpaceRadius * 1.8,
+                  sectionsSpace: 2.5,
+                  pieTouchData: PieTouchData(enabled: false),
+                ),
+              ),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    totalStr,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: radius < 90 ? 15 : 22,
+                      fontWeight: FontWeight.bold,
+                      shadows: [
+                        Shadow(
+                          color: const Color(0xFF00D9FF).withOpacity(0.9),
+                          blurRadius: 14,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Text(
+                    'TOTAL',
+                    style: TextStyle(
+                      color: const Color(0xFF00D9FF).withOpacity(0.75),
+                      fontSize: radius < 90 ? 8 : 10,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 2.0,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        // ── Scrollable legend ──
+        Expanded(
+          flex: 4,
+          child: ListView.builder(
+            itemCount: entries.length,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            itemBuilder: (ctx, i) {
+              final entry = entries[i];
+              final pct = total > 0 ? (entry.value / total * 100) : 0.0;
+              final amtStr =
+                  entry.value >= 1000
+                      ? '₹${(entry.value / 1000).toStringAsFixed(1)}k'
+                      : '₹${entry.value.toStringAsFixed(0)}';
+              final color = colors[i % colors.length];
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 3),
+                child: Row(
+                  children: [
+                    // Color dot
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: color,
+                        boxShadow: [
+                          BoxShadow(
+                            color: color.withOpacity(0.6),
+                            blurRadius: 6,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Category name
+                    Expanded(
+                      child: Text(
+                        entry.key,
+                        style: TextStyle(
+                          color: color,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    // Percentage
+                    Text(
+                      '${pct.toStringAsFixed(1)}%',
+                      style: const TextStyle(
+                        color: Color(0xFFBBDEFF),
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Amount
+                    Text(
+                      amtStr,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 
-  // Comparative bar chart: Bar 0 = Total Income (green), Bar 1 = Total Expenses (orange)
   List<BarChartGroupData> _getBarChartData(
     List<Income> incomes,
     List<Expense> expenses,
   ) {
     final totalIncome = incomes.fold(0.0, (s, i) => s + i.amount);
     final totalExpenses = expenses.fold(0.0, (s, e) => s + e.amount);
+    const double rodWidth = 32;
     return [
       BarChartGroupData(
         x: 0,
         barRods: [
           BarChartRodData(
             toY: totalIncome,
-            color: Colors.green,
-            width: 28,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+            width: rodWidth,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+            gradient: const LinearGradient(
+              begin: Alignment.bottomCenter,
+              end: Alignment.topCenter,
+              colors: [Color(0xFF005B7F), Color(0xFF00E5FF)],
+            ),
+            backDrawRodData: BackgroundBarChartRodData(
+              show: true,
+              toY:
+                  totalIncome == 0 && totalExpenses == 0
+                      ? 100
+                      : (totalIncome > totalExpenses
+                              ? totalIncome
+                              : totalExpenses) *
+                          1.1,
+              color: const Color(0xFF00D9FF).withOpacity(0.07),
+            ),
           ),
         ],
       ),
@@ -774,105 +992,160 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
         barRods: [
           BarChartRodData(
             toY: totalExpenses,
-            color: Colors.orange,
-            width: 28,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+            width: rodWidth,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+            gradient: const LinearGradient(
+              begin: Alignment.bottomCenter,
+              end: Alignment.topCenter,
+              colors: [Color(0xFF7A1800), Color(0xFFFF6D00)],
+            ),
+            backDrawRodData: BackgroundBarChartRodData(
+              show: true,
+              toY:
+                  totalIncome == 0 && totalExpenses == 0
+                      ? 100
+                      : (totalIncome > totalExpenses
+                              ? totalIncome
+                              : totalExpenses) *
+                          1.1,
+              color: const Color(0xFFFF6D00).withOpacity(0.07),
+            ),
           ),
         ],
       ),
     ];
   }
 
-  Widget _buildCustomButton({
-    required VoidCallback onPressed,
-    required double size,
-    String label = '',
-    bool isAddIncome = false,
-  }) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Button image scaled to fit text
-          Container(
-            width: label.isEmpty ? size : size * 3.8,
-            height: size,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(size / 2),
-              image: DecorationImage(
-                image: AssetImage('lib/assets/button.png'),
-                fit: BoxFit.fill,
-              ),
-            ),
-          ),
-          // Add icon or label on top
-          if (label.isEmpty)
-            Icon(
-              isAddIncome ? Icons.remove : Icons.add,
-              color: Colors.white,
-              size: 32,
-            )
-          else
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                label,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPeriodButton(
-    String label,
-    String period, {
+  /// Shared premium analytics toggle button — used on both mobile and desktop.
+  Widget _buildAnalyticsToggleButton({
+    required bool isAnalytics,
     bool isCompact = false,
   }) {
-    final isActive = _selectedPeriod == period;
-    final horizontalPadding = isCompact ? 8.0 : 12.0;
-    final verticalPadding = isCompact ? 6.0 : 8.0;
-    final fontSize = isCompact ? 9.0 : 11.0;
-
     return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedPeriod = period;
-        });
-      },
-      child: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: horizontalPadding,
-          vertical: verticalPadding,
-        ),
-        decoration: BoxDecoration(
-          color:
-              isActive
-                  ? const Color(0xFF00D9FF).withOpacity(0.2)
-                  : Colors.black.withOpacity(0.3),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isActive ? const Color(0xFF00D9FF) : Colors.white24,
-            width: isActive ? 2 : 1,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isActive ? const Color(0xFF00D9FF) : const Color(0xFFBBDEFF),
-            fontSize: fontSize,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 0.5,
+      onTap: () => setState(() => _showAnalytics = !_showAnalytics),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: isCompact ? 9 : 12,
+            ),
+            decoration: BoxDecoration(
+              color:
+                  isAnalytics
+                      ? const Color(0xFF7C4DFF).withOpacity(0.15)
+                      : const Color(0xFF00D9FF).withOpacity(0.08),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color:
+                    isAnalytics
+                        ? const Color(0xFF7C4DFF).withOpacity(0.7)
+                        : const Color(0xFF00D9FF).withOpacity(0.4),
+                width: 1.4,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color:
+                      isAnalytics
+                          ? const Color(0xFF7C4DFF).withOpacity(0.28)
+                          : const Color(0xFF00D9FF).withOpacity(0.14),
+                  blurRadius: 18,
+                  spreadRadius: 1,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                // Gradient icon circle
+                Container(
+                  width: isCompact ? 30 : 36,
+                  height: isCompact ? 30 : 36,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient:
+                        isAnalytics
+                            ? const LinearGradient(
+                              colors: [Color(0xFF4A148C), Color(0xFF9C27B0)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            )
+                            : const LinearGradient(
+                              colors: [Color(0xFF006064), Color(0xFF00E5FF)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                    boxShadow: [
+                      BoxShadow(
+                        color:
+                            isAnalytics
+                                ? const Color(0xFF7C4DFF).withOpacity(0.5)
+                                : const Color(0xFF00D9FF).withOpacity(0.45),
+                        blurRadius: 10,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    isAnalytics
+                        ? Icons.bar_chart_rounded
+                        : Icons.analytics_outlined,
+                    color: Colors.white,
+                    size: isCompact ? 15 : 18,
+                  ),
+                ),
+                SizedBox(width: isCompact ? 10 : 12),
+                // Labels
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        isAnalytics ? 'HIDE ANALYTICS' : 'SHOW ANALYTICS',
+                        style: TextStyle(
+                          color:
+                              isAnalytics
+                                  ? const Color(0xFFCE93D8)
+                                  : const Color(0xFF00D9FF),
+                          fontSize: isCompact ? 11 : 13,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      Text(
+                        isAnalytics
+                            ? 'Back to transactions'
+                            : 'Charts & insights',
+                        style: TextStyle(
+                          color:
+                              isAnalytics
+                                  ? const Color(0xFFCE93D8).withOpacity(0.6)
+                                  : const Color(0xFF00D9FF).withOpacity(0.55),
+                          fontSize: isCompact ? 8 : 9,
+                          letterSpacing: 0.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Chevron
+                Icon(
+                  isAnalytics
+                      ? Icons.keyboard_arrow_up
+                      : Icons.keyboard_arrow_down,
+                  color:
+                      isAnalytics
+                          ? const Color(0xFFCE93D8).withOpacity(0.7)
+                          : const Color(0xFF00D9FF).withOpacity(0.7),
+                  size: 20,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -1129,57 +1402,136 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
     );
   }
 
-  // Responsive Action Button Builder
+  // Premium Glassmorphic Action Button
   Widget _buildResponsiveActionButton({
     required VoidCallback onPressed,
     required IconData icon,
     required String label,
+    required String subtitle,
     required Color color,
-    bool showGlow = true,
+    required Gradient gradient,
     bool compact = false,
   }) {
-    final buttonWidth = compact ? 130.0 : 160.0;
-    final buttonHeight = compact ? 50.0 : 60.0;
-    final iconSize = compact ? 18.0 : 20.0;
-    final fontSize = compact ? 10.0 : 12.0;
-
     return GestureDetector(
       onTap: onPressed,
-      child: Container(
-        width: buttonWidth,
-        height: buttonHeight,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          image: const DecorationImage(
-            image: AssetImage('lib/assets/button.png'),
-            fit: BoxFit.fill,
-          ),
-          boxShadow:
-              showGlow
-                  ? [
-                    BoxShadow(
-                      color: color.withOpacity(0.3),
-                      blurRadius: 10,
-                      spreadRadius: 2,
-                    ),
-                  ]
-                  : [],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: Colors.white, size: iconSize),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: fontSize,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1,
-              ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? 14 : 20,
+              vertical: compact ? 10 : 14,
             ),
-          ],
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: color.withOpacity(0.45), width: 1.4),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withOpacity(0.22),
+                  blurRadius: 18,
+                  spreadRadius: 1,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child:
+                compact
+                    // ---- Compact pill (mobile row) ----
+                    ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 34,
+                          height: 34,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: gradient,
+                            boxShadow: [
+                              BoxShadow(
+                                color: color.withOpacity(0.45),
+                                blurRadius: 10,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                          child: Icon(icon, color: Colors.white, size: 17),
+                        ),
+                        const SizedBox(width: 10),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              label,
+                              style: TextStyle(
+                                color: color,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                            Text(
+                              subtitle,
+                              style: TextStyle(
+                                color: color.withOpacity(0.6),
+                                fontSize: 9,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    )
+                    // ---- Wide card (desktop row) ----
+                    : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: gradient,
+                            boxShadow: [
+                              BoxShadow(
+                                color: color.withOpacity(0.5),
+                                blurRadius: 14,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
+                          child: Icon(icon, color: Colors.white, size: 22),
+                        ),
+                        const SizedBox(width: 14),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              label,
+                              style: TextStyle(
+                                color: color,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.5,
+                              ),
+                            ),
+                            Text(
+                              subtitle,
+                              style: TextStyle(
+                                color: color.withOpacity(0.6),
+                                fontSize: 10,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+          ),
         ),
       ),
     );
@@ -1190,215 +1542,399 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
     required bool isCompact,
     required bool isMobile,
   }) {
-    final spacing = isCompact ? 8.0 : 12.0;
     final padding = isCompact ? 8.0 : 12.0;
 
+    const incomeGradient = LinearGradient(
+      colors: [Color(0xFF006064), Color(0xFF00E5FF)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
+    const expenseGradient = LinearGradient(
+      colors: [Color(0xFF7A1800), Color(0xFFFF6D00)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
+
+    final incomeBtn = _buildResponsiveActionButton(
+      onPressed: () => _openAddIncomeSheet(context),
+      icon: Icons.south_west_rounded,
+      label: 'INCOME',
+      subtitle: 'Add a receipt',
+      color: const Color(0xFF00E5FF),
+      gradient: incomeGradient,
+      compact: isMobile,
+    );
+    final expenseBtn = _buildResponsiveActionButton(
+      onPressed: () => _openAddExpenseSheet(context),
+      icon: Icons.north_east_rounded,
+      label: 'EXPENSE',
+      subtitle: 'Log a payment',
+      color: const Color(0xFFFF6D00),
+      gradient: expenseGradient,
+      compact: isMobile,
+    );
+
     if (isMobile) {
-      // Vertical stack for mobile
       return Padding(
-        padding: EdgeInsets.all(padding),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        padding: EdgeInsets.symmetric(horizontal: padding, vertical: padding),
+        child: Row(
           children: [
-            _buildResponsiveActionButton(
-              onPressed: () => _openAddIncomeSheet(context),
-              icon: Icons.download,
-              label: 'INCOME',
-              color: Colors.cyan,
-              compact: true,
-            ),
-            SizedBox(height: spacing),
-            _buildResponsiveActionButton(
-              onPressed: () => _openAddExpenseSheet(context),
-              icon: Icons.upload,
-              label: 'EXPENSE',
-              color: Colors.orange,
-              showGlow: false,
-              compact: true,
-            ),
+            Expanded(child: incomeBtn),
+            const SizedBox(width: 10),
+            Expanded(child: expenseBtn),
           ],
         ),
       );
     } else {
-      // Horizontal row for larger screens
       return Padding(
         padding: EdgeInsets.all(padding),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Flexible(
-              child: _buildResponsiveActionButton(
-                onPressed: () => _openAddIncomeSheet(context),
-                icon: Icons.download,
-                label: 'INCOME',
-                color: Colors.cyan,
-                compact: isCompact,
-              ),
-            ),
-            SizedBox(width: spacing),
-            Flexible(
-              child: _buildResponsiveActionButton(
-                onPressed: () => _openAddExpenseSheet(context),
-                icon: Icons.upload,
-                label: 'EXPENSE',
-                color: Colors.orange,
-                showGlow: false,
-                compact: isCompact,
-              ),
-            ),
+            Flexible(child: incomeBtn),
+            SizedBox(width: isCompact ? 10 : 16),
+            Flexible(child: expenseBtn),
           ],
         ),
       );
     }
   }
 
-  // Responsive Calendar Widget Builder
-  Widget _buildResponsiveCalendar({required bool isCompact}) {
-    final rowHeight = isCompact ? 40.0 : 52.0;
-    final headerFontSize = isCompact ? 14.0 : 16.0;
-    final dayFontSize = isCompact ? 12.0 : 14.0;
+  // ── Navigational Chronometer (Mobile Week Strip) ──────────────────────────
 
+  /// Scrolls the week strip to the 1st of [month] with smooth animation.
+  void _jumpToMonth(DateTime month) {
+    final origin = DateTime(
+      DateTime.now().year,
+      DateTime.now().month,
+      DateTime.now().day,
+    );
+    final target = DateTime(month.year, month.month, 1);
+    final diff = target.difference(origin).inDays;
+    final index = (_pastDays + diff).clamp(0, _dateList.length - 1);
+    final offset = (index * (_podWidth + 10)).toDouble();
+    _weekStripController.animateTo(
+      offset,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeInOut,
+    );
+    setState(() => _focusedMonth = month);
+  }
+
+  /// Compact header for mobile: month nav + week strip + analytics toggle.
+  Widget _buildMobileHeader({
+    required bool isAnalytics,
+    required bool isCompact,
+  }) {
+    const monthNames = [
+      'JANUARY',
+      'FEBRUARY',
+      'MARCH',
+      'APRIL',
+      'MAY',
+      'JUNE',
+      'JULY',
+      'AUGUST',
+      'SEPTEMBER',
+      'OCTOBER',
+      'NOVEMBER',
+      'DECEMBER',
+    ];
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        // Format toggle buttons for compact view
-        if (isCompact)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _buildCalendarFormatButton('Month', CalendarFormat.month),
-                const SizedBox(width: 8),
-                _buildCalendarFormatButton('2 Weeks', CalendarFormat.twoWeeks),
-                const SizedBox(width: 8),
-                _buildCalendarFormatButton('Week', CalendarFormat.week),
-              ],
-            ),
+        // ── Month / Year Navigation ──
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          child: Row(
+            children: [
+              _buildNavArrow(Icons.chevron_left, () {
+                _jumpToMonth(
+                  DateTime(_focusedMonth.year, _focusedMonth.month - 1),
+                );
+              }),
+              Expanded(
+                child: Text(
+                  '${monthNames[_focusedMonth.month - 1]}  ${_focusedMonth.year}',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Color(0xFF00D9FF),
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 2.0,
+                  ),
+                ),
+              ),
+              _buildNavArrow(Icons.chevron_right, () {
+                _jumpToMonth(
+                  DateTime(_focusedMonth.year, _focusedMonth.month + 1),
+                );
+              }),
+            ],
           ),
-        Expanded(
-          child: SingleChildScrollView(
-            child: TableCalendar(
-              firstDay: DateTime.utc(2020, 1, 1),
-              lastDay: DateTime.utc(2030, 12, 31),
-              focusedDay: _focusedDay,
-              calendarFormat: _calendarFormat,
-              availableCalendarFormats: const {
-                CalendarFormat.month: 'Month',
-                CalendarFormat.twoWeeks: '2 weeks',
-                CalendarFormat.week: 'Week',
-              },
-              onFormatChanged: (format) {
-                setState(() {
-                  _calendarFormat = format;
-                });
-              },
-              selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-              onDaySelected: (selectedDay, focusedDay) {
-                setState(() {
-                  _selectedDay = selectedDay;
-                  _focusedDay = focusedDay;
-                });
-              },
-              calendarStyle: CalendarStyle(
-                cellMargin: EdgeInsets.all(isCompact ? 2 : 4),
-                rowDecoration: BoxDecoration(),
-                defaultTextStyle: TextStyle(
-                  color: const Color(0xFFBBDEFF),
-                  fontSize: dayFontSize,
-                ),
-                weekendTextStyle: TextStyle(
-                  color: const Color(0xFFBBDEFF),
-                  fontSize: dayFontSize,
-                ),
-                selectedDecoration: const BoxDecoration(
-                  color: Color(0xFF00D9FF),
-                  shape: BoxShape.circle,
-                ),
-                todayDecoration: const BoxDecoration(
-                  color: Color(0xFF00B8D4),
-                  shape: BoxShape.circle,
-                ),
-                defaultDecoration: const BoxDecoration(shape: BoxShape.circle),
-                weekendDecoration: const BoxDecoration(shape: BoxShape.circle),
-              ),
-              rowHeight: rowHeight,
-              daysOfWeekHeight: isCompact ? 20 : 24,
-              headerStyle: HeaderStyle(
-                formatButtonVisible: !isCompact,
-                formatButtonTextStyle: TextStyle(
-                  color: const Color(0xFF00D9FF),
-                  fontSize: isCompact ? 10 : 12,
-                ),
-                formatButtonDecoration: BoxDecoration(
-                  border: Border.all(color: const Color(0xFF00D9FF)),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                titleTextStyle: TextStyle(
-                  color: const Color(0xFF00D9FF),
-                  fontSize: headerFontSize,
-                  fontWeight: FontWeight.bold,
-                ),
-                leftChevronIcon: Icon(
-                  Icons.chevron_left,
-                  color: const Color(0xFF00D9FF),
-                  size: isCompact ? 20 : 24,
-                ),
-                rightChevronIcon: Icon(
-                  Icons.chevron_right,
-                  color: const Color(0xFF00D9FF),
-                  size: isCompact ? 20 : 24,
-                ),
-                headerPadding: EdgeInsets.symmetric(
-                  vertical: isCompact ? 8 : 12,
-                ),
-              ),
-              daysOfWeekStyle: DaysOfWeekStyle(
-                weekdayStyle: TextStyle(
-                  color: const Color(0xFF00D9FF),
-                  fontSize: isCompact ? 10 : 12,
-                  fontWeight: FontWeight.bold,
-                ),
-                weekendStyle: TextStyle(
-                  color: const Color(0xFF00D9FF),
-                  fontSize: isCompact ? 10 : 12,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
+        ),
+        _buildWeekStrip(),
+        const SizedBox(height: 6),
+        // ── Analytics Toggle Button (premium card) ──
+        _buildAnalyticsToggleButton(
+          isAnalytics: isAnalytics,
+          isCompact: isCompact,
         ),
       ],
     );
   }
 
-  // Calendar Format Button Builder
-  Widget _buildCalendarFormatButton(String label, CalendarFormat format) {
-    final isActive = _calendarFormat == format;
+  Widget _buildNavArrow(IconData icon, VoidCallback onTap) {
     return GestureDetector(
-      onTap: () {
-        setState(() {
-          _calendarFormat = format;
-        });
-      },
+      onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        width: 32,
+        height: 32,
         decoration: BoxDecoration(
-          color:
-              isActive
-                  ? const Color(0xFF00D9FF).withOpacity(0.2)
-                  : Colors.black.withOpacity(0.3),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isActive ? const Color(0xFF00D9FF) : Colors.white24,
-            width: isActive ? 2 : 1,
-          ),
+          color: const Color(0xFF00D9FF).withOpacity(0.1),
+          shape: BoxShape.circle,
+          border: Border.all(color: const Color(0xFF00D9FF).withOpacity(0.4)),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isActive ? const Color(0xFF00D9FF) : const Color(0xFFBBDEFF),
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
+        child: Icon(icon, color: const Color(0xFF00D9FF), size: 18),
+      ),
+    );
+  }
+
+  /// Horizontal scrollable row of glassmorphic date pods.
+  Widget _buildWeekStrip() {
+    const weekdays = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+    const months = [
+      'JAN',
+      'FEB',
+      'MAR',
+      'APR',
+      'MAY',
+      'JUN',
+      'JUL',
+      'AUG',
+      'SEP',
+      'OCT',
+      'NOV',
+      'DEC',
+    ];
+    final today = DateTime.now();
+
+    return SizedBox(
+      height: 96,
+      child: ListView.builder(
+        controller: _weekStripController,
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+        itemCount: _dateList.length,
+        itemBuilder: (context, index) {
+          final date = _dateList[index];
+          final isSelected = isSameDay(date, _selectedDay);
+          final isToday = isSameDay(date, today);
+          final weekdayLabel = weekdays[date.weekday - 1];
+          final monthLabel = months[date.month - 1];
+
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                _selectedDay = date;
+                _focusedDay = date;
+              });
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: BackdropFilter(
+                  filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: _podWidth,
+                    decoration: BoxDecoration(
+                      color:
+                          isSelected
+                              ? const Color(0xFF00D9FF).withOpacity(0.20)
+                              : Colors.black.withOpacity(0.28),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color:
+                            isSelected
+                                ? const Color(0xFF00D9FF)
+                                : Colors.white24,
+                        width: isSelected ? 1.6 : 1.0,
+                      ),
+                      boxShadow:
+                          isSelected
+                              ? [
+                                BoxShadow(
+                                  color: const Color(
+                                    0xFF00D9FF,
+                                  ).withOpacity(0.35),
+                                  blurRadius: 12,
+                                  spreadRadius: 1,
+                                ),
+                              ]
+                              : [],
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Weekday
+                        Text(
+                          weekdayLabel,
+                          style: TextStyle(
+                            color:
+                                isSelected
+                                    ? const Color(0xFF00D9FF)
+                                    : const Color(0xFFBBDEFF),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        // Day number
+                        Text(
+                          '${date.day}',
+                          style: TextStyle(
+                            color:
+                                isSelected
+                                    ? const Color(0xFF00D9FF)
+                                    : Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            height: 1.0,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        // Month abbrev
+                        Text(
+                          monthLabel,
+                          style: TextStyle(
+                            color:
+                                isSelected
+                                    ? const Color(0xFF00D9FF).withOpacity(0.8)
+                                    : const Color(0xFFBBDEFF),
+                            fontSize: 9,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                        // Today dot indicator
+                        if (isToday) ...[
+                          const SizedBox(height: 4),
+                          Container(
+                            width: 5,
+                            height: 5,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color:
+                                  isSelected
+                                      ? const Color(0xFF00D9FF)
+                                      : const Color(
+                                        0xFF00D9FF,
+                                      ).withOpacity(0.6),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // Responsive Calendar Widget Builder (tablet/desktop only)
+  Widget _buildResponsiveCalendar({required bool isCompact}) {
+    final rowHeight = isCompact ? 40.0 : 52.0;
+    final headerFontSize = isCompact ? 14.0 : 16.0;
+    final dayFontSize = isCompact ? 12.0 : 14.0;
+
+    return Expanded(
+      child: SingleChildScrollView(
+        child: TableCalendar(
+          firstDay: DateTime.utc(2020, 1, 1),
+          lastDay: DateTime.utc(2030, 12, 31),
+          focusedDay: _focusedDay,
+          calendarFormat: _calendarFormat,
+          availableCalendarFormats: const {
+            CalendarFormat.month: 'Month',
+            CalendarFormat.twoWeeks: '2 weeks',
+            CalendarFormat.week: 'Week',
+          },
+          onFormatChanged: (format) => setState(() => _calendarFormat = format),
+          selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+          onDaySelected: (selectedDay, focusedDay) {
+            setState(() {
+              _selectedDay = selectedDay;
+              _focusedDay = focusedDay;
+            });
+          },
+          calendarStyle: CalendarStyle(
+            cellMargin: EdgeInsets.all(isCompact ? 2 : 4),
+            rowDecoration: const BoxDecoration(),
+            defaultTextStyle: TextStyle(
+              color: const Color(0xFFBBDEFF),
+              fontSize: dayFontSize,
+            ),
+            weekendTextStyle: TextStyle(
+              color: const Color(0xFFBBDEFF),
+              fontSize: dayFontSize,
+            ),
+            selectedDecoration: const BoxDecoration(
+              color: Color(0xFF00D9FF),
+              shape: BoxShape.circle,
+            ),
+            todayDecoration: const BoxDecoration(
+              color: Color(0xFF00B8D4),
+              shape: BoxShape.circle,
+            ),
+            defaultDecoration: const BoxDecoration(shape: BoxShape.circle),
+            weekendDecoration: const BoxDecoration(shape: BoxShape.circle),
+          ),
+          rowHeight: rowHeight,
+          daysOfWeekHeight: isCompact ? 20 : 24,
+          headerStyle: HeaderStyle(
+            formatButtonVisible: !isCompact,
+            formatButtonTextStyle: TextStyle(
+              color: const Color(0xFF00D9FF),
+              fontSize: isCompact ? 10 : 12,
+            ),
+            formatButtonDecoration: BoxDecoration(
+              border: Border.all(color: const Color(0xFF00D9FF)),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            titleTextStyle: TextStyle(
+              color: const Color(0xFF00D9FF),
+              fontSize: headerFontSize,
+              fontWeight: FontWeight.bold,
+            ),
+            leftChevronIcon: Icon(
+              Icons.chevron_left,
+              color: const Color(0xFF00D9FF),
+              size: isCompact ? 20 : 24,
+            ),
+            rightChevronIcon: Icon(
+              Icons.chevron_right,
+              color: const Color(0xFF00D9FF),
+              size: isCompact ? 20 : 24,
+            ),
+            headerPadding: EdgeInsets.symmetric(vertical: isCompact ? 8 : 12),
+          ),
+          daysOfWeekStyle: DaysOfWeekStyle(
+            weekdayStyle: TextStyle(
+              color: const Color(0xFF00D9FF),
+              fontSize: isCompact ? 10 : 12,
+              fontWeight: FontWeight.bold,
+            ),
+            weekendStyle: TextStyle(
+              color: const Color(0xFF00D9FF),
+              fontSize: isCompact ? 10 : 12,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
       ),

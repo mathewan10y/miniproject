@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' as ui;
 import 'dart:math' as math;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -16,6 +17,7 @@ import '../../gamification/user_stats_provider.dart';
 import '../../trading/data/portfolio_provider.dart';
 import '../../trading/domain/models/open_position.dart';
 import '../../trading/presentation/stock_analysis_overlay.dart';
+import '../../trading/data/flight_deck_state_provider.dart';
 
 class FlightDeckPage extends ConsumerStatefulWidget {
   const FlightDeckPage({super.key});
@@ -25,7 +27,7 @@ class FlightDeckPage extends ConsumerStatefulWidget {
 }
 
 class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   late final AnimationController _fuelAnimationController;
   late final AnimationController _radarController;
   final List<Particle> _particles = [];
@@ -73,6 +75,9 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
   String _selectedInterval = '1H';
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   void initState() {
     super.initState();
     _fuelAnimationController = AnimationController(
@@ -87,6 +92,27 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
 
     _particleTimer = Timer.periodic(const Duration(milliseconds: 32), (timer) {
       _updateParticles();
+    });
+
+    // ── Restore previously cached chart data from the Riverpod provider ──
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final cached = ref.read(flightDeckChartProvider);
+      if (cached.hasData && mounted) {
+        setState(() {
+          _selectedAsset = cached.selectedAsset;
+          _candles = List.of(cached.candles);
+          _selectedInterval = cached.selectedInterval;
+          if (_candles.isNotEmpty) {
+            final screenW = MediaQuery.of(context).size.width - 60;
+            final targetVisible = _candles.length < 80 ? _candles.length : 80;
+            _candleWidth = (screenW / targetVisible).clamp(
+              _minCandleWidth,
+              _maxCandleWidth,
+            );
+            _baseCandleWidth = _candleWidth;
+          }
+        });
+      }
     });
   }
 
@@ -204,6 +230,14 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
             );
           }
         });
+        // ── Persist chart data in the provider so it survives navigation ──
+        ref
+            .read(flightDeckChartProvider.notifier)
+            .saveChartData(
+              asset: asset,
+              candles: _candles,
+              interval: _selectedInterval,
+            );
       }
     } catch (e) {
       if (mounted) setState(() => _isLoadingHistory = false);
@@ -262,9 +296,9 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // required by AutomaticKeepAliveClientMixin
     final system = ref.watch(refineryProvider).valueOrNull;
     final assetsAsync = ref.watch(marketAssetsProvider);
-
     ref.listen(refineryProvider, (previous, next) {
       final nextFuel = next.valueOrNull?.refinedFuel ?? 0;
       final prevFuel = previous?.valueOrNull?.refinedFuel ?? 0;
@@ -508,6 +542,69 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
           left: 16,
           bottom: _panelHeight + 8,
           child: _buildTimeframeSelector(),
+        ),
+
+        // Analyze Button — bottom-left of chart, right of timeframe selector
+        AnimatedPositioned(
+          duration: const Duration(milliseconds: 100),
+          curve: Curves.easeOut,
+          right: 50,
+          bottom: _panelHeight + 30,
+          child:
+              _selectedAsset != null
+                  ? GestureDetector(
+                    onTap:
+                        () =>
+                            showStockAnalysisOverlay(context, _selectedAsset!),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: BackdropFilter(
+                        filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 7,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF7C3AED).withOpacity(0.25),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: const Color(0xFF9C27B0).withOpacity(0.7),
+                              width: 1.2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF7C3AED).withOpacity(0.4),
+                                blurRadius: 12,
+                                spreadRadius: 0,
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.auto_awesome,
+                                color: Color(0xFFCE93D8),
+                                size: 13,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'ANALYZE',
+                                style: GoogleFonts.orbitron(
+                                  color: const Color(0xFFCE93D8),
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
+                  : const SizedBox(),
         ),
 
         // Drag-adjustable Bottom Panel
@@ -1025,40 +1122,6 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
               _buildQuantitySelector(),
               const SizedBox(width: 4),
               _buildTradeButton("BUY", Colors.cyan),
-              const SizedBox(width: 8),
-              // ── Analyze Button ──
-              GestureDetector(
-                onTap: () => showStockAnalysisOverlay(context, _selectedAsset!),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF7C3AED),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.auto_awesome,
-                        color: Colors.white,
-                        size: 13,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Analyze',
-                        style: GoogleFonts.inter(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
               if (_tradeMode != TradeMode.none) ...[
                 const SizedBox(width: 8),
                 _buildActiveTradeHeader(),
@@ -2147,15 +2210,39 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
   }
 
   Widget _buildTradeButton(String label, Color color) {
+    final price =
+        _candles.isNotEmpty
+            ? _candles.last.close
+            : (_selectedAsset?.currentPrice ?? 0.0);
+    final cost = price * _tradeQuantity;
+    final currentFuel =
+        ref.watch(userStatsProvider).valueOrNull?.tradingCredits ?? 0.0;
+    final canAfford = currentFuel >= cost;
+
+    final effectiveColor = canAfford ? color : Colors.grey.shade600;
+
     return GestureDetector(
       onTap: () {
         final isLong = label == "BUY";
-        final price =
-            _candles.isNotEmpty
-                ? _candles.last.close
-                : _selectedAsset!.currentPrice;
 
-        final cost = price * _tradeQuantity;
+        if (!canAfford) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Insufficient FUEL — Need ₹${cost.toStringAsFixed(0)}, '
+                'have ₹${currentFuel.toStringAsFixed(0)}',
+                style: GoogleFonts.shareTechMono(color: Colors.white),
+              ),
+              backgroundColor: Colors.redAccent.shade700,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          );
+          return;
+        }
+
         final statsNotifier = ref.read(userStatsProvider.notifier);
         final success = statsNotifier.deductFuel(cost);
         if (!success) {
@@ -2196,19 +2283,44 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
           _tpPrice = null;
         });
       },
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          border: Border.all(color: color),
+          color: effectiveColor.withOpacity(canAfford ? 0.1 : 0.05),
+          border: Border.all(color: effectiveColor),
           borderRadius: BorderRadius.circular(4),
         ),
-        child: Text(
-          label,
-          style: GoogleFonts.orbitron(
-            color: color,
-            fontWeight: FontWeight.bold,
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (!canAfford) ...[
+                  Icon(Icons.lock_outline, color: effectiveColor, size: 10),
+                  const SizedBox(width: 3),
+                ],
+                Text(
+                  label,
+                  style: GoogleFonts.orbitron(
+                    color: effectiveColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+            if (!canAfford)
+              Text(
+                'LOW FUEL',
+                style: GoogleFonts.shareTechMono(
+                  color: Colors.redAccent.withOpacity(0.7),
+                  fontSize: 7,
+                  letterSpacing: 0.5,
+                ),
+              ),
+          ],
         ),
       ),
     );

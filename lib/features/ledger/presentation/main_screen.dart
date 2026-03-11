@@ -31,7 +31,7 @@ class _MainScreenState extends State<MainScreen> {
     return Scaffold(
       body: PageView(
         controller: _pageController,
-        physics: const BouncingScrollPhysics(),
+        physics: const ClampingScrollPhysics(),
         children: const [
           LogisticsPage(), // Page 0 - Left
           ReactorCorePage(), // Page 1 - Center (Default)
