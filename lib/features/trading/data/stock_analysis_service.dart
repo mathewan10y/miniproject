@@ -203,7 +203,7 @@ The "score" field must be an integer from 0 to 10.
 ''';
 
     final model = GenerativeModel(
-      model: 'gemini-1.5-flash-latest',
+      model: 'gemini-2.5-flash-lite',
       apiKey: apiKey,
       generationConfig: GenerationConfig(
         temperature: 0.3,

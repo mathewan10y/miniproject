@@ -1528,31 +1528,28 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                     ),
                   ),
                   // Live Account Stats
-                  Flexible(
-                    fit: FlexFit.loose,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _buildAccountStat(
-                          "Balance",
-                          "₹${balance.toStringAsFixed(0)}",
-                        ),
-                        const SizedBox(width: 10),
-                        _buildAccountStat(
-                          "P&L",
-                          "${realizedPnl >= 0 ? '+' : ''}₹${realizedPnl.toStringAsFixed(0)}",
-                          valueColor:
-                              realizedPnl >= 0
-                                  ? Colors.greenAccent
-                                  : Colors.redAccent,
-                        ),
-                        const SizedBox(width: 10),
-                        _buildAccountStat(
-                          "Equity",
-                          "₹${equity.toStringAsFixed(0)}",
-                        ),
-                      ],
-                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildAccountStat(
+                        "Balance",
+                        "₹${balance.toStringAsFixed(0)}",
+                      ),
+                      const SizedBox(width: 10),
+                      _buildAccountStat(
+                        "P&L",
+                        "${realizedPnl >= 0 ? '+' : ''}₹${realizedPnl.toStringAsFixed(0)}",
+                        valueColor:
+                            realizedPnl >= 0
+                                ? Colors.greenAccent
+                                : Colors.redAccent,
+                      ),
+                      const SizedBox(width: 10),
+                      _buildAccountStat(
+                        "Equity",
+                        "₹${equity.toStringAsFixed(0)}",
+                      ),
+                    ],
                   ),
                 ],
               ),
