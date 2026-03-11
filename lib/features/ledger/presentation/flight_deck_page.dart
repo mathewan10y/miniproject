@@ -15,6 +15,7 @@ import '../../gamification/presentation/widgets/varsity_orbit_panel.dart';
 import '../../gamification/user_stats_provider.dart';
 import '../../trading/data/portfolio_provider.dart';
 import '../../trading/domain/models/open_position.dart';
+import '../../trading/presentation/stock_analysis_overlay.dart';
 
 class FlightDeckPage extends ConsumerStatefulWidget {
   const FlightDeckPage({super.key});
@@ -1024,6 +1025,40 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
               _buildQuantitySelector(),
               const SizedBox(width: 4),
               _buildTradeButton("BUY", Colors.cyan),
+              const SizedBox(width: 8),
+              // ── Analyze Button ──
+              GestureDetector(
+                onTap: () => showStockAnalysisOverlay(context, _selectedAsset!),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF7C3AED),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.auto_awesome,
+                        color: Colors.white,
+                        size: 13,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Analyze',
+                        style: GoogleFonts.inter(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
               if (_tradeMode != TradeMode.none) ...[
                 const SizedBox(width: 8),
                 _buildActiveTradeHeader(),
