@@ -65,7 +65,7 @@ class TopBar extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                // CODEX button — right of the title
+                // CODEX button — opens Captain's Log
                 GestureDetector(
                   onTap: () {
                     showDialog(
@@ -119,7 +119,7 @@ class TopBar extends ConsumerWidget {
               if (actions != null) ...[actions!, const SizedBox(width: 8)],
 
               // Dev / User mode toggle
-              _DevModeToggle(),
+              const _DevModeToggle(),
               const SizedBox(width: 8),
 
               // Fuel Display
