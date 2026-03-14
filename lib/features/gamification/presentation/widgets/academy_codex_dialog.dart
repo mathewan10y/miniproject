@@ -280,6 +280,7 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
     final raw = _loadedContent[m.level] ?? '';
     final subLevelTitles = raw.split('\n## ').skip(1).map((s) => s.split('\n').first.replaceAll('## ', '').trim()).toList();
     final allCompleted = subLevelTitles.isNotEmpty && completed.length >= subLevelTitles.length;
+    final progress = subLevelTitles.isEmpty ? 0.0 : completed.length / subLevelTitles.length;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -322,6 +323,32 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
                   style: GoogleFonts.shareTechMono(
                     color: locked ? Colors.white12 : Colors.white30, fontSize: 8),
                   overflow: TextOverflow.ellipsis),
+                // Progress bar
+                if (!locked && subLevelTitles.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Container(
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                    child: FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: progress,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: allCompleted ? const Color(0xFF4CAF50) : m.accent,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text('${completed.length}/${subLevelTitles.length} completed',
+                    style: GoogleFonts.shareTechMono(
+                      color: allCompleted ? const Color(0xFF4CAF50) : Colors.white38,
+                      fontSize: 7)),
+                ],
               ])),
             ]),
           ),
@@ -479,16 +506,13 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
     widgets.addAll(_parseInnerContent(raw, meta.accent, meta));
     
     // Add cadet evaluation section
-    if (meta.level > 0) {
+    if (meta.level >= 0) {
       widgets.add(const SizedBox(height: 20));
       widgets.add(_cadetEvaluation(meta.level, completed, meta.accent));
     }
 
-    // Add evaluation button if not completed
-    if (completed.length < 3) {
-      widgets.add(_buildCadetEvalButton(meta.level, 'Complete Level ${meta.level}', completed.length, meta.accent, false));
-    } else {
-      // All sub-levels completed - show boss fight button
+    // Add boss fight button if all sub-levels completed
+    if (completed.length >= 3) {
       widgets.add(const SizedBox(height: 20));
       widgets.add(_buildBossFightButton(meta.level, true));
     }
@@ -575,11 +599,25 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
     final widgets = <Widget>[];
     final lines   = raw.split('\n');
     final buf     = StringBuffer();
+    String? currentSectionTitle;
+    int? currentSubLevelIndex;
 
     void flush() {
       final t = buf.toString().trim();
       if (t.isNotEmpty) widgets.add(_bodyBlock(t, accent));
       buf.clear();
+      
+      // Add evaluation button after section content if this was a sub-level
+      if (currentSectionTitle != null && currentSubLevelIndex != null) {
+        final engine = ref.read(tutorialEngineProvider);
+        final completed = engine.getCompletedSubLevels(meta.level);
+        final isSubLevelCompleted = completed.contains(currentSubLevelIndex);
+        
+        widgets.add(const SizedBox(height: 16));
+        widgets.add(_buildCadetEvalButton(meta.level, currentSectionTitle ?? '', currentSubLevelIndex!, accent, isSubLevelCompleted));
+        currentSectionTitle = null;
+        currentSubLevelIndex = null;
+      }
     }
 
     for (final raw in lines) {
@@ -603,17 +641,13 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
         flush(); 
         widgets.add(_section(line, accent));
         
-        // Add evaluation button after each section/sub-level
+        // Store section info to add evaluation button after content
         final sectionTitle = line.replaceAll(RegExp(r'^#+\s'), '').trim();
-        if (sectionTitle.isNotEmpty && meta.level > 0) {
+        if (sectionTitle.isNotEmpty) {
           final subLevelIndex = _getSubLevelIndex(sectionTitle);
           if (subLevelIndex != null) {
-            final engine = ref.read(tutorialEngineProvider);
-            final completed = engine.getCompletedSubLevels(meta.level);
-            final isSubLevelCompleted = completed.contains(subLevelIndex);
-            
-            widgets.add(const SizedBox(height: 16));
-            widgets.add(_buildCadetEvalButton(meta.level, sectionTitle, subLevelIndex, accent, isSubLevelCompleted));
+            currentSectionTitle = sectionTitle;
+            currentSubLevelIndex = subLevelIndex;
           }
         }
         
@@ -627,6 +661,11 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
   }
 
   Widget _buildCadetEvalButton(int levelId, String subLevelTitle, int subLevelIndex, Color accent, bool isCompleted) {
+    // Check if this evaluation was failed
+    final engine = ref.read(tutorialEngineProvider);
+    final completed = engine.getCompletedSubLevels(levelId);
+    final isFailed = !completed.contains(subLevelIndex.toString());
+    
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 24),
       child: ElevatedButton.icon(
@@ -641,12 +680,28 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
           // Refresh state
           setState(() {});
         },
-        icon: Icon(isCompleted ? Icons.check_circle : Icons.psychology, size: 18),
-        label: Text(isCompleted ? "EVALUATION PASSED" : "[ RUN DIAGNOSTIC: CADET EVALUATION ]"),
+        icon: Icon(
+          isCompleted ? Icons.check_circle : 
+          isFailed ? Icons.error : Icons.psychology, 
+          size: 18
+        ),
+        label: Text(
+          isCompleted ? "✓ EVALUATION PASSED" : 
+          isFailed ? "✗ EVALUATION FAILED - RETRY" : 
+          "[ RUN DIAGNOSTIC: CADET EVALUATION ]"
+        ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: isCompleted ? Colors.green.withOpacity(0.2) : accent.withOpacity(0.1),
-          foregroundColor: isCompleted ? Colors.green : accent,
-          side: BorderSide(color: isCompleted ? Colors.green.withOpacity(0.5) : accent.withOpacity(0.5)),
+          backgroundColor: isCompleted ? Colors.green.withOpacity(0.2) : 
+                         isFailed ? Colors.red.withOpacity(0.2) : 
+                         accent.withOpacity(0.1),
+          foregroundColor: isCompleted ? Colors.green : 
+                         isFailed ? Colors.red : 
+                         accent,
+          side: BorderSide(
+            color: isCompleted ? Colors.green.withOpacity(0.5) : 
+                   isFailed ? Colors.red.withOpacity(0.5) : 
+                   accent.withOpacity(0.5)
+          ),
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
           alignment: Alignment.centerLeft,
           textStyle: GoogleFonts.shareTechMono(fontWeight: FontWeight.bold, letterSpacing: 1),
@@ -779,6 +834,7 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
   // Helper method to extract sub-level index from title
   int? _getSubLevelIndex(String sectionTitle) {
     final levelSections = {
+      '0.0': 0, '0.1': 1, '0.2': 2, '0.3': 3, '0.4': 4,
       '1.0': 0, '1.1': 1, '1.2': 2, '1.3': 3, '1.4': 4,
       '2.0': 0, '2.1': 1, '2.2': 2, '2.3': 3, '2.4': 4,
       '3.0': 0, '3.1': 1, '3.2': 2, '3.3': 3, '3.4': 4,
