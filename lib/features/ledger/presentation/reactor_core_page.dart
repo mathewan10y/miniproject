@@ -64,8 +64,6 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
         return incomesAsync.when(
           data: (incomes) {
             final rawOre = refineryState?.rawOre ?? 0;
-            final refinedFuel = refineryState?.refinedFuel ?? 0.0;
-            final totalSavings = refineryState?.totalSavings ?? 0.0;
 
             // Calculate ore level for reactor gauge (0-1 based on raw ore)
             double oreLevel = (rawOre / 10000.0).clamp(

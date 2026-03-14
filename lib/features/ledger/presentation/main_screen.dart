@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'reactor_core_page.dart';
 import 'logistics_page.dart';
 import 'flight_deck_page.dart';
-import '../../gamification/services/tutorial_keys.dart';
+// tutorial_keys only used by Phase1Onboarding internally
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../gamification/user_stats_provider.dart';
 import '../../gamification/services/tutorial_engine_service.dart';
@@ -19,7 +19,7 @@ class MainScreen extends ConsumerStatefulWidget {
 
 class _MainScreenState extends ConsumerState<MainScreen> {
   late PageController _pageController;
-  int _currentIndex = 1;
+  // _currentIndex removed — not needed, PageView is the source of truth
 
   bool _tutorialLaunched = false;
 
@@ -52,9 +52,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           // Extra 200ms padding to let animations / layouts settle after data is populated
           Future.delayed(const Duration(milliseconds: 200), () {
-            if (mounted) {
-              Phase1Onboarding.start(context, ref);
-            }
+            if (!mounted) return;
+            // Capture context before async gap to avoid use_build_context_synchronously
+            final ctx = context;
+            Phase1Onboarding.start(ctx, ref);
           });
         });
       }
@@ -72,7 +73,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             );
             return;
           }
-          setState(() => _currentIndex = index);
+          setState(() {/* page changed */});
         },
         children: const [
           LogisticsPage(), // Page 0 - Left

@@ -62,7 +62,7 @@ class _TutorialOverlayWidgetState extends ConsumerState<TutorialOverlayWidget> {
     final shadowColor = isAura ? const Color(0xFF00D9FF).withOpacity(0.5) : const Color(0xFFFF2A2A).withOpacity(0.5);
     final characterName = isAura ? "AURA v3.2" : "CRASH-X";
     // Using local placeholder assets for characters as requested. Ensure these exist or use default icons.
-    final avatarImage = isAura ? 'assets/tars.png' : 'assets/case.png';
+    // avatarImage: isAura ? 'assets/tars.png' : 'assets/case.png' (used when assets available)
 
     // Need a full screen tap detector to progress the dialogue
     return GestureDetector(

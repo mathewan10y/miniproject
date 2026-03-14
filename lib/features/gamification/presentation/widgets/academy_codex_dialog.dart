@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../user_stats_provider.dart';
 import '../../services/tutorial_engine_service.dart';
 import '../../data/tutorial_scripts.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'tutorial_overlay_widget.dart';
 import 'mini_quiz_sheet.dart';
 import '../pages/boss_fight_screen.dart';

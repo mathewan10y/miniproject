@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:fl_chart/fl_chart.dart';
+// fl_chart removed — unused
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/providers/refinery_provider.dart';
 import '../../trading/data/market_service.dart';

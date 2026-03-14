@@ -15,7 +15,6 @@ class BossFightScreen extends ConsumerStatefulWidget {
 class _BossFightScreenState extends ConsumerState<BossFightScreen> with SingleTickerProviderStateMixin {
   int _userHp = 3;
   int _bossHp = 3;
-  bool _isAnimatingDamage = false;
   late final QuizQuestion _quiz;
   int? _selectedIndex;
   bool _hasAnswered = false;
