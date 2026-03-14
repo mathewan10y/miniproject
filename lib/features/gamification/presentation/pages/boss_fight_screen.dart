@@ -234,49 +234,65 @@ class _BossFightScreenState extends ConsumerState<BossFightScreen> with SingleTi
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 16),
-                      Text(
-                        _quizzes[_currentQuestionIndex].question,
-                        style: GoogleFonts.shareTechMono(color: Colors.white, fontSize: 16, height: 1.5, fontWeight: FontWeight.bold),
-                        textAlign: TextAlign.center,
-                      ),
-                      const Spacer(),
-                      ...List.generate(_quizzes[_currentQuestionIndex].options.length, (index) {
-                        final isSelected = _selectedIndex == index;
-                        final isCorrect = index == _quizzes[_currentQuestionIndex].correctIndex;
-                        Color borderColor = Colors.white24;
-                        Color bgColor = Colors.black38;
-
-                        if (_hasAnswered) {
-                          if (isCorrect) {
-                            borderColor = Colors.greenAccent; bgColor = Colors.greenAccent.withOpacity(0.2);
-                          } else if (isSelected) {
-                            borderColor = Colors.redAccent; bgColor = Colors.redAccent.withOpacity(0.2);
-                          }
-                        } else if (isSelected) {
-                          borderColor = const Color(0xFF00D9FF); bgColor = const Color(0xFF00D9FF).withOpacity(0.1);
-                        }
-
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: GestureDetector(
-                            onTap: _hasAnswered ? null : () => setState(() => _selectedIndex = index),
-                            child: Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: bgColor,
-                                border: Border.all(color: borderColor),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                _quizzes[_currentQuestionIndex].options[index],
-                                style: GoogleFonts.shareTechMono(color: Colors.white, fontSize: 14),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
+                      // Make question text scrollable to prevent overflow
+                      Expanded(
+                        flex: 2,
+                        child: SingleChildScrollView(
+                          child: Text(
+                            _quizzes[_currentQuestionIndex].question,
+                            style: GoogleFonts.shareTechMono(color: Colors.white, fontSize: 16, height: 1.5, fontWeight: FontWeight.bold),
+                            textAlign: TextAlign.center,
                           ),
-                        );
-                      }),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // Make answer options scrollable if needed
+                      Expanded(
+                        flex: 3,
+                        child: SingleChildScrollView(
+                          child: Column(
+                            children: List.generate(_quizzes[_currentQuestionIndex].options.length, (index) {
+                              final isSelected = _selectedIndex == index;
+                              final isCorrect = index == _quizzes[_currentQuestionIndex].correctIndex;
+                              Color borderColor = Colors.white24;
+                              Color bgColor = Colors.black38;
+
+                              if (_hasAnswered) {
+                                if (isCorrect) {
+                                  borderColor = Colors.greenAccent; bgColor = Colors.greenAccent.withOpacity(0.2);
+                                } else if (isSelected) {
+                                  borderColor = Colors.redAccent; bgColor = Colors.redAccent.withOpacity(0.2);
+                                }
+                              } else if (isSelected) {
+                                borderColor = const Color(0xFF00D9FF); bgColor = const Color(0xFF00D9FF).withOpacity(0.1);
+                              }
+
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: GestureDetector(
+                                  onTap: _hasAnswered ? null : () => setState(() => _selectedIndex = index),
+                                  child: Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: bgColor,
+                                      border: Border.all(color: borderColor),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      _quizzes[_currentQuestionIndex].options[index],
+                                      style: GoogleFonts.shareTechMono(color: Colors.white, fontSize: 14),
+                                      textAlign: TextAlign.center,
+                                      maxLines: 3,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }),
+                          ),
+                        ),
+                      ),
                       const SizedBox(height: 12),
                       if (!_hasAnswered)
                         ElevatedButton(
