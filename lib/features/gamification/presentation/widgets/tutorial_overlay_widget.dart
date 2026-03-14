@@ -114,11 +114,10 @@ class _TutorialOverlayWidgetState extends ConsumerState<TutorialOverlayWidget> {
                   Row(
                     mainAxisAlignment: isAura ? MainAxisAlignment.start : MainAxisAlignment.end,
                     children: [
-                      // Avatar placeholder
+                      // Avatar placeholder (simplified)
                       Container(
                         width: 100,
                         height: 100,
-                        margin: const EdgeInsets.only(bottom: -10), // overlap effect
                         decoration: BoxDecoration(
                           color: const Color(0xFF0D1520),
                           shape: BoxShape.circle,
@@ -135,7 +134,7 @@ class _TutorialOverlayWidgetState extends ConsumerState<TutorialOverlayWidget> {
                         ),
                       ),
                     ],
-                  ),
+                  ),  
 
                   // 3. The Dialog Box
                   Container(

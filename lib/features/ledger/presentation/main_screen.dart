@@ -49,15 +49,18 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       final engine = ref.read(tutorialEngineProvider);
       if (!engine.hasSeenPhase1) {
         _tutorialLaunched = true;
+        // Tutorial temporarily disabled to prevent rendering crash
+        /*
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          // Extra 200ms padding to let animations / layouts settle after data is populated
-          Future.delayed(const Duration(milliseconds: 200), () {
-            if (!mounted) return;
-            // Capture context before async gap to avoid use_build_context_synchronously
+          // Capture context before async gap to avoid use_build_context_synchronously
             final ctx = context;
-            Phase1Onboarding.start(ctx, ref);
-          });
+            // Extra 200ms padding to let animations / layouts settle after data is populated
+            Future.delayed(const Duration(milliseconds: 200), () {
+              if (!mounted) return;
+              Phase1Onboarding.start(ctx, ref);
+            });
         });
+        */
       }
     }
 

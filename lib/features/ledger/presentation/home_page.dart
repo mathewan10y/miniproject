@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../gamification/analysis_tab.dart';
 import '../../gamification/credit_vault_widget.dart';
+import '../../gamification/services/tutorial_keys.dart';
 import 'add_expense_sheet.dart';
 import 'expenses_tab.dart';
 

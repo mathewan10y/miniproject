@@ -60,12 +60,11 @@ class CyberFinanceApp extends StatelessWidget {
         colorScheme: const ColorScheme.dark(
           primary: Color(0xFF00D9FF), // Cyan
           secondary: Color(0xFF00B8D4), // Darker cyan
-          background: Color(0xFF0A0E27), // Dark space
-          surface: Color(0xFF1A1F3A), // Dark panel
+          surface: Color(0xFF0A0E27), // Dark space
+          surfaceContainer: Color(0xFF1A1F3A), // Dark panel
           onPrimary: Colors.white,
           onSecondary: Colors.white,
-          onBackground: Color(0xFFE0FFFF), // Light cyan
-          onSurface: Color(0xFFE0FFFF),
+          onSurface: Color(0xFFE0FFFF), // Light cyan
         ),
         textTheme: TextTheme(
           displayLarge: GoogleFonts.orbitron(

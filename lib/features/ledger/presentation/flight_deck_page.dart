@@ -272,7 +272,6 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
 
   @override
   Widget build(BuildContext context) {
-    final system = ref.watch(refineryProvider).valueOrNull;
     final assetsAsync = ref.watch(marketAssetsProvider);
 
     ref.listen(refineryProvider, (previous, next) {
@@ -1448,7 +1447,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                 }),
             onVerticalDragUpdate: (d) {
               setState(() {
-                _panelHeight = (_panelHeight - d.primaryDelta!).clamp(
+                _panelHeight = (_panelHeight - (d.primaryDelta ?? 0)).clamp(
                   _panelMinHeight,
                   _panelMaxHeight,
                 );
@@ -2217,7 +2216,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
     required Function(double?) onUpdate,
   }) {
     final bool isActive = activePrice != null;
-    final double price = isActive ? activePrice! : currentPrice;
+    final double price = activePrice ?? currentPrice;
 
     // If docked, use Entry Y. If active, calculate Y from price.
     final double topY = isActive ? priceToY(price) : entryY;
@@ -2247,7 +2246,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
         behavior: HitTestBehavior.opaque,
         onVerticalDragStart: (d) {
           _dragStartGlobalY = d.globalPosition.dy;
-          _dragStartPrice = isActive ? activePrice! : currentPrice;
+          _dragStartPrice = activePrice ?? currentPrice;
           if (!isActive) {
             onUpdate(currentPrice);
           }

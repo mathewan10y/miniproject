@@ -32,8 +32,8 @@ class TopBar extends ConsumerWidget {
       height: 60,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.8),
-        border: Border(bottom: BorderSide(color: Colors.cyan.withOpacity(0.3))),
+        color: Colors.black.withAlpha((0.8 * 255).toInt()),
+        border: Border(bottom: BorderSide(color: Colors.cyan.withAlpha((0.3 * 255).toInt()))),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -79,13 +79,13 @@ class TopBar extends ConsumerWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF00D9FF).withOpacity(0.08),
+                      color: const Color(0xFF00D9FF).withAlpha((0.08 * 255).toInt()),
                       border: Border.all(
-                          color: const Color(0xFF00D9FF).withOpacity(0.35), width: 1),
+                          color: const Color(0xFF00D9FF).withAlpha((0.35 * 255).toInt()), width: 1),
                       borderRadius: BorderRadius.circular(6),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF00D9FF).withOpacity(0.12),
+                          color: const Color(0xFF00D9FF).withAlpha((0.12 * 255).toInt()),
                           blurRadius: 8,
                           spreadRadius: 1,
                         ),

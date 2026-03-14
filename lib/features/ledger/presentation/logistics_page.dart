@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'dart:ui' as ui;
 import 'package:fl_chart/fl_chart.dart';
-import '../../../core/database/database.dart';
 import '../../../core/providers/refinery_provider.dart';
 import '../expense_provider.dart';
 import '../income_provider.dart';
+import '../../../core/database/database.dart';
 import 'add_expense_sheet.dart';
 import 'add_income_sheet.dart';
 import '../../gamification/presentation/widgets/top_bar.dart';
@@ -624,45 +624,6 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
             ],
           ),
           child: child,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGlassmorphButton({
-    required String label,
-    required bool isActive,
-  }) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color:
-                isActive
-                    ? const Color(0xFF00D9FF).withOpacity(0.2)
-                    : Colors.black.withOpacity(0.3),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: isActive ? const Color(0xFF00D9FF) : Colors.white24,
-              width: isActive ? 2 : 1,
-            ),
-          ),
-          child: Center(
-            child: Text(
-              label,
-              style: TextStyle(
-                color:
-                    isActive
-                        ? const Color(0xFF00D9FF)
-                        : const Color(0xFFBBDEFF),
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1,
-              ),
-            ),
-          ),
         ),
       ),
     );

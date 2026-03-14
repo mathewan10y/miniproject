@@ -26,6 +26,7 @@ class Phase1Onboarding {
                 DialogNode(CharacterSpeaker.aura, "Mute him. He is a corrupted algorithm. To survive, you must first generate power."),
               ],
               onComplete: () {
+                if (!context.mounted) return;
                 controller.next();
               },
             );
@@ -88,6 +89,7 @@ class Phase1Onboarding {
                 DialogNode(CharacterSpeaker.crash, "Boring! When do we get to the Flight Deck to trade options?!"),
               ],
               onComplete: () {
+                if (!context.mounted) return;
                 controller.next();
               },
             );
@@ -109,7 +111,10 @@ class Phase1Onboarding {
                 DialogNode(CharacterSpeaker.aura, "The Logistics panel is to your left (SWIPE RIGHT). The Flight Deck is to your right (SWIPE LEFT)."),
                 DialogNode(CharacterSpeaker.aura, "However, the Flight Deck is currently locked. You cannot trade until you learn how to survive."),
               ],
-              onComplete: () { controller.next(); }, 
+              onComplete: () { 
+                if (!context.mounted) return;
+                controller.next(); 
+              }, 
             );
           },
         ),

@@ -201,12 +201,12 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.4),
+        color: Colors.black.withAlpha((0.4 * 255).toInt()),
         border: Border.all(color: const Color(0xFF00D9FF), width: 2),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF00D9FF).withOpacity(0.5),
+            color: const Color(0xFF00D9FF).withAlpha((0.1 * 255).toInt()),
             blurRadius: 20,
             spreadRadius: 2,
           ),
@@ -442,7 +442,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
               letterSpacing: 2,
               shadows: [
                 Shadow(
-                  color: Colors.black.withOpacity(0.5),
+                  color: Colors.black.withAlpha((0.5 * 255).toInt()),
                   blurRadius: 2,
                   offset: const Offset(1, 1),
                 ),

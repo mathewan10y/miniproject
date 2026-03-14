@@ -27,13 +27,13 @@ class _LevelMeta {
 }
 
 const _levels = <_LevelMeta>[
-  _LevelMeta(level: 0, title: 'THE ACADEMY',         subtitle: 'Life Support',      accent: Color(0xFF4FC3F7), icon: Icons.school_outlined,         assetPath: 'lib/assets/documents/level0'),
-  _LevelMeta(level: 1, title: 'GROUND SCHOOL',        subtitle: 'The Shipyard',      accent: Color(0xFF66BB6A), icon: Icons.construction_outlined,   assetPath: 'lib/assets/documents/level1'),
-  _LevelMeta(level: 2, title: 'NAVIGATION',           subtitle: 'Star Mapping',      accent: Color(0xFFFFD54F), icon: Icons.explore_outlined,         assetPath: 'lib/assets/documents/level2'),
-  _LevelMeta(level: 3, title: 'ENGINEERING',          subtitle: 'Reactor Diag.',     accent: Color(0xFFFF8A65), icon: Icons.engineering_outlined,     assetPath: 'lib/assets/documents/level3'),
-  _LevelMeta(level: 4, title: 'HYPERDRIVE',           subtitle: 'Warp Speed',        accent: Color(0xFFCE93D8), icon: Icons.rocket_launch_outlined,   assetPath: 'lib/assets/documents/level4'),
-  _LevelMeta(level: 5, title: 'CRISIS MGMT',          subtitle: 'Asteroid Field',    accent: Color(0xFFEF9A9A), icon: Icons.shield_outlined,          assetPath: 'lib/assets/documents/level5'),
-  _LevelMeta(level: 6, title: 'THE OUTER RIM',        subtitle: 'Uncharted Space',   accent: Color(0xFFB39DDB), icon: Icons.language_outlined,        assetPath: 'lib/assets/documents/level6'),
+  _LevelMeta(level: 0, title: 'THE ACADEMY',         subtitle: 'Life Support',      accent: Color(0xFF4FC3F7), icon: Icons.school_outlined,         assetPath: 'assets/documents/level0'),
+  _LevelMeta(level: 1, title: 'GROUND SCHOOL',        subtitle: 'The Shipyard',      accent: Color(0xFF66BB6A), icon: Icons.construction_outlined,   assetPath: 'assets/documents/level1'),
+  _LevelMeta(level: 2, title: 'NAVIGATION',           subtitle: 'Star Mapping',      accent: Color(0xFFFFD54F), icon: Icons.explore_outlined,         assetPath: 'assets/documents/level2'),
+  _LevelMeta(level: 3, title: 'ENGINEERING',          subtitle: 'Reactor Diag.',     accent: Color(0xFFFF8A65), icon: Icons.engineering_outlined,     assetPath: 'assets/documents/level3'),
+  _LevelMeta(level: 4, title: 'HYPERDRIVE',           subtitle: 'Warp Speed',        accent: Color(0xFFCE93D8), icon: Icons.rocket_launch_outlined,   assetPath: 'assets/documents/level4'),
+  _LevelMeta(level: 5, title: 'CRISIS MGMT',          subtitle: 'Asteroid Field',    accent: Color(0xFFEF9A9A), icon: Icons.shield_outlined,          assetPath: 'assets/documents/level5'),
+  _LevelMeta(level: 6, title: 'THE OUTER RIM',        subtitle: 'Uncharted Space',   accent: Color(0xFFB39DDB), icon: Icons.language_outlined,        assetPath: 'assets/documents/level6'),
 ];
 
 // ─── Main widget ───────────────────────────────────────────────
@@ -71,7 +71,7 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
 
   Future<void> _loadOne(_LevelMeta m) async {
     try {
-      final t = (await rootBundle.loadString('${m.assetPath}.md')).trim();
+      final t = (await rootBundle.loadString(m.assetPath)).trim();
       _loadedContent[m.level] = t.isNotEmpty ? t : 'Decryption failed: Codex entry missing.';
     } catch (_) {
       _loadedContent[m.level] = 'Decryption failed: Codex entry missing.';
@@ -647,7 +647,18 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 5),
-      child: Text(line, style: GoogleFonts.shareTechMono(color: Colors.white54, fontSize: 12, height: 1.65)),
+      child: MarkdownBody(
+        data: line,
+        styleSheet: MarkdownStyleSheet(
+          p: GoogleFonts.shareTechMono(color: Colors.white54, fontSize: 12, height: 1.65),
+          code: GoogleFonts.shareTechMono(color: accent, backgroundColor: Colors.black26, fontSize: 11),
+          codeblockDecoration: BoxDecoration(
+            color: Colors.black26,
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: accent.withOpacity(0.3)),
+          ),
+        ),
+      ),
     );
   }
 
