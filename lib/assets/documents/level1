@@ -11,7 +11,7 @@ Before a company (a ship) can build factories, hire engineers, or expand its fle
 * Equity (Issuing Stock): The company sells a percentage of its ownership to the public. You, the investor, become a part-owner (a Shareholder). The company does not legally owe you any guaranteed money or interest. 
   * The Catch: The original founders give up a piece of their control and future profits. However, because there are no mandatory loan payments, the ship is much safer from immediate bankruptcy during economic storms. If the company's value goes up 1000%, your slice of the equity goes up 1000% with it.
 
-> [AURA'S LOG] "As an equity shareholder, you are the last to be paid if the ship is destroyed. The banks get the salvage. This is why equity demands a higher rate of return than debt: you are taking on the ultimate risk."
+ [AURA'S LOG] "As an equity shareholder, you are the last to be paid if the ship is destroyed. The banks get the salvage. This is why equity demands a higher rate of return than debt: you are taking on the ultimate risk."
 
 ---
 
@@ -33,7 +33,7 @@ How does a stock get onto the exchange so you can buy it? It goes through a high
 * The IPO (Initial Public Offering): The company offers its shares to the public for the very first time. This is the "Primary Market." Because demand is often higher than supply, shares are usually allotted via a lottery system.
 * Listing Day: The day the stock officially lands on the NSE/BSE and begins trading freely. 
 
-> [CRASH'S LOG] "Yo! Listing Day is pure chaos! Sometimes a stock lists 50% higher than the IPO price and you double your money in one second! Other times it crashes instantly. Pure gambling. I love it!"
+
 
 ---
 
@@ -68,7 +68,7 @@ Owning a piece of a company entitles you to specific corporate events authorized
 * Stock Splits (Psychological Pricing): If a stock becomes too mathematically "heavy" (e.g., MRF trading at ₹1,00,000 per share), retail cadets can't afford a single share. The company might execute a "1-for-10 Split." If you owned 1 share at ₹1,00,000, you now own 10 shares worth ₹10,000 each. Your total value remains identical, but the stock is now highly accessible to new buyers.
 * Bonus Shares: The company gives you free additional shares out of its accumulated cash reserves. Similar to a split, the stock price adjusts downward proportionally.
 
----
+
 
 ### 1.7 Navigational Compasses (Market Indices)
 When the news anchors scream, "The Market is up 2% today!", what does that actually mean? They are talking about an Index—a mathematical barometer for the economy.
@@ -77,7 +77,7 @@ When the news anchors scream, "The Market is up 2% today!", what does that actua
 * The Sensex: The older, traditional index tracking the top 30 companies on the BSE.
 * Sectoral Indices: Specific trackers for different fleets. Nifty IT tracks tech companies. Nifty Bank tracks financial institutions. Often, one sector will be booming while another is crashing.
 
----
+
 
 ### 1.8 Convoy Protocols (Mutual Funds vs. ETFs)
 Flying a single ship (stock picking) is incredibly dangerous. If you put all your fuel into one ship and the CEO commits fraud, your account goes to zero. You must fly a "Convoy"—a single asset that holds dozens of different stocks to spread out your risk (Diversification).
@@ -90,9 +90,9 @@ Flying a single ship (stock picking) is incredibly dangerous. If you put all you
 * SIP (Systematic Investment Plan): The ultimate, emotionless wealth-building protocol. You automate your broker to buy ₹5,000 of an Index Fund every single month on the 1st, regardless of whether the market is crashing or booming. 
   * The Math: When the market is high, you buy fewer shares. When the market crashes, everything is on sale, and your ₹5,000 buys more shares. This mathematically lowers your average purchase price over time without requiring you to perfectly time the market.
 
-> [AURA'S LOG] "Cadets who try to perfectly time the market usually fail. Cadets who set up an automated SIP into an Index Fund and do absolutely nothing for 20 years usually become millionaires. Time in the market > Timing the market."
+ 
 
----
+
 
 🏁 LEVEL 1 CLEARANCE CHECK
 Do you understand why a Limit Order protects you in a low-liquidity Small-Cap stock? Do you recognize why a 2% Expense Ratio on an active mutual fund can destroy your wealth over 30 years compared to an Index Fund? 

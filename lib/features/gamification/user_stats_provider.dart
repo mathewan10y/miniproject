@@ -48,10 +48,28 @@ class UserStatsNotifier extends AsyncNotifier<UserStatsModel> {
     updateUserStats(current.copyWith(xp: current.xp + amount));
   }
 
-  void levelUp() {
-    final current = state.valueOrNull;
-    if (current == null) return;
-    updateUserStats(current.copyWith(currentLevel: current.currentLevel + 1));
+  Future<void> levelUp() async {
+    final prefs = await SharedPreferences.getInstance();
+    final currentLevel = prefs.getInt(_kLevelKey) ?? 1;
+    final newLevel = currentLevel + 1;
+    await prefs.setInt(_kLevelKey, newLevel);
+    state = AsyncData(UserStatsModel(
+      userId: 'default_user',
+      tradingCredits: state.valueOrNull?.tradingCredits ?? 0,
+      xp: state.valueOrNull?.xp ?? 0,
+      currentLevel: newLevel,
+    ));
+  }
+
+  Future<void> setLevel(int level) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_kLevelKey, level);
+    state = AsyncData(UserStatsModel(
+      userId: 'default_user',
+      tradingCredits: state.value?.tradingCredits ?? 0,
+      xp: state.value?.xp ?? 0,
+      currentLevel: level,
+    ));
   }
 
   /// Deduct [amount] of FUEL (INR) from trading credits.

@@ -1163,7 +1163,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              key: isMobile ? TutorialKeys.addIncomeBtnKey : ValueKey('mobile_income'),
+              key: isMobile ? TutorialKeys.addIncomeBtnKey() : ValueKey('mobile_income'),
               child: _buildResponsiveActionButton(
                 onPressed: () => _openAddIncomeSheet(context),
                 icon: Icons.download,
@@ -1174,7 +1174,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
             ),
             SizedBox(height: spacing),
             Container(
-              key: isMobile ? TutorialKeys.addExpenseBtnKey : ValueKey('mobile_expense'),
+              key: isMobile ? TutorialKeys.addExpenseBtnKey() : ValueKey('mobile_expense'),
               child: _buildResponsiveActionButton(
                 onPressed: () => _openAddExpenseSheet(context),
                 icon: Icons.upload,
@@ -1196,7 +1196,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
           children: [
             Flexible(
               child: Container(
-                key: !isMobile ? TutorialKeys.addIncomeBtnKey : ValueKey('desktop_income'),
+                key: !isMobile ? TutorialKeys.addIncomeBtnKey() : ValueKey('desktop_income'),
                 child: _buildResponsiveActionButton(
                   onPressed: () => _openAddIncomeSheet(context),
                   icon: Icons.download,
@@ -1209,7 +1209,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
             SizedBox(width: spacing),
             Flexible(
               child: Container(
-                key: !isMobile ? TutorialKeys.addExpenseBtnKey : ValueKey('desktop_expense'),
+                key: !isMobile ? TutorialKeys.addExpenseBtnKey() : ValueKey('desktop_expense'),
                 child: _buildResponsiveActionButton(
                   onPressed: () => _openAddExpenseSheet(context),
                   icon: Icons.upload,

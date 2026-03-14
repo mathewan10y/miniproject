@@ -272,13 +272,19 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
 
   Widget _navItem(_LevelMeta m, int maxLvl, bool narrow) {
     final sel    = _selectedLevel == m.level;
-    final locked = m.level > maxLvl;
+    // Lock level if previous level's boss fight not completed (for levels > 0), unless in dev mode
+    final engine = ref.read(tutorialEngineProvider);
+    final isDev = ref.read(devModeProvider);
+    final previousLevelBossCompleted = m.level <= 0 || engine.isBossFightCompleted(m.level - 1);
+    final locked = m.level > maxLvl || (m.level > 0 && !previousLevelBossCompleted && !isDev);
     
     // Sub-level logic
-    final engine = ref.read(tutorialEngineProvider);
     final completed = engine.getCompletedSubLevels(m.level);
     final raw = _loadedContent[m.level] ?? '';
-    final subLevelTitles = raw.split('\n## ').skip(1).map((s) => s.split('\n').first.replaceAll('## ', '').trim()).toList();
+    final subLevelTitles = raw.split('\n').where((line) {
+      final trimmed = line.trim();
+      return RegExp(r'^\d+\.\d+\s+[A-Za-z]').hasMatch(trimmed);
+    }).map((s) => s.trim()).toList();
     final allCompleted = subLevelTitles.isNotEmpty && completed.length >= subLevelTitles.length;
     final progress = subLevelTitles.isEmpty ? 0.0 : completed.length / subLevelTitles.length;
 
@@ -300,59 +306,85 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
               borderRadius: BorderRadius.circular(8),
               border: Border(left: BorderSide(color: sel ? m.accent : Colors.transparent, width: 3)),
             ),
-            child: Row(children: [
-              Container(
-                width: 28, height: 28,
-                decoration: BoxDecoration(
-                  color: locked ? Colors.white.withOpacity(0.03) : m.accent.withOpacity(sel ? 0.18 : 0.06),
-                  border: Border.all(color: locked ? Colors.white12 : m.accent.withOpacity(sel ? 0.6 : 0.18)),
-                  borderRadius: BorderRadius.circular(6),
+            child: Column(children: [
+              Row(children: [
+                Container(
+                  width: 28, height: 28,
+                  decoration: BoxDecoration(
+                    color: locked ? Colors.white.withOpacity(0.03) : m.accent.withOpacity(sel ? 0.18 : 0.06),
+                    border: Border.all(color: locked ? Colors.white12 : m.accent.withOpacity(sel ? 0.6 : 0.18)),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: locked
+                      ? const Icon(Icons.lock, color: Colors.white24, size: 12)
+                      : Center(child: Icon(m.icon, color: m.accent.withOpacity(sel ? 1 : 0.5), size: 13)),
                 ),
-                child: locked
-                    ? const Icon(Icons.lock, color: Colors.white24, size: 12)
-                    : Center(child: Icon(m.icon, color: m.accent.withOpacity(sel ? 1 : 0.5), size: 13)),
-              ),
-              const SizedBox(width: 10),
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(m.title,
-                  style: GoogleFonts.orbitron(
-                    color: locked ? Colors.white24 : sel ? m.accent : Colors.white54,
-                    fontSize: 8, fontWeight: FontWeight.bold, letterSpacing: 0.5),
-                  overflow: TextOverflow.ellipsis),
-                Text(locked ? 'LOCKED' : m.subtitle,
-                  style: GoogleFonts.shareTechMono(
-                    color: locked ? Colors.white12 : Colors.white30, fontSize: 8),
-                  overflow: TextOverflow.ellipsis),
-                // Progress bar
-                if (!locked && subLevelTitles.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Container(
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                    child: FractionallySizedBox(
-                      alignment: Alignment.centerLeft,
-                      widthFactor: progress,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: allCompleted ? const Color(0xFF4CAF50) : m.accent,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
+                const SizedBox(width: 10),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(m.title,
+                    style: GoogleFonts.orbitron(
+                      color: locked ? Colors.white24 : sel ? m.accent : Colors.white54,
+                      fontSize: 8, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                    overflow: TextOverflow.ellipsis),
+                  Text(locked ? 'LOCKED' : m.subtitle,
+                    style: GoogleFonts.shareTechMono(
+                      color: locked ? Colors.white12 : Colors.white30, fontSize: 8),
+                    overflow: TextOverflow.ellipsis),
+                ])),
+              ]),
+              // Enhanced progress bar that fills the button
+              if (!locked && subLevelTitles.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Container(
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                  child: FractionallySizedBox(
+                    alignment: Alignment.centerLeft,
+                    widthFactor: progress,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: allCompleted ? const Color(0xFF4CAF50) : m.accent,
+                        borderRadius: BorderRadius.circular(3),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Text('${completed.length}/${subLevelTitles.length} completed',
-                    style: GoogleFonts.shareTechMono(
-                      color: allCompleted ? const Color(0xFF4CAF50) : Colors.white38,
-                      fontSize: 7)),
-                ],
-              ])),
+                ),
+                const SizedBox(height: 2),
+                Text('${completed.length}/${subLevelTitles.length} completed',
+                  style: GoogleFonts.shareTechMono(
+                    color: allCompleted ? const Color(0xFF4CAF50) : Colors.white38,
+                    fontSize: 7)),
+              ],
             ]),
           ),
         ),
+        
+        // Boss fight button when all evaluations completed
+        if (!locked && allCompleted) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.of(context).push(MaterialPageRoute(builder: (_) => BossFightScreen(levelId: m.level))).then((_) {
+                  setState((){}); // refresh UI bounds if we level up
+                });
+              },
+              icon: const Icon(Icons.flash_on, size: 12),
+              label: Text("BOSS FIGHT", style: GoogleFonts.shareTechMono(fontSize: 8, fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent.withOpacity(0.2),
+                foregroundColor: Colors.redAccent,
+                side: BorderSide(color: Colors.redAccent.withOpacity(0.5)),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+          ),
+        ],
         
         // Render sub-level progress and boss tile if selected
         if (sel && subLevelTitles.isNotEmpty) ...[
@@ -505,14 +537,15 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
     // Parse initial content
     widgets.addAll(_parseInnerContent(raw, meta.accent, meta));
     
-    // Add cadet evaluation section
-    if (meta.level >= 0) {
-      widgets.add(const SizedBox(height: 20));
-      widgets.add(_cadetEvaluation(meta.level, completed, meta.accent));
-    }
-
     // Add boss fight button if all sub-levels completed
-    if (completed.length >= 3) {
+    final levelRaw = _loadedContent[meta.level] ?? '';
+    final subLevelTitles = levelRaw.split('\n').where((line) {
+      final trimmed = line.trim();
+      return RegExp(r'^\d+\.\d+\s+[A-Za-z]').hasMatch(trimmed);
+    }).map((s) => s.trim()).toList();
+    final allCompleted = subLevelTitles.isNotEmpty && completed.length >= subLevelTitles.length;
+    
+    if (allCompleted) {
       widgets.add(const SizedBox(height: 20));
       widgets.add(_buildBossFightButton(meta.level, true));
     }
@@ -521,7 +554,13 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
   }
 
   Widget _cadetEvaluation(int level, List<String> completed, Color accent) {
-    final isCompleted = completed.length >= 3;
+    final raw = _loadedContent[level] ?? '';
+    final subLevelTitles = raw.split('\n').where((line) {
+      final trimmed = line.trim();
+      return RegExp(r'^\d+\.\d+\s+[A-Za-z]').hasMatch(trimmed);
+    }).map((s) => s.trim()).toList();
+    final isCompleted = subLevelTitles.isNotEmpty && completed.length >= subLevelTitles.length;
+    
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 16),
       padding: const EdgeInsets.all(16),
@@ -611,7 +650,7 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
       if (currentSectionTitle != null && currentSubLevelIndex != null) {
         final engine = ref.read(tutorialEngineProvider);
         final completed = engine.getCompletedSubLevels(meta.level);
-        final isSubLevelCompleted = completed.contains(currentSubLevelIndex);
+        final isSubLevelCompleted = completed.contains(currentSectionTitle);
         
         widgets.add(const SizedBox(height: 16));
         widgets.add(_buildCadetEvalButton(meta.level, currentSectionTitle ?? '', currentSubLevelIndex!, accent, isSubLevelCompleted));
@@ -663,11 +702,11 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
   Widget _buildCadetEvalButton(int levelId, String subLevelTitle, int subLevelIndex, Color accent, bool isCompleted) {
     // Check if this evaluation was failed
     final engine = ref.read(tutorialEngineProvider);
-    final completed = engine.getCompletedSubLevels(levelId);
-    final isFailed = !completed.contains(subLevelIndex.toString());
+    final failed = engine.getFailedSubLevels(levelId);
+    final isFailed = failed.contains(subLevelTitle) && !isCompleted;
     
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 24),
+      padding: const EdgeInsets.symmetric(vertical: 16),
       child: ElevatedButton.icon(
         onPressed: isCompleted ? null : () async {
           // Open Mini Quiz Sheet
@@ -682,13 +721,24 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
         },
         icon: Icon(
           isCompleted ? Icons.check_circle : 
-          isFailed ? Icons.error : Icons.psychology, 
+          isFailed ? Icons.error : 
+          Icons.psychology, 
+          color: isCompleted ? Colors.green : 
+                 isFailed ? Colors.red : 
+                 accent,
           size: 18
         ),
         label: Text(
-          isCompleted ? "✓ EVALUATION PASSED" : 
-          isFailed ? "✗ EVALUATION FAILED - RETRY" : 
-          "[ RUN DIAGNOSTIC: CADET EVALUATION ]"
+          isCompleted ? "✓ PASSED" : 
+          isFailed ? "✗ FAILED" : 
+          "RUN EVALUATION",
+          style: GoogleFonts.shareTechMono(
+            fontWeight: FontWeight.bold, 
+            letterSpacing: 0.5,
+            fontSize: 11,
+          ),
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
         ),
         style: ElevatedButton.styleFrom(
           backgroundColor: isCompleted ? Colors.green.withOpacity(0.2) : 
@@ -702,9 +752,8 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
                    isFailed ? Colors.red.withOpacity(0.5) : 
                    accent.withOpacity(0.5)
           ),
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           alignment: Alignment.centerLeft,
-          textStyle: GoogleFonts.shareTechMono(fontWeight: FontWeight.bold, letterSpacing: 1),
         ),
       ),
     );
@@ -834,13 +883,13 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
   // Helper method to extract sub-level index from title
   int? _getSubLevelIndex(String sectionTitle) {
     final levelSections = {
-      '0.0': 0, '0.1': 1, '0.2': 2, '0.3': 3, '0.4': 4,
-      '1.0': 0, '1.1': 1, '1.2': 2, '1.3': 3, '1.4': 4,
-      '2.0': 0, '2.1': 1, '2.2': 2, '2.3': 3, '2.4': 4,
-      '3.0': 0, '3.1': 1, '3.2': 2, '3.3': 3, '3.4': 4,
-      '4.0': 0, '4.1': 1, '4.2': 2, '4.3': 3, '4.4': 4,
-      '5.0': 0, '5.1': 1, '5.2': 2, '5.3': 3, '5.4': 4,
-      '6.0': 0, '6.1': 1, '6.2': 2, '6.3': 3, '6.4': 4,
+      '0.0': 0, '0.1': 1, '0.2': 2, '0.3': 3, '0.4': 4, '0.5': 5, '0.6': 6,
+      '1.0': 0, '1.1': 1, '1.2': 2, '1.3': 3, '1.4': 4, '1.5': 5, '1.6': 6, '1.7': 7, '1.8': 8,
+      '2.0': 0, '2.1': 1, '2.2': 2, '2.3': 3, '2.4': 4, '2.5': 5, '2.6': 6, '2.7': 7, '2.8': 8,
+      '3.0': 0, '3.1': 1, '3.2': 2, '3.3': 3, '3.4': 4, '3.5': 5, '3.6': 6,
+      '4.0': 0, '4.1': 1, '4.2': 2, '4.3': 3, '4.4': 4, '4.5': 5, '4.6': 6,
+      '5.0': 0, '5.1': 1, '5.2': 2, '5.3': 3, '5.4': 4, '5.5': 5, '5.6': 6,
+      '6.0': 0, '6.1': 1, '6.2': 2, '6.3': 3, '6.4': 4, '6.5': 5, '6.6': 6,
     };
     
     for (final entry in levelSections.entries) {

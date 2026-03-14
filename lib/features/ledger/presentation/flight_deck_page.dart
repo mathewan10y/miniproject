@@ -303,14 +303,14 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
               Expanded(
                 flex: 8, 
                 child: Container(
-                  key: TutorialKeys.stockChartKey,
+                  key: TutorialKeys.stockChartKey(),
                   child: _buildTelemetryPanel(),
                 )
               ),
               SizedBox(
                 height: 80,
                 child: Container(
-                  key: TutorialKeys.flightDeckAssetListKey,
+                  key: TutorialKeys.flightDeckAssetListKey(),
                   child: assetsAsync.when(
                     data: (assets) => _buildControlDock(context, assets),
                     loading:
@@ -1056,7 +1056,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
 
   Widget _buildQuantitySelector() {
     return Container(
-      key: TutorialKeys.orderQuantityInputKey,
+      key: TutorialKeys.orderQuantityInputKey(),
       child: GestureDetector(
         key: _qtyButtonKey,
         onTap: () => _showQuantityPopup(),

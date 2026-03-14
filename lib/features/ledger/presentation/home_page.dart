@@ -71,7 +71,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         },
       ),
       floatingActionButton: FloatingActionButton(
-        key: TutorialKeys.addExpenseBtnKey,
+        key: TutorialKeys.addExpenseBtnKey(),
         onPressed: () => _openAddExpenseSheet(context),
         child: const Icon(Icons.add),
       ),

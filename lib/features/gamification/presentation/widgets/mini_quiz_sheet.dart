@@ -41,9 +41,13 @@ class _MiniQuizSheetState extends ConsumerState<MiniQuizSheet> {
     if (_isCorrect) {
       // Award XP
       ref.read(userStatsProvider.notifier).addExperience(10);
-      // Mark as read
+      // Mark as completed
       if (!mounted) return;
       await ref.read(tutorialEngineProvider).markSubLevelCompleted(widget.levelId, widget.subLevelTitle);
+    } else {
+      // Mark as failed
+      if (!mounted) return;
+      await ref.read(tutorialEngineProvider).markSubLevelFailed(widget.levelId, widget.subLevelTitle);
     }
   }
 

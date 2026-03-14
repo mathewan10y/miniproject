@@ -142,9 +142,9 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
                                         width: reactorSize,
                                         height: reactorSize,
                                         child: Container(
-                                          key: TutorialKeys.reactorCenterKey,
+                                          key: TutorialKeys.reactorCenterKey(),
                                           child: ReactorGauge(
-                                            key: TutorialKeys.reactorGaugeKey,
+                                            key: TutorialKeys.reactorGaugeKey(),
                                             fillPercent: oreLevel,
                                           ),
                                         ),

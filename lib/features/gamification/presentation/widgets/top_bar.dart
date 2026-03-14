@@ -68,7 +68,7 @@ class TopBar extends ConsumerWidget {
                 const SizedBox(width: 12),
                 // CODEX button — opens Captain's Log
                 GestureDetector(
-                  key: TutorialKeys.codexBtnKey,
+                  key: TutorialKeys.codexBtnKey(),
                   onTap: () {
                     showDialog(
                       context: context,
@@ -559,7 +559,9 @@ class _DevModeToggle extends ConsumerWidget {
     final isDevMode = ref.watch(devModeProvider);
 
     return GestureDetector(
-      onTap: () => ref.read(devModeProvider.notifier).state = !isDevMode,
+      onTap: () {
+        ref.read(devModeProvider.notifier).state = !isDevMode;
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),

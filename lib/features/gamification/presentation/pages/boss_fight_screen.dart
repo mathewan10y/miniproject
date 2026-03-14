@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../user_stats_provider.dart';
 import '../../data/quiz_data.dart';
+import '../../services/tutorial_engine_service.dart';
 
 class BossFightScreen extends ConsumerStatefulWidget {
   final int levelId;
@@ -15,7 +16,8 @@ class BossFightScreen extends ConsumerStatefulWidget {
 class _BossFightScreenState extends ConsumerState<BossFightScreen> with SingleTickerProviderStateMixin {
   int _userHp = 3;
   int _bossHp = 3;
-  late final QuizQuestion _quiz;
+  int _currentQuestionIndex = 0;
+  late final List<QuizQuestion> _quizzes;
   int? _selectedIndex;
   bool _hasAnswered = false;
 
@@ -24,7 +26,7 @@ class _BossFightScreenState extends ConsumerState<BossFightScreen> with SingleTi
   @override
   void initState() {
     super.initState();
-    _quiz = QuizData.getBossQuiz(widget.levelId);
+    _quizzes = QuizData.getBossQuizzes(widget.levelId);
     _shakeController = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
   }
 
@@ -42,18 +44,35 @@ class _BossFightScreenState extends ConsumerState<BossFightScreen> with SingleTi
     if (_selectedIndex == null) return;
     setState(() => _hasAnswered = true);
     
-    final isCorrect = _selectedIndex == _quiz.correctIndex;
+    final isCorrect = _selectedIndex == _quizzes[_currentQuestionIndex].correctIndex;
 
     Future.delayed(const Duration(milliseconds: 600), () {
       if (isCorrect) {
-        setState(() => _bossHp = 0);
+        setState(() {
+          _bossHp = (_bossHp - 1).clamp(0, 3);
+        });
         _triggerShake();
-        Future.delayed(const Duration(seconds: 2), _winSequence);
       } else {
-        setState(() => _userHp = 0);
+        setState(() {
+          _userHp = (_userHp - 1).clamp(0, 3);
+        });
         _triggerShake();
-        Future.delayed(const Duration(seconds: 2), _loseSequence);
       }
+
+      Future.delayed(const Duration(seconds: 2), () {
+        if (_bossHp <= 0) {
+          _winSequence();
+        } else if (_userHp <= 0) {
+          _loseSequence();
+        } else {
+          // Move to next question
+          setState(() {
+            _currentQuestionIndex++;
+            _selectedIndex = null;
+            _hasAnswered = false;
+          });
+        }
+      });
     });
   }
 
@@ -65,6 +84,9 @@ class _BossFightScreenState extends ConsumerState<BossFightScreen> with SingleTi
     // wait, we can just bump currentLevel explicitly here or assume XP handles it.
     // If the Boss Fight inherently unlocks the NEXT level, let's bump it.
     ref.read(userStatsProvider.notifier).levelUp();
+    
+    // Mark boss fight as completed
+    ref.read(tutorialEngineProvider).markBossFightCompleted(widget.levelId);
 
     showDialog(
       context: context,
@@ -207,14 +229,20 @@ class _BossFightScreenState extends ConsumerState<BossFightScreen> with SingleTi
                   child: Column(
                     children: [
                       Text(
-                        _quiz.question,
+                        "QUESTION ${_currentQuestionIndex + 1}/3",
+                        style: GoogleFonts.orbitron(color: Colors.redAccent, fontSize: 12, letterSpacing: 2),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        _quizzes[_currentQuestionIndex].question,
                         style: GoogleFonts.shareTechMono(color: Colors.white, fontSize: 16, height: 1.5, fontWeight: FontWeight.bold),
                         textAlign: TextAlign.center,
                       ),
                       const Spacer(),
-                      ...List.generate(_quiz.options.length, (index) {
+                      ...List.generate(_quizzes[_currentQuestionIndex].options.length, (index) {
                         final isSelected = _selectedIndex == index;
-                        final isCorrect = index == _quiz.correctIndex;
+                        final isCorrect = index == _quizzes[_currentQuestionIndex].correctIndex;
                         Color borderColor = Colors.white24;
                         Color bgColor = Colors.black38;
 
@@ -241,7 +269,7 @@ class _BossFightScreenState extends ConsumerState<BossFightScreen> with SingleTi
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
-                                _quiz.options[index],
+                                _quizzes[_currentQuestionIndex].options[index],
                                 style: GoogleFonts.shareTechMono(color: Colors.white, fontSize: 14),
                                 textAlign: TextAlign.center,
                               ),

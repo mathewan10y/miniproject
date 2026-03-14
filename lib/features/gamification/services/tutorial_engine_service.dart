@@ -58,11 +58,35 @@ class TutorialEngineService {
   // Phase 2: Codex Sub-Level Tracking
   List<String> getCompletedSubLevels(int levelId) => _prefs.getStringList('codex_sublevels_$levelId') ?? [];
   
+  List<String> getFailedSubLevels(int levelId) => _prefs.getStringList('codex_failed_$levelId') ?? [];
+  
   Future<void> markSubLevelCompleted(int levelId, String subLevelId) async {
      final current = getCompletedSubLevels(levelId);
      if (!current.contains(subLevelId)) {
         current.add(subLevelId);
         await _prefs.setStringList('codex_sublevels_$levelId', current);
+        
+        // Remove from failed list if it was there
+        final failed = getFailedSubLevels(levelId);
+        if (failed.contains(subLevelId)) {
+          failed.remove(subLevelId);
+          await _prefs.setStringList('codex_failed_$levelId', failed);
+        }
      }
+  }
+  
+  Future<void> markSubLevelFailed(int levelId, String subLevelId) async {
+     final failed = getFailedSubLevels(levelId);
+     if (!failed.contains(subLevelId)) {
+        failed.add(subLevelId);
+        await _prefs.setStringList('codex_failed_$levelId', failed);
+     }
+  }
+  
+  // Boss fight completion tracking
+  bool isBossFightCompleted(int levelId) => _prefs.getBool('boss_fight_completed_$levelId') ?? false;
+  
+  Future<void> markBossFightCompleted(int levelId) async {
+    await _prefs.setBool('boss_fight_completed_$levelId', true);
   }
 }

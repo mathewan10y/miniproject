@@ -2,25 +2,25 @@ import 'package:flutter/material.dart';
 
 class TutorialKeys {
   // Phase 1 Onboarding Keys
-  static final GlobalKey reactorCenterKey = GlobalKey();
-  static final GlobalKey addIncomeBtnKey = GlobalKey();
-  static final GlobalKey addExpenseBtnKey = GlobalKey();
-  static final GlobalKey reactorGaugeKey = GlobalKey();
-  static final GlobalKey flightDeckTabKey = GlobalKey();
-  static final GlobalKey codexBtnKey = GlobalKey();
+  static GlobalKey reactorCenterKey() => GlobalKey();
+  static GlobalKey addIncomeBtnKey() => GlobalKey();
+  static GlobalKey addExpenseBtnKey() => GlobalKey();
+  static GlobalKey reactorGaugeKey() => GlobalKey();
+  static GlobalKey flightDeckTabKey() => GlobalKey();
+  static GlobalKey codexBtnKey() => GlobalKey();
 
   // Phase 3 Micro-Learning Keys
-  static final GlobalKey flightDeckAssetListKey = GlobalKey();
-  static final GlobalKey orderQuantityInputKey = GlobalKey();
-  static final GlobalKey orderBuyBtnKey = GlobalKey();
-  static final GlobalKey positionsTabKey = GlobalKey();
-  static final GlobalKey stockChartKey = GlobalKey();
-  static final GlobalKey chartTimeframeKey = GlobalKey();
-  static final GlobalKey fundamentalsPeKey = GlobalKey();
-  static final GlobalKey fundamentalsDebtKey = GlobalKey();
-  static final GlobalKey leverageSliderKey = GlobalKey();
-  static final GlobalKey marginRequiredTextKey = GlobalKey();
-  static final GlobalKey stopLossInputKey = GlobalKey();
-  static final GlobalKey cryptoFilterKey = GlobalKey();
-  static final GlobalKey cryptoAssetTileKey = GlobalKey();
+  static GlobalKey flightDeckAssetListKey() => GlobalKey();
+  static GlobalKey orderQuantityInputKey() => GlobalKey();
+  static GlobalKey orderBuyBtnKey() => GlobalKey();
+  static GlobalKey positionsTabKey() => GlobalKey();
+  static GlobalKey stockChartKey() => GlobalKey();
+  static GlobalKey chartTimeframeKey() => GlobalKey();
+  static GlobalKey fundamentalsPeKey() => GlobalKey();
+  static GlobalKey fundamentalsDebtKey() => GlobalKey();
+  static GlobalKey leverageSliderKey() => GlobalKey();
+  static GlobalKey marginRequiredTextKey() => GlobalKey();
+  static GlobalKey stopLossInputKey() => GlobalKey();
+  static GlobalKey cryptoFilterKey() => GlobalKey();
+  static GlobalKey cryptoAssetTileKey() => GlobalKey();
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../services/tutorial_keys.dart';
 import '../../services/tutorial_engine_service.dart';
 import '../widgets/tutorial_overlay_widget.dart';
@@ -11,46 +12,77 @@ class Phase3MicroLearning {
 
     final t1 = TargetFocus(
       identify: "AssetList",
-      keyTarget: TutorialKeys.flightDeckAssetListKey,
+      keyTarget: TutorialKeys.flightDeckAssetListKey(),
       shape: ShapeLightFocus.RRect,
       contents: [
         TargetContent(
-          align: ContentAlign.top,
-          builder: (context, controller) {
-            return TutorialOverlayWidget(
-              dialogs: const [
-                DialogNode(CharacterSpeaker.aura, "Welcome to the Flight Deck, Commander. This is the live market terminal."),
-                DialogNode(CharacterSpeaker.aura, "Select an asset sector below to initialize telemetry."),
-              ],
-              onComplete: () => controller.next(),
-            );
-          },
+          align: ContentAlign.bottom,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "ASSET MANIFEST",
+                style: GoogleFonts.orbitron(
+                  color: Colors.cyanAccent,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "These are your available tradable assets.\nEach represents a different sector of the digital economy.",
+                style: GoogleFonts.shareTechMono(
+                  color: Colors.white70,
+                  fontSize: 12,
+                  height: 1.4,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       ],
     );
 
     final t2 = TargetFocus(
       identify: "TelemetryChart",
-      keyTarget: TutorialKeys.stockChartKey,
+      keyTarget: TutorialKeys.stockChartKey(),
       shape: ShapeLightFocus.RRect,
       contents: [
         TargetContent(
           align: ContentAlign.bottom,
-          builder: (context, controller) {
-            return TutorialOverlayWidget(
-              dialogs: const [
-                DialogNode(CharacterSpeaker.aura, "This panel displays the candlestick chart for the selected asset. Use it to identify macroscopic trends."),
-              ],
-              onComplete: () => controller.next(),
-            );
-          },
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "PRICE TELEMETRY",
+                style: GoogleFonts.orbitron(
+                  color: Colors.cyanAccent,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "Real-time price data visualization.\nMonitor market trends and patterns.",
+                style: GoogleFonts.shareTechMono(
+                  color: Colors.white70,
+                  fontSize: 12,
+                  height: 1.4,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       ],
     );
 
     final t3 = TargetFocus(
       identify: "TradeQuantity",
-      keyTarget: TutorialKeys.orderQuantityInputKey,
+      keyTarget: TutorialKeys.orderQuantityInputKey(),
       shape: ShapeLightFocus.Circle,
       contents: [
         TargetContent(

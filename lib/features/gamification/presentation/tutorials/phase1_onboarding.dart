@@ -13,7 +13,7 @@ class Phase1Onboarding {
     
     final t1 = TargetFocus(
       identify: "Awakening",
-      keyTarget: TutorialKeys.reactorCenterKey,
+      keyTarget: TutorialKeys.reactorCenterKey(),
       shape: ShapeLightFocus.Circle,
       contents: [
         TargetContent(
@@ -37,7 +37,7 @@ class Phase1Onboarding {
 
     final t2 = TargetFocus(
       identify: "PowerGeneration",
-      keyTarget: TutorialKeys.addIncomeBtnKey,
+      keyTarget: TutorialKeys.addIncomeBtnKey(),
       shape: ShapeLightFocus.RRect,
       contents: [
         TargetContent(
@@ -56,7 +56,7 @@ class Phase1Onboarding {
 
     final t3 = TargetFocus(
       identify: "HullLeaks",
-      keyTarget: TutorialKeys.addExpenseBtnKey,
+      keyTarget: TutorialKeys.addExpenseBtnKey(),
       shape: ShapeLightFocus.RRect,
       contents: [
         TargetContent(
@@ -77,7 +77,7 @@ class Phase1Onboarding {
 
     final t4 = TargetFocus(
       identify: "CoreMechanic",
-      keyTarget: TutorialKeys.reactorGaugeKey,
+      keyTarget: TutorialKeys.reactorGaugeKey(),
       shape: ShapeLightFocus.Circle,
       contents: [
         TargetContent(
@@ -100,7 +100,7 @@ class Phase1Onboarding {
 
     final t5 = TargetFocus(
       identify: "TheGoal",
-      keyTarget: TutorialKeys.reactorCenterKey,
+      keyTarget: TutorialKeys.reactorCenterKey(),
       shape: ShapeLightFocus.Circle,
       contents: [
         TargetContent(
@@ -123,7 +123,7 @@ class Phase1Onboarding {
 
     final t6 = TargetFocus(
       identify: "TheAcademy",
-      keyTarget: TutorialKeys.codexBtnKey,
+      keyTarget: TutorialKeys.codexBtnKey(),
       shape: ShapeLightFocus.RRect,
       contents: [
         TargetContent(
