@@ -84,7 +84,7 @@ class CyberFinanceApp extends StatelessWidget {
           ),
         ),
       ),
-      home: SafeArea(child: const MainScreen()),
+      home: const MainScreen(),
     );
   }
 }
