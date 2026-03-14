@@ -476,7 +476,7 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
     final completed = engine.getCompletedSubLevels(meta.level);
 
     // Parse initial content
-    widgets.addAll(_parseInnerContent(raw, meta.accent));
+    widgets.addAll(_parseInnerContent(raw, meta.accent, meta));
     
     // Add cadet evaluation section
     if (meta.level > 0) {
@@ -487,6 +487,10 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
     // Add evaluation button if not completed
     if (completed.length < 3) {
       widgets.add(_buildCadetEvalButton(meta.level, 'Complete Level ${meta.level}', completed.length, meta.accent, false));
+    } else {
+      // All sub-levels completed - show boss fight button
+      widgets.add(const SizedBox(height: 20));
+      widgets.add(_buildBossFightButton(meta.level, true));
     }
 
     return widgets;
@@ -567,7 +571,7 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
     );
   }
 
-  List<Widget> _parseInnerContent(String raw, Color accent) {
+  List<Widget> _parseInnerContent(String raw, Color accent, _LevelMeta meta) {
     final widgets = <Widget>[];
     final lines   = raw.split('\n');
     final buf     = StringBuffer();
@@ -595,7 +599,26 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
            RegExp(r'^#+\s').hasMatch(line) ||
            RegExp(r'^LEVEL\s+\d+').hasMatch(line) ||
            (line.endsWith(':') && line.length < 60));
-      if (isSection) { flush(); widgets.add(_section(line, accent)); continue; }
+      if (isSection) { 
+        flush(); 
+        widgets.add(_section(line, accent));
+        
+        // Add evaluation button after each section/sub-level
+        final sectionTitle = line.replaceAll(RegExp(r'^#+\s'), '').trim();
+        if (sectionTitle.isNotEmpty && meta.level > 0) {
+          final subLevelIndex = _getSubLevelIndex(sectionTitle);
+          if (subLevelIndex != null) {
+            final engine = ref.read(tutorialEngineProvider);
+            final completed = engine.getCompletedSubLevels(meta.level);
+            final isSubLevelCompleted = completed.contains(subLevelIndex);
+            
+            widgets.add(const SizedBox(height: 16));
+            widgets.add(_buildCadetEvalButton(meta.level, sectionTitle, subLevelIndex, accent, isSubLevelCompleted));
+          }
+        }
+        
+        continue; 
+      }
 
       buf.writeln(line);
     }
@@ -734,21 +757,41 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
     final isWarning = text.startsWith('🚨') || text.startsWith('⚠️') || text.startsWith('❌');
     final isSuccess = text.startsWith('✅') || text.startsWith('🟢') || text.startsWith('🏁');
     final isGoal    = text.startsWith('🚀') || text.startsWith('⚔️') || text.startsWith('🎓');
-    final color = isWarning ? Colors.redAccent
-        : isSuccess ? Colors.greenAccent
-        : isGoal    ? accent
-        : accent;
+
+    Color bgColor = Colors.transparent;
+    if (isWarning) bgColor = const Color(0xFFFF5252).withOpacity(0.1);
+    if (isSuccess) bgColor = const Color(0xFF4CAF50).withOpacity(0.1);
+    if (isGoal)    bgColor = const Color(0xFF2196F3).withOpacity(0.1);
 
     return Container(
+      width: double.infinity,
       margin: const EdgeInsets.symmetric(vertical: 8),
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.06),
+        color: bgColor,
+        border: Border.all(color: accent.withOpacity(0.3)),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.35), width: 1.5),
-        boxShadow: [BoxShadow(color: color.withOpacity(0.04), blurRadius: 12)],
       ),
-      child: Text(text, style: GoogleFonts.shareTechMono(color: color.withOpacity(0.9), fontSize: 12, height: 1.6, fontWeight: FontWeight.bold)),
+      child: Text(text, style: GoogleFonts.shareTechMono(color: Colors.white70, fontSize: 11, height: 1.4)),
     );
+  }
+
+  // Helper method to extract sub-level index from title
+  int? _getSubLevelIndex(String sectionTitle) {
+    final levelSections = {
+      '1.0': 0, '1.1': 1, '1.2': 2, '1.3': 3, '1.4': 4,
+      '2.0': 0, '2.1': 1, '2.2': 2, '2.3': 3, '2.4': 4,
+      '3.0': 0, '3.1': 1, '3.2': 2, '3.3': 3, '3.4': 4,
+      '4.0': 0, '4.1': 1, '4.2': 2, '4.3': 3, '4.4': 4,
+      '5.0': 0, '5.1': 1, '5.2': 2, '5.3': 3, '5.4': 4,
+      '6.0': 0, '6.1': 1, '6.2': 2, '6.3': 3, '6.4': 4,
+    };
+    
+    for (final entry in levelSections.entries) {
+      if (sectionTitle.toLowerCase().contains(entry.key.toLowerCase())) {
+        return entry.value;
+      }
+    }
+    return null;
   }
 }
