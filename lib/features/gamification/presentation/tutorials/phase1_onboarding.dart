@@ -7,6 +7,7 @@ import '../widgets/tutorial_overlay_widget.dart';
 
 class Phase1Onboarding {
   static void start(BuildContext context, WidgetRef ref) {
+    if (!context.mounted) return;
     // Start step 1: The Awakening
     // Highlight the center of the reactor core
     
@@ -136,8 +137,18 @@ class Phase1Onboarding {
       ],
     );
 
+    final allTargets = [t1, t2, t3, t4, t5, t6];
+    final validTargets = allTargets.where((t) {
+      if (t.keyTarget != null) {
+        return t.keyTarget!.currentContext != null;
+      }
+      return true;
+    }).toList();
+
+    if (validTargets.isEmpty) return;
+
     TutorialCoachMark(
-      targets: [t1, t2, t3, t4, t5, t6],
+      targets: validTargets,
       colorShadow: const Color(0xAA0B0E14),
       textSkip: "SKIP TUTORIAL [DEV]",
       paddingFocus: 10,
@@ -147,12 +158,6 @@ class Phase1Onboarding {
       },
       onClickTarget: (target) {
         // We let them through.
-        // Wait, for step 2 & 3 & 6, the user tapping the button triggers the bottom sheet / dialog.
-        // The TutorialCoachMark will automatically proceed to the next step, which might immediately overshadow the bottom sheet!
-        // We need custom logic to PAUSE the tutorial and wait for them to close it, OR we just let the tutorial end or proceed differently?
-        // Actually, if they tap the target, CoachMark moves to the next target instantly.
-        // To prevent this clashing, we can just let coach mark run through, OR we make the tutorial just text-based.
-        // Let's rely on standard tutorial_coach_mark behavior for now.
       },
       onSkip: () {
         ref.read(tutorialEngineProvider).markPhase1Seen();

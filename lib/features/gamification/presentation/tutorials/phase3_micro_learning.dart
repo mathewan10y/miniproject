@@ -68,8 +68,18 @@ class Phase3MicroLearning {
       ],
     );
 
+    final allTargets = [t1, t2, t3];
+    final validTargets = allTargets.where((t) {
+      if (t.keyTarget != null) {
+        return t.keyTarget!.currentContext != null;
+      }
+      return true;
+    }).toList();
+
+    if (validTargets.isEmpty) return;
+
     TutorialCoachMark(
-      targets: [t1, t2, t3],
+      targets: validTargets,
       colorShadow: const Color(0xAA0B0E14),
       textSkip: "SKIP TUTORIAL [DEV]",
       paddingFocus: 10,

@@ -71,9 +71,11 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
 
   Future<void> _loadOne(_LevelMeta m) async {
     try {
-      final t = (await rootBundle.loadString(m.assetPath)).trim();
-      _loadedContent[m.level] = t.isNotEmpty ? t : '';
-    } catch (_) { _loadedContent[m.level] = ''; }
+      final t = (await rootBundle.loadString('${m.assetPath}.md')).trim();
+      _loadedContent[m.level] = t.isNotEmpty ? t : 'Decryption failed: Codex entry missing.';
+    } catch (_) {
+      _loadedContent[m.level] = 'Decryption failed: Codex entry missing.';
+    }
   }
 
   @override
@@ -97,7 +99,9 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
                      backgroundColor: Colors.transparent, 
                      body: TutorialOverlayWidget(
                          dialogs: script, 
-                         onComplete: () => Navigator.pop(ctx)
+                         onComplete: () {
+                           if (ctx.mounted) Navigator.of(ctx).pop();
+                         }
                      )
                  ),
              );
