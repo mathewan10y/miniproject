@@ -119,6 +119,26 @@ class QuizData {
         options: ["Putting all money in one stock", "Spreading investments across different assets", "Only buying government bonds"],
         correctIndex: 1,
       ),
+      const QuizQuestion(
+        question: "What is 'Market Index'?",
+        options: ["Single stock price", "Benchmark for market performance", "Company's annual report"],
+        correctIndex: 1,
+      ),
+      const QuizQuestion(
+        question: "What is 'ETF' (Exchange Traded Fund)?",
+        options: ["Single company stock", "Fund that trades like a stock", "Government bond"],
+        correctIndex: 1,
+      ),
+      const QuizQuestion(
+        question: "What is 'SIP' (Systematic Investment Plan)?",
+        options: ["Investing fixed amount regularly", "One-time lump sum investment", "Day trading strategy"],
+        correctIndex: 0,
+      ),
+      const QuizQuestion(
+        question: "What is 'Expense Ratio'?",
+        options: ["Fund's annual fee as percentage", "Stock's price-to-earnings ratio", "Company's debt ratio"],
+        correctIndex: 0,
+      ),
     ],
     2: [
       const QuizQuestion(

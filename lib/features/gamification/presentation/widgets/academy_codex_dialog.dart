@@ -283,7 +283,7 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
     final raw = _loadedContent[m.level] ?? '';
     final subLevelTitles = raw.split('\n').where((line) {
       final trimmed = line.trim();
-      return RegExp(r'^\d+\.\d+\s+[A-Za-z]').hasMatch(trimmed);
+      return RegExp(r'^###?\s*\d+\.\d+\s+[A-Za-z]').hasMatch(trimmed);
     }).map((s) => s.trim()).toList();
     final allCompleted = subLevelTitles.isNotEmpty && completed.length >= subLevelTitles.length;
     final progress = subLevelTitles.isEmpty ? 0.0 : completed.length / subLevelTitles.length;
