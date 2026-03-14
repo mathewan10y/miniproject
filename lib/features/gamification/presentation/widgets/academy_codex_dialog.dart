@@ -27,13 +27,13 @@ class _LevelMeta {
 }
 
 const _levels = <_LevelMeta>[
-  _LevelMeta(level: 0, title: 'THE ACADEMY',         subtitle: 'Life Support',      accent: Color(0xFF4FC3F7), icon: Icons.school_outlined,         assetPath: 'assets/documents/level0'),
-  _LevelMeta(level: 1, title: 'GROUND SCHOOL',        subtitle: 'The Shipyard',      accent: Color(0xFF66BB6A), icon: Icons.construction_outlined,   assetPath: 'assets/documents/level1'),
-  _LevelMeta(level: 2, title: 'NAVIGATION',           subtitle: 'Star Mapping',      accent: Color(0xFFFFD54F), icon: Icons.explore_outlined,         assetPath: 'assets/documents/level2'),
-  _LevelMeta(level: 3, title: 'ENGINEERING',          subtitle: 'Reactor Diag.',     accent: Color(0xFFFF8A65), icon: Icons.engineering_outlined,     assetPath: 'assets/documents/level3'),
-  _LevelMeta(level: 4, title: 'HYPERDRIVE',           subtitle: 'Warp Speed',        accent: Color(0xFFCE93D8), icon: Icons.rocket_launch_outlined,   assetPath: 'assets/documents/level4'),
-  _LevelMeta(level: 5, title: 'CRISIS MGMT',          subtitle: 'Asteroid Field',    accent: Color(0xFFEF9A9A), icon: Icons.shield_outlined,          assetPath: 'assets/documents/level5'),
-  _LevelMeta(level: 6, title: 'THE OUTER RIM',        subtitle: 'Uncharted Space',   accent: Color(0xFFB39DDB), icon: Icons.language_outlined,        assetPath: 'assets/documents/level6'),
+  _LevelMeta(level: 0, title: 'THE ACADEMY',         subtitle: 'Life Support',      accent: Color(0xFF4FC3F7), icon: Icons.school_outlined,         assetPath: 'lib/assets/documents/level0'),
+  _LevelMeta(level: 1, title: 'GROUND SCHOOL',        subtitle: 'The Shipyard',      accent: Color(0xFF66BB6A), icon: Icons.construction_outlined,   assetPath: 'lib/assets/documents/level1'),
+  _LevelMeta(level: 2, title: 'NAVIGATION',           subtitle: 'Star Mapping',      accent: Color(0xFFFFD54F), icon: Icons.explore_outlined,         assetPath: 'lib/assets/documents/level2'),
+  _LevelMeta(level: 3, title: 'ENGINEERING',          subtitle: 'Reactor Diag.',     accent: Color(0xFFFF8A65), icon: Icons.engineering_outlined,     assetPath: 'lib/assets/documents/level3'),
+  _LevelMeta(level: 4, title: 'HYPERDRIVE',           subtitle: 'Warp Speed',        accent: Color(0xFFCE93D8), icon: Icons.rocket_launch_outlined,   assetPath: 'lib/assets/documents/level4'),
+  _LevelMeta(level: 5, title: 'CRISIS MGMT',          subtitle: 'Asteroid Field',    accent: Color(0xFFEF9A9A), icon: Icons.shield_outlined,          assetPath: 'lib/assets/documents/level5'),
+  _LevelMeta(level: 6, title: 'THE OUTER RIM',        subtitle: 'Uncharted Space',   accent: Color(0xFFB39DDB), icon: Icons.language_outlined,        assetPath: 'lib/assets/documents/level6'),
 ];
 
 // ─── Main widget ───────────────────────────────────────────────
@@ -471,33 +471,100 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
   // ── Text parser ─────────────────────────────────────────────────
   List<Widget> _parseContent(_LevelMeta meta) {
     final raw = _loadedContent[meta.level] ?? '';
-    final parts = raw.split('\n## ');
     final widgets = <Widget>[];
     final engine = ref.read(tutorialEngineProvider);
     final completed = engine.getCompletedSubLevels(meta.level);
+
+    // Parse initial content
+    widgets.addAll(_parseInnerContent(raw, meta.accent));
     
-    // Parse Intro
-    widgets.addAll(_parseInnerContent(parts[0], meta.accent));
-    
-    // Parse Sublevels
-    int totalSubLevels = parts.length > 1 ? parts.length - 1 : 0;
-    for (int i = 1; i < parts.length; i++) {
-       final sectionText = '## ' + parts[i];
-       final lines = sectionText.split('\n');
-       final titleLine = lines.first.replaceAll('## ', '').trim();
-       
-       widgets.addAll(_parseInnerContent(sectionText, meta.accent));
-       
-       // Add Cadet Evaluation Button
-       final isDone = completed.contains(titleLine);
-       widgets.add(_buildCadetEvalButton(meta.level, titleLine, i - 1, meta.accent, isDone));
+    // Add cadet evaluation section
+    if (meta.level > 0) {
+      widgets.add(const SizedBox(height: 20));
+      widgets.add(_cadetEvaluation(meta.level, completed, meta.accent));
     }
-    
-    // Boss Fight Button
-    final allDone = totalSubLevels > 0 && completed.length >= totalSubLevels;
-    widgets.add(_buildBossFightButton(meta.level, allDone));
-    
+
+    // Add evaluation button if not completed
+    if (completed.length < 3) {
+      widgets.add(_buildCadetEvalButton(meta.level, 'Complete Level ${meta.level}', completed.length, meta.accent, false));
+    }
+
     return widgets;
+  }
+
+  Widget _cadetEvaluation(int level, List<String> completed, Color accent) {
+    final isCompleted = completed.length >= 3;
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            isCompleted ? const Color(0xFF4CAF50).withOpacity(0.1) : const Color(0xFF2196F3).withOpacity(0.1),
+            isCompleted ? const Color(0xFF4CAF50).withOpacity(0.05) : const Color(0xFF2196F3).withOpacity(0.05),
+          ],
+        ),
+        border: Border.all(
+          color: isCompleted ? const Color(0xFF4CAF50).withOpacity(0.3) : const Color(0xFF2196F3).withOpacity(0.3),
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isCompleted ? Icons.verified : Icons.pending_actions,
+                color: isCompleted ? const Color(0xFF4CAF50) : const Color(0xFF2196F3),
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'CADET EVALUATION',
+                style: GoogleFonts.orbitron(
+                  color: isCompleted ? const Color(0xFF4CAF50) : const Color(0xFF2196F3),
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            isCompleted 
+              ? '✓ Level $level completed successfully! Ready for next mission.'
+              : '⚠ Complete all objectives to unlock next level and boss fight.',
+            style: GoogleFonts.shareTechMono(
+              color: Colors.white70,
+              fontSize: 11,
+              height: 1.4,
+            ),
+          ),
+          if (!isCompleted) ...[
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2196F3).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                'PROGRESS: ${completed.length}/3 objectives completed',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.shareTechMono(
+                  color: const Color(0xFF2196F3),
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 
   List<Widget> _parseInnerContent(String raw, Color accent) {
