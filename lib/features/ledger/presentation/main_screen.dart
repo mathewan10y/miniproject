@@ -28,15 +28,17 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: PageView(
-        controller: _pageController,
-        physics: const BouncingScrollPhysics(),
-        children: const [
-          LogisticsPage(), // Page 0 - Left
-          ReactorCorePage(), // Page 1 - Center (Default)
-          FlightDeckPage(), // Page 2 - Right
-        ],
+    return SafeArea(
+      child: Scaffold(
+        body: PageView(
+          controller: _pageController,
+          physics: const ClampingScrollPhysics(),
+          children: const [
+            LogisticsPage(), // Page 0 - Left
+            ReactorCorePage(), // Page 1 - Center (Default)
+            FlightDeckPage(), // Page 2 - Right
+          ],
+        ),
       ),
     );
   }

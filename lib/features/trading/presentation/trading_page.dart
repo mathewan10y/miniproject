@@ -9,6 +9,7 @@ import '../../trading/domain/models/market_asset.dart';
 import '../../trading/domain/models/open_position.dart';
 import '../../trading/domain/models/trade_history_item.dart';
 import '../../gamification/user_stats_provider.dart';
+import 'stock_analysis_overlay.dart';
 
 class TradingPage extends ConsumerStatefulWidget {
   final MarketAsset asset;
@@ -516,14 +517,19 @@ class _TradingPageState extends ConsumerState<TradingPage>
                 ),
               ),
               const SizedBox(width: 6),
-              Text(
-                '≈₹${(widget.asset.currentPrice * _quantity).toStringAsFixed(0)}',
-                style: GoogleFonts.inter(color: Colors.white30, fontSize: 10),
+              Flexible(
+                child: Text(
+                  '≈₹${(widget.asset.currentPrice * _quantity).toStringAsFixed(0)}',
+                  style: GoogleFonts.inter(color: Colors.white30, fontSize: 10),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-              const Spacer(),
+              const SizedBox(width: 6),
               _orderButton('BUY / LONG', _green, _onBuy),
               const SizedBox(width: 6),
               _orderButton('SELL / SHORT', _red, _onSell),
+              const SizedBox(width: 6),
+              _analyzeButton(),
             ],
           ),
         ],
@@ -568,6 +574,27 @@ class _TradingPageState extends ConsumerState<TradingPage>
         child: Text(
           label,
           style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 11),
+        ),
+      ),
+    );
+  }
+
+  Widget _analyzeButton() {
+    return SizedBox(
+      height: 30,
+      child: ElevatedButton.icon(
+        onPressed: () => showStockAnalysisOverlay(context, widget.asset),
+        icon: const Icon(Icons.auto_awesome, size: 13),
+        label: Text(
+          'Analyze',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 11),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF7C3AED),
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          elevation: 0,
         ),
       ),
     );
