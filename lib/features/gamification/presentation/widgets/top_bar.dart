@@ -30,7 +30,7 @@ class TopBar extends ConsumerWidget {
 
     return Container(
       height: 60,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.black.withAlpha((0.8 * 255).toInt()),
         border: Border(bottom: BorderSide(color: Colors.cyan.withAlpha((0.3 * 255).toInt()))),
@@ -39,28 +39,27 @@ class TopBar extends ConsumerWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // Title & Left Controls
-          Flexible(
+          Expanded(
             child: Row(
-              mainAxisSize: MainAxisSize.min,
               children: [
                 if (onVarsityToggle != null)
                   Padding(
-                    padding: const EdgeInsets.only(right: 12),
+                    padding: const EdgeInsets.only(right: 8),
                     child: IconButton(
                       icon: const Icon(Icons.school, color: Colors.cyan),
                       onPressed: onVarsityToggle,
                       tooltip: "Varsity Orbit",
                     ),
                   ),
-                // Page title
-                Flexible(
+
+                Expanded(
                   child: Text(
                     title,
                     style: GoogleFonts.orbitron(
                       color: Colors.white,
-                      fontSize: 20,
+                      fontSize: 18, // slightly reduced to fit mobile gracefully
                       fontWeight: FontWeight.bold,
-                      letterSpacing: 2,
+                      letterSpacing: 1.5,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -114,8 +113,11 @@ class TopBar extends ConsumerWidget {
             ),
           ),
 
+          const SizedBox(width: 8),
+
           // Right Side: (optional actions) + Fuel & Bots
           Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               // Page-specific action button (e.g. SmsSyncButton on Logistics)
               if (actions != null) ...[actions!, const SizedBox(width: 8)],
@@ -126,10 +128,7 @@ class TopBar extends ConsumerWidget {
 
               // Fuel Display
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.green.withOpacity(0.1),
                   border: Border.all(color: Colors.green.withOpacity(0.5)),
@@ -140,25 +139,25 @@ class TopBar extends ConsumerWidget {
                     const Icon(
                       Icons.local_gas_station,
                       color: Colors.green,
-                      size: 16,
+                      size: 14,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 4),
                     Text(
                       fuel.toStringAsFixed(0),
                       style: GoogleFonts.shareTechMono(
                         color: Colors.green,
-                        fontSize: 16,
+                        fontSize: 14,
                       ),
                     ),
                   ],
                 ),
               ),
 
-              const SizedBox(width: 24),
+              const SizedBox(width: 8),
 
               // Bot Icons
               _buildBotIcon(context, ref, 'lib/assets/case.png', BotType.aura),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               _buildBotIcon(context, ref, 'lib/assets/tars.png', BotType.crash),
             ],
           ),
