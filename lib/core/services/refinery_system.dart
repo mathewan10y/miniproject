@@ -122,6 +122,23 @@ class RefinerySystem {
     }
   }
 
+  // Trading: safely deduct fuel (returns false if insufficient)
+  bool deductFuel(double amount) {
+    if (refinedFuel >= amount) {
+      refinedFuel -= amount;
+      return true;
+    }
+    return false;
+  }
+
+  // Trading: add fuel back (e.g. on position close); clamps to 0 if negative
+  void addFuel(double amount) {
+    refinedFuel += amount;
+    if (refinedFuel < 0) {
+      refinedFuel = 0.0;
+    }
+  }
+
   // Get current state
   Map<String, dynamic> getState() {
     return {

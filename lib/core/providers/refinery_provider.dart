@@ -126,6 +126,29 @@ class RefineryNotifier extends AsyncNotifier<RefinerySystem> {
     _save(next);
   }
 
+  /// Deducts [amount] from refinedFuel. Returns true on success, false if
+  /// insufficient balance. State is persisted on success.
+  bool deductFuel(double amount) {
+    final s = _current;
+    final success = s.deductFuel(amount);
+    if (success) {
+      final next = _snapshot(s);
+      state = AsyncData(next);
+      _save(next);
+    }
+    return success;
+  }
+
+  /// Adds [amount] to refinedFuel (e.g. margin return + P&L on close).
+  /// Negative balance is clamped to 0. State is always persisted.
+  void addFuel(double amount) {
+    final s = _current;
+    s.addFuel(amount);
+    final next = _snapshot(s);
+    state = AsyncData(next);
+    _save(next);
+  }
+
   int calculateOreFromIncome(double amount) =>
       _current.calculateOreFromIncome(amount);
 }
