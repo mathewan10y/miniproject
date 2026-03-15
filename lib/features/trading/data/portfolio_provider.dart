@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/models/open_position.dart';
 import '../domain/models/trade_history_item.dart';
 import 'market_service.dart';
-import '../../gamification/user_stats_provider.dart';
+import '../../../core/providers/refinery_provider.dart';
 
 /// Holds active positions, closed-trade history, and balance events.
 class PortfolioState {
@@ -162,12 +162,12 @@ final autoTradeWatcherProvider = Provider<void>((ref) {
 
           if (shouldClose && portfolioNotifier.getPositionById(position.id) != null) {
             final pnl = position.realizedPnl(currentPrice);
-            ref.read(userStatsProvider.notifier).addFuel(position.totalCost + pnl);
-            final stats = ref.read(userStatsProvider).valueOrNull;
+            ref.read(refineryProvider.notifier).addFuel(position.totalCost + pnl);
+            final stats = ref.read(refineryProvider).valueOrNull;
             portfolioNotifier.closePosition(
               position.id,
               currentPrice,
-              balanceAfter: stats?.tradingCredits ?? 0.0,
+              balanceAfter: stats?.refinedFuel ?? 0.0,
             );
           }
         } catch (_) {

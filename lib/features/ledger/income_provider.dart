@@ -27,7 +27,7 @@ class IncomeNotifier extends AsyncNotifier<List<Income>> {
     await _db.addIncome(newIncome);
 
     // Process through gamification (convert savings to ore)
-    ref.read(refineryProvider.notifier).processIncome(amount);
+    await ref.read(refineryProvider.notifier).processIncome(amount);
 
     // O(1) state update — prepend new item, no round-trip query needed
     final current = state.valueOrNull ?? [];

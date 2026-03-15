@@ -35,6 +35,54 @@ class SmsLlmProcessor {
   // Batch size — send up to N messages per Gemini call to stay within limits
   static const int _batchSize = 20;
 
+  // ── Local pre-filter regex lists ──────────────────────────────────────────
+
+  static final List<RegExp> _otpPatterns = [
+    RegExp(
+      r'\b\d{4,6}\b\s*(?:is|are|hai)\s*(?:your|the|apka|apki)\s*(?:otp|one time password|code|pin|verification code|security code)',
+      caseSensitive: false,
+    ),
+    RegExp(
+      r'^(?:otp|code|pin|verification)\s*(?:is|:|hai)\s*\d{4,6}\b',
+      caseSensitive: false,
+    ),
+    RegExp(
+      r'\buse\s*\d{4,6}\s*to\s*(?:verify|confirm|authenticate|authorize|validate|complete)',
+      caseSensitive: false,
+    ),
+  ];
+
+  static final List<RegExp> _promotionalPatterns = [
+    RegExp(r'congratulations.*you.*won', caseSensitive: false),
+    RegExp(r'pre-approved.*loan.*apply.*now', caseSensitive: false),
+    RegExp(r'limited.*time.*offer', caseSensitive: false),
+    RegExp(r'discount|coupon|deal|sale|offer', caseSensitive: false),
+    RegExp(r'click here|visit us|know more|apply now', caseSensitive: false),
+  ];
+
+  static final List<RegExp> _transactionIndicators = [
+    RegExp(
+      r'debited|debit|withdrawn|purchase|spent|paid|charged|deducted',
+      caseSensitive: false,
+    ),
+    RegExp(
+      r'credited|credit|received|deposit|salary|refund|transfer',
+      caseSensitive: false,
+    ),
+    RegExp(r'(?:INR|Rs\.?|₹)\s*\d+', caseSensitive: false),
+  ];
+
+  /// Returns true only if [message] looks like a financial transaction.
+  /// OTPs and promotional messages are rejected first.
+  bool _isLikelyTransaction(String message) {
+    if (_otpPatterns.any((re) => re.hasMatch(message))) return false;
+    if (_promotionalPatterns.any((re) => re.hasMatch(message))) return false;
+    if (_transactionIndicators.any((re) => re.hasMatch(message))) return true;
+    return false;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+
   static const String _systemPrompt = '''
 You are a financial SMS parser for Indian banking messages. 
 Analyze the following list of SMS messages and classify each one.
@@ -70,16 +118,29 @@ The input messages are:
     final model = await _buildModel();
     if (model == null) return [];
 
+    // ── Task 1: local pre-filter — drop OTPs, promos, non-financial SMS ──
+    final filtered = messages.where(_isLikelyTransaction).toList();
+    if (filtered.isEmpty) return [];
+
     final List<ParsedTransaction> results = [];
 
     // Process in batches to avoid token limits
-    for (int i = 0; i < messages.length; i += _batchSize) {
-      final batch = messages.sublist(
+    final batches = <List<String>>[];
+    for (int i = 0; i < filtered.length; i += _batchSize) {
+      batches.add(filtered.sublist(
         i,
-        i + _batchSize > messages.length ? messages.length : i + _batchSize,
-      );
-      final batchResults = await _processBatch(model, batch);
+        i + _batchSize > filtered.length ? filtered.length : i + _batchSize,
+      ));
+    }
+
+    for (int b = 0; b < batches.length; b++) {
+      final batchResults = await _processBatch(model, batches[b]);
       results.addAll(batchResults);
+
+      // ── Task 2: rate-limit guard — 1 s delay between batches ──
+      if (b < batches.length - 1) {
+        await Future.delayed(const Duration(milliseconds: 1000));
+      }
     }
 
     return results;

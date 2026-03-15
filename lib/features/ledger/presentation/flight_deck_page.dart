@@ -13,7 +13,7 @@ import 'flight_deck_page_wickpainter.dart';
 import '../../gamification/presentation/widgets/top_bar.dart';
 
 import '../../gamification/presentation/widgets/varsity_orbit_panel.dart';
-import '../../gamification/user_stats_provider.dart';
+
 import '../../trading/data/portfolio_provider.dart';
 import '../../trading/domain/models/open_position.dart';
 import '../../trading/presentation/stock_analysis_overlay.dart';
@@ -1496,9 +1496,9 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
   }
 
   Widget _buildTradeManagerPanel() {
-    final stats = ref.watch(userStatsProvider).valueOrNull;
+    final stats = ref.watch(refineryProvider).valueOrNull;
     final portfolioState = ref.watch(portfolioProvider);
-    final balance = stats?.tradingCredits ?? 0.0;
+    final balance = stats?.refinedFuel ?? 0.0;
     final currentPrice = _selectedAsset?.currentPrice ?? 0;
     final unrealizedPnl = portfolioState.positions.fold(
       0.0,
@@ -1818,13 +1818,13 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                     if (p == null) return;
                     final closePnl = p.realizedPnl(currentPrice);
                     ref
-                        .read(userStatsProvider.notifier)
+                        .read(refineryProvider.notifier)
                         .addFuel(p.totalCost + closePnl);
                     final bal =
                         ref
-                            .read(userStatsProvider)
+                            .read(refineryProvider)
                             .valueOrNull
-                            ?.tradingCredits ??
+                            ?.refinedFuel ??
                         0.0;
                     ref
                         .read(portfolioProvider.notifier)
@@ -2214,7 +2214,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
             : (_selectedAsset?.currentPrice ?? 0.0);
     final cost = price * _tradeQuantity;
     final currentFuel =
-        ref.watch(userStatsProvider).valueOrNull?.tradingCredits ?? 0.0;
+        ref.watch(refineryProvider).valueOrNull?.refinedFuel ?? 0.0;
     final canAfford = currentFuel >= cost;
 
     final effectiveColor = canAfford ? color : Colors.grey.shade600;
@@ -2241,7 +2241,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
           return;
         }
 
-        final statsNotifier = ref.read(userStatsProvider.notifier);
+        final statsNotifier = ref.read(refineryProvider.notifier);
         final success = statsNotifier.deductFuel(cost);
         if (!success) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -2258,7 +2258,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
         }
 
         final balAfter =
-            ref.read(userStatsProvider).valueOrNull?.tradingCredits ?? 0.0;
+            ref.read(refineryProvider).valueOrNull?.refinedFuel ?? 0.0;
         ref
             .read(portfolioProvider.notifier)
             .openPosition(

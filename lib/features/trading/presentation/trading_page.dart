@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -8,7 +8,7 @@ import '../../trading/data/portfolio_provider.dart';
 import '../../trading/domain/models/market_asset.dart';
 import '../../trading/domain/models/open_position.dart';
 import '../../trading/domain/models/trade_history_item.dart';
-import '../../gamification/user_stats_provider.dart';
+import '../../../core/providers/refinery_provider.dart';
 import 'stock_analysis_overlay.dart';
 
 class TradingPage extends ConsumerStatefulWidget {
@@ -108,12 +108,12 @@ class _TradingPageState extends ConsumerState<TradingPage>
     final price = currentAsset.currentPrice;
     final cost = price * qty;
 
-    final statsNotifier = ref.read(userStatsProvider.notifier);
+    final statsNotifier = ref.read(refineryProvider.notifier);
     final success = statsNotifier.deductFuel(cost);
 
     if (!success) {
       final balance =
-          ref.read(userStatsProvider).valueOrNull?.tradingCredits ?? 0.0;
+          ref.read(refineryProvider).valueOrNull?.refinedFuel ?? 0.0;
       _showSnack(
         'Insufficient FUEL â€” need â‚¹${cost.toStringAsFixed(2)}, have â‚¹${balance.toStringAsFixed(2)}',
         _red,
@@ -122,7 +122,7 @@ class _TradingPageState extends ConsumerState<TradingPage>
     }
 
     final balanceAfter =
-        ref.read(userStatsProvider).valueOrNull?.tradingCredits ?? 0.0;
+        ref.read(refineryProvider).valueOrNull?.refinedFuel ?? 0.0;
     final sl = double.tryParse(_slController.text.trim());
     final tp = double.tryParse(_tpController.text.trim());
 
@@ -163,12 +163,12 @@ class _TradingPageState extends ConsumerState<TradingPage>
     final price = currentAsset.currentPrice;
     final cost = price * qty;
 
-    final statsNotifier = ref.read(userStatsProvider.notifier);
+    final statsNotifier = ref.read(refineryProvider.notifier);
     final success = statsNotifier.deductFuel(cost);
 
     if (!success) {
       final balance =
-          ref.read(userStatsProvider).valueOrNull?.tradingCredits ?? 0.0;
+          ref.read(refineryProvider).valueOrNull?.refinedFuel ?? 0.0;
       _showSnack(
         'Insufficient FUEL â€” need â‚¹${cost.toStringAsFixed(2)}, have â‚¹${balance.toStringAsFixed(2)}',
         _red,
@@ -177,7 +177,7 @@ class _TradingPageState extends ConsumerState<TradingPage>
     }
 
     final balanceAfter =
-        ref.read(userStatsProvider).valueOrNull?.tradingCredits ?? 0.0;
+        ref.read(refineryProvider).valueOrNull?.refinedFuel ?? 0.0;
     final sl = double.tryParse(_slController.text.trim());
     final tp = double.tryParse(_tpController.text.trim());
 
@@ -218,10 +218,10 @@ class _TradingPageState extends ConsumerState<TradingPage>
     
     // Return capital + P&L first
     final pnl = existing.realizedPnl(currentPrice);
-    ref.read(userStatsProvider.notifier).addFuel(existing.totalCost + pnl);
+    ref.read(refineryProvider.notifier).addFuel(existing.totalCost + pnl);
 
     final balanceAfter =
-        ref.read(userStatsProvider).valueOrNull?.tradingCredits ?? 0.0;
+        ref.read(refineryProvider).valueOrNull?.refinedFuel ?? 0.0;
     portfolio.closePosition(
       positionId,
       currentPrice,
@@ -291,11 +291,11 @@ class _TradingPageState extends ConsumerState<TradingPage>
     ) ?? widget.asset;
 
 
-    final stats = ref.watch(userStatsProvider).valueOrNull;
+    final stats = ref.watch(refineryProvider).valueOrNull;
     final portfolioState = ref.watch(portfolioProvider);
 
     // Compute account stats
-    final balance = stats?.tradingCredits ?? 0.0;
+    final balance = stats?.refinedFuel ?? 0.0;
     final unrealizedPnl = portfolioState.positions.fold(
       0.0,
       (sum, p) => sum + p.unrealizedPnl(liveAsset.currentPrice),
@@ -1265,3 +1265,4 @@ class _TradingPageState extends ConsumerState<TradingPage>
     );
   }
 }
+
