@@ -10,6 +10,7 @@ import '../../../widgets/reactor_gauge.dart';
 import '../../../core/providers/refinery_provider.dart';
 import '../../gamification/presentation/widgets/top_bar.dart';
 import '../../gamification/presentation/widgets/levels_panel.dart';
+import '../../gamification/services/tutorial_keys.dart';
 
 class ReactorCorePage extends ConsumerStatefulWidget {
   const ReactorCorePage({super.key});
@@ -64,8 +65,6 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
         return incomesAsync.when(
           data: (incomes) {
             final rawOre = refineryState?.rawOre ?? 0;
-            final refinedFuel = refineryState?.refinedFuel ?? 0.0;
-            final totalSavings = refineryState?.totalSavings ?? 0.0;
 
             // Calculate ore level for reactor gauge (0-1 based on raw ore)
             double oreLevel = (rawOre / 10000.0).clamp(
@@ -80,86 +79,90 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
                 Image.asset('lib/assets/bg_center.jpg', fit: BoxFit.cover),
                 // Dark overlay for readability
                 Container(color: Colors.black.withOpacity(0.5)),
-                // Levels Panel (left side, behind TopBar)
-                const Positioned(
-                  left: 0,
-                  top: 0,
-                  bottom: 0,
-                  child: LevelsPanel(),
-                ),
-                // Main content - centered layout
-                Column(
-                  children: [
-                    const TopBar(title: "REACTOR CORE"),
-                    Expanded(
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            // UNREFINED ORE display (above reactor)
-                            _buildHolographicContainer(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Text(
-                                    'RAW ORE',
-                                    style: TextStyle(
-                                      color: Color(0xFF00D9FF),
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 2,
+                // Main content - centered layout with SafeArea to prevent overflow
+                SafeArea(
+                  child: Column(
+                    children: [
+                      const TopBar(title: "REACTOR CORE"),
+                      Expanded(
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            // Reactor size: 70% of available height, but never wider than 85% of width
+                            final reactorSize = (constraints.maxHeight * 0.70)
+                                .clamp(180.0, constraints.maxWidth * 0.85);
+                            return Center(
+                              child: SingleChildScrollView(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    // UNREFINED ORE display (above reactor)
+                                    _buildHolographicContainer(
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Text(
+                                            'RAW ORE',
+                                            style: TextStyle(
+                                              color: Color(0xFF00D9FF),
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                              letterSpacing: 2,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Column(
+                                            children: [
+                                              Text(
+                                                '$rawOre',
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 40,
+                                                  fontWeight: FontWeight.bold,
+                                                  letterSpacing: 1,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 8),
+                                              const Text(
+                                                'REFINERY EFFICIENCY: 80%',
+                                                style: TextStyle(
+                                                  color: Color(0xFF00B8D4),
+                                                  fontSize: 12,
+                                                  letterSpacing: 1,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Column(
-                                    children: [
-                                      Text(
-                                        '$rawOre',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 40,
-                                          fontWeight: FontWeight.bold,
-                                          letterSpacing: 1,
+                                    const SizedBox(height: 20),
+                                    // Reactor core with pulse animation
+                                    ScaleTransition(
+                                      scale: _pulseAnimation,
+                                      child: SizedBox(
+                                        width: reactorSize,
+                                        height: reactorSize,
+                                        child: Container(
+                                          key: TutorialKeys.reactorCenterKey(),
+                                          child: ReactorGauge(
+                                            key: TutorialKeys.reactorGaugeKey(),
+                                            fillPercent: oreLevel,
+                                          ),
                                         ),
                                       ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        'REFINERY EFFICIENCY: 80%',
-                                        style: const TextStyle(
-                                          color: Color(0xFF00B8D4),
-                                          fontSize: 12,
-                                          letterSpacing: 1,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                                    ),
+                                    // Space for the refine button below
+                                    const SizedBox(height: 120),
+                                  ],
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 20),
-                            // Reactor core with pulse animation and responsive sizing
-                            ScaleTransition(
-                              scale: _pulseAnimation,
-                              child: Builder(
-                                builder: (context) {
-                                  final screenWidth =
-                                      MediaQuery.of(context).size.width;
-                                  final reactorWidth = screenWidth * 0.8;
-
-                                  return Container(
-                                    width: reactorWidth,
-                                    child: ReactorGauge(fillPercent: oreLevel),
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
+                            );
+                          },
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-                // Top label removed
 
                 // Particle effects overlay
                 ..._particles.map((particle) => _buildParticle(particle)),
@@ -167,7 +170,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
                 ..._criticalTexts.map((text) => _buildCriticalText(text)),
                 // Hold to refine button
                 Positioned(
-                  bottom: 40,
+                  bottom: 24,
                   left: 0,
                   right: 0,
                   child: Center(child: _buildRefineButton()),
@@ -175,6 +178,14 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
 
                 // Chat Overlay
                 const BotChatPanel(),
+
+                // Levels Panel — top-most overlay so it floats over all content
+                const Positioned(
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: LevelsPanel(),
+                ),
               ],
             );
           },
@@ -191,12 +202,12 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.4),
+        color: Colors.black.withAlpha((0.4 * 255).toInt()),
         border: Border.all(color: const Color(0xFF00D9FF), width: 2),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF00D9FF).withOpacity(0.5),
+            color: const Color(0xFF00D9FF).withAlpha((0.1 * 255).toInt()),
             blurRadius: 20,
             spreadRadius: 2,
           ),

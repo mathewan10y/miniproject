@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:stardust/core/providers/refinery_provider.dart';
 import '../providers/bot_chat_provider.dart';
+import 'academy_codex_dialog.dart';
+import '../../user_stats_provider.dart';
+import '../../services/tutorial_keys.dart';
 
 class TopBar extends ConsumerWidget {
   final String title;
@@ -29,8 +32,8 @@ class TopBar extends ConsumerWidget {
       height: 60,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.8),
-        border: Border(bottom: BorderSide(color: Colors.cyan.withOpacity(0.3))),
+        color: Colors.black.withAlpha((0.8 * 255).toInt()),
+        border: Border(bottom: BorderSide(color: Colors.cyan.withAlpha((0.3 * 255).toInt()))),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -48,6 +51,7 @@ class TopBar extends ConsumerWidget {
                       tooltip: "Varsity Orbit",
                     ),
                   ),
+
                 Expanded(
                   child: Text(
                     title,
@@ -58,6 +62,51 @@ class TopBar extends ConsumerWidget {
                       letterSpacing: 1.5,
                     ),
                     overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // CODEX button — opens Captain's Log
+                GestureDetector(
+                  key: TutorialKeys.codexBtnKey(),
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      barrierColor: Colors.black87,
+                      builder: (_) => const AcademyCodexDialog(),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00D9FF).withAlpha((0.08 * 255).toInt()),
+                      border: Border.all(
+                          color: const Color(0xFF00D9FF).withAlpha((0.35 * 255).toInt()), width: 1),
+                      borderRadius: BorderRadius.circular(6),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF00D9FF).withAlpha((0.12 * 255).toInt()),
+                          blurRadius: 8,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.auto_stories_outlined,
+                            color: Color(0xFF00D9FF), size: 16),
+                        const SizedBox(width: 6),
+                        Text(
+                          'CODEX',
+                          style: GoogleFonts.orbitron(
+                            color: const Color(0xFF00D9FF),
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -72,6 +121,10 @@ class TopBar extends ConsumerWidget {
             children: [
               // Page-specific action button (e.g. SmsSyncButton on Logistics)
               if (actions != null) ...[actions!, const SizedBox(width: 8)],
+
+              // Dev / User mode toggle
+              const _DevModeToggle(),
+              const SizedBox(width: 8),
 
               // Fuel Display
               Container(
@@ -492,5 +545,67 @@ class _BotChatPanelState extends ConsumerState<BotChatPanel> {
         ),
       );
     }
+  }
+}
+
+// ─── Dev / User Mode Toggle ───────────────────────────────────────────────────
+
+class _DevModeToggle extends ConsumerWidget {
+  const _DevModeToggle();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDevMode = ref.watch(devModeProvider);
+
+    return GestureDetector(
+      onTap: () {
+        ref.read(devModeProvider.notifier).state = !isDevMode;
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: isDevMode
+              ? Colors.amber.withOpacity(0.12)
+              : Colors.white.withOpacity(0.04),
+          border: Border.all(
+            color: isDevMode
+                ? Colors.amber.withOpacity(0.6)
+                : Colors.white.withOpacity(0.15),
+            width: 1,
+          ),
+          borderRadius: BorderRadius.circular(6),
+          boxShadow: isDevMode
+              ? [
+                  BoxShadow(
+                    color: Colors.amber.withOpacity(0.2),
+                    blurRadius: 8,
+                    spreadRadius: 1,
+                  ),
+                ]
+              : [],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isDevMode ? Icons.developer_mode : Icons.person_outline,
+              color: isDevMode ? Colors.amber : Colors.white38,
+              size: 14,
+            ),
+            const SizedBox(width: 5),
+            Text(
+              isDevMode ? 'DEV' : 'USER',
+              style: GoogleFonts.orbitron(
+                color: isDevMode ? Colors.amber : Colors.white38,
+                fontSize: 9,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

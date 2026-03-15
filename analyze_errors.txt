@@ -1,0 +1,136 @@
+﻿
+warning - The value of the 
+field '_isAnimatingDamage' 
+isn't used - lib\features\ga
+mification\presentation\page
+s\boss_fight_screen.dart:18:
+8 - unused_field
+warning - Unused import: 'pa
+ckage:flutter_markdown/flutt
+er_markdown.dart' - lib\feat
+ures\gamification\presentati
+on\widgets\academy_codex_dia
+log.dart:9:8 - unused_import
+warning - Duplicate import 
+- lib\features\gamification\
+presentation\widgets\mini_qu
+iz_sheet.dart:7:8 - 
+duplicate_import
+warning - The value of the 
+local variable 
+'avatarImage' isn't used - l
+ib\features\gamification\pre
+sentation\widgets\tutorial_o
+verlay_widget.dart:65:11 - 
+unused_local_variable
+warning - Unused import: 
+'top_bar.dart' - lib\feature
+s\gamification\presentation\
+widgets\varsity_orbit_panel.
+dart:6:8 - unused_import
+warning - The value of the 
+local variable 'text' isn't 
+used - lib\features\gamifica
+tion\presentation\widgets\va
+rsity_orbit_panel.dart:114:3
+6 - unused_local_variable
+warning - Unused import: '..
+/../../core/database/databas
+e.dart' - lib\features\ledge
+r\presentation\expenses_tab.
+dart:4:8 - unused_import
+warning - Unused import: 'pa
+ckage:fl_chart/fl_chart.dart
+' - lib\features\ledger\pres
+entation\flight_deck_page.da
+rt:6:8 - unused_import
+warning - The value of the 
+local variable 'system' 
+isn't used - lib\features\le
+dger\presentation\flight_dec
+k_page.dart:275:11 - 
+unused_local_variable
+warning - The value of the 
+local variable 
+'panelHeight' isn't used - l
+ib\features\ledger\presentat
+ion\flight_deck_page.dart:50
+5:18 - unused_local_variable
+warning - The '!' will have 
+no effect because the 
+receiver can't be null - lib
+\features\ledger\presentatio
+n\flight_deck_page.dart:2220
+:48 - unnecessary_non_null_a
+ssertion
+warning - The '!' will have 
+no effect because the 
+receiver can't be null - lib
+\features\ledger\presentatio
+n\flight_deck_page.dart:2250
+:51 - unnecessary_non_null_a
+ssertion
+warning - The declaration 
+'_buildIntervalSelector' 
+isn't referenced - lib\featu
+res\ledger\presentation\flig
+ht_deck_page.dart:2331:10 - 
+unused_element
+warning - A value for 
+optional parameter 
+'isDashed' isn't ever given 
+- lib\features\ledger\presen
+tation\flight_deck_page.dart
+:2466:10 - 
+unused_element_parameter
+warning - The value of the 
+local variable 'range' 
+isn't used - lib\features\le
+dger\presentation\flight_dec
+k_page.dart:2861:11 - 
+unused_local_variable
+warning - The value of the 
+local variable 
+'refineryNotifier' isn't 
+used - lib\features\ledger\p
+resentation\logistics_page.d
+art:126:21 - 
+unused_local_variable
+warning - The declaration 
+'_buildGlassmorphButton' 
+isn't referenced - lib\featu
+res\ledger\presentation\logi
+stics_page.dart:632:10 - 
+unused_element
+warning - The declaration 
+'_buildActionButton' isn't 
+referenced - lib\features\le
+dger\presentation\logistics_
+page.dart:1009:10 - 
+unused_element
+warning - Unused import: '..
+/../gamification/services/tu
+torial_keys.dart' - lib\feat
+ures\ledger\presentation\mai
+n_screen.dart:5:8 - 
+unused_import
+warning - The value of the 
+field '_currentIndex' isn't 
+used - lib\features\ledger\p
+resentation\main_screen.dart
+:22:7 - unused_field
+warning - The value of the 
+local variable 
+'refinedFuel' isn't used - l
+ib\features\ledger\presentat
+ion\reactor_core_page.dart:6
+7:19 - unused_local_variable
+warning - The value of the 
+local variable 
+'totalSavings' isn't used - 
+lib\features\ledger\presenta
+tion\reactor_core_page.dart:
+68:19 - 
+unused_local_variable
+
+

@@ -7,6 +7,8 @@ class OpenPosition {
   final double quantity;
   final bool isLong; // true = BUY, false = SHORT
   final DateTime openedAt;
+  final double? stopLoss;
+  final double? takeProfit;
 
   OpenPosition({
     String? id,
@@ -17,6 +19,8 @@ class OpenPosition {
     required this.quantity,
     required this.isLong,
     required this.openedAt,
+    this.stopLoss,
+    this.takeProfit,
   }) : id = id ?? '${assetId}_${openedAt.microsecondsSinceEpoch}';
 
   /// Total capital locked (INR)

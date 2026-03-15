@@ -1,9 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../data/varsity_service.dart';
 import '../../domain/models/varsity_level.dart';
-import 'top_bar.dart'; // For Bot interaction if needed, or simply triggered via provider
 import '../providers/bot_chat_provider.dart';
 import '../../../../core/services/aura_service.dart';
 import '../../../../core/services/crash_service.dart';
@@ -111,7 +110,7 @@ class _VarsityOrbitPanelState extends ConsumerState<VarsityOrbitPanel> {
                        Expanded(
                          child: ElevatedButton.icon(
                            onPressed: () {
-                             final text = AuraService().getVarsityBriefing();
+                             AuraService().getVarsityBriefing();
                              ref.read(botChatProvider.notifier).openChat(BotType.aura);
                              // We need to inject the message. The BotChatNotifier might not have a public method for specific text injection easily without user input simulation.
                              // Looking at BotChatNotifier (I assume it exists), usually it handles user input.
@@ -178,6 +177,7 @@ class _VarsityOrbitPanelState extends ConsumerState<VarsityOrbitPanel> {
     
     // Small delay to make it feel natural after opening
     Future.delayed(const Duration(milliseconds: 300), () {
+       if (!mounted) return;
        ref.read(botChatProvider.notifier).injectBotResponse(type, message);
     });
   }

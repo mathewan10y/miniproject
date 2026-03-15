@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:table_calendar/table_calendar.dart';
-import '../../../core/database/database.dart';
 import '../expense_provider.dart';
 
 class ExpensesTab extends ConsumerStatefulWidget {

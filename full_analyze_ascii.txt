@@ -1,0 +1,237 @@
+Analyzing minproject...                                         
+
+   info - Don't invoke 'print' in production code - lib\core\database\database.dart:135:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\services\gemini_service.dart:55:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\services\gemini_service.dart:59:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\services\gemini_service.dart:73:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\services\gemini_service.dart:84:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\services\gemini_service.dart:100:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\services\refinery_system.dart:113:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\services\refinery_system_test.dart:6:3 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\services\refinery_system_test.dart:9:3 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\services\refinery_system_test.dart:10:3 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\services\refinery_system_test.dart:11:3 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\services\refinery_system_test.dart:12:3 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\services\refinery_system_test.dart:13:3 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\services\refinery_system_test.dart:14:3 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\services\refinery_system_test.dart:17:3 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\services\refinery_system_test.dart:19:3 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\services\refinery_system_test.dart:20:3 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\services\refinery_system_test.dart:21:3 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\services\refinery_system_test.dart:22:3 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\services\refinery_system_test.dart:23:3 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\services\refinery_system_test.dart:26:3 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\services\refinery_system_test.dart:35:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\services\refinery_system_test.dart:39:3 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\services\refinery_system_test.dart:40:3 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\services\refinery_system_test.dart:41:3 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\services\refinery_system_test.dart:42:3 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\services\refinery_system_test.dart:43:3 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\services\refinery_system_test.dart:44:3 - avoid_print
+   info - The constant name 'Daily' isn't a lowerCamelCase identifier - lib\features\gamification\analysis_tab.dart:6:18 - constant_identifier_names
+   info - The constant name 'Weekly' isn't a lowerCamelCase identifier - lib\features\gamification\analysis_tab.dart:6:25 - constant_identifier_names
+   info - The constant name 'Yearly' isn't a lowerCamelCase identifier - lib\features\gamification\analysis_tab.dart:6:33 - constant_identifier_names
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\credit_vault_widget.dart:14:44 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\credit_vault_widget.dart:19:48 - deprecated_member_use
+   info - Unnecessary use of string interpolation - lib\features\gamification\credit_vault_widget.dart:38:13 - unnecessary_string_interpolations
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\credit_vault_widget.dart:45:52 - deprecated_member_use
+   info - The private field _isAnimatingDamage could be 'final' - lib\features\gamification\presentation\pages\boss_fight_screen.dart:18:8 - prefer_final_fields
+warning - The value of the field '_isAnimatingDamage' isn't used - lib\features\gamification\presentation\pages\boss_fight_screen.dart:18:8 - unused_field
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\pages\boss_fight_screen.dart:161:74 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\pages\boss_fight_screen.dart:186:63 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\pages\boss_fight_screen.dart:191:92 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\pages\boss_fight_screen.dart:206:67 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\pages\boss_fight_screen.dart:224:92 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\pages\boss_fight_screen.dart:226:88 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\pages\boss_fight_screen.dart:229:100 - deprecated_member_use
+warning - Unused import: 'package:flutter_markdown/flutter_markdown.dart' - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:9:8 - unused_import
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:139:63 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:140:66 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:171:57 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:174:62 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:203:22 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:205:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:214:16 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:215:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:238:81 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:239:59 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:248:58 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:255:58 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:294:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:302:48 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:302:77 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:303:80 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:308:66 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:355:56 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:355:90 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:356:75 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:385:79 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:401:67 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:403:91 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:419:32 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:421:62 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:428:34 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:429:53 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:464:97 - deprecated_member_use
+   info - Use interpolation to compose strings and values - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:481:28 - prefer_interpolation_to_compose_strings
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:553:55 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:553:81 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:555:62 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:555:88 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:579:50 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:579:85 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:582:72 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:600:87 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:638:93 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:664:22 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:666:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:667:44 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\academy_codex_dialog.dart:669:71 - deprecated_member_use
+warning - Duplicate import - lib\features\gamification\presentation\widgets\mini_quiz_sheet.dart:7:8 - duplicate_import
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\mini_quiz_sheet.dart:95:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\mini_quiz_sheet.dart:98:44 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\mini_quiz_sheet.dart:102:49 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\top_bar.dart:35:29 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\top_bar.dart:36:62 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\top_bar.dart:82:54 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\top_bar.dart:84:58 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\top_bar.dart:88:58 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\top_bar.dart:134:39 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\top_bar.dart:135:58 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\top_bar.dart:285:44 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\top_bar.dart:290:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\top_bar.dart:302:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\top_bar.dart:308:58 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\top_bar.dart:436:31 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\top_bar.dart:437:50 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\top_bar.dart:466:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\top_bar.dart:499:51 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\top_bar.dart:525:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\top_bar.dart:568:30 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\top_bar.dart:569:30 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\top_bar.dart:572:32 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\top_bar.dart:573:32 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\top_bar.dart:580:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\tutorial_overlay_widget.dart:62:58 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\tutorial_overlay_widget.dart:62:101 - deprecated_member_use
+warning - The value of the local variable 'avatarImage' isn't used - lib\features\gamification\presentation\widgets\tutorial_overlay_widget.dart:65:11 - unused_local_variable
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\tutorial_overlay_widget.dart:159:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\tutorial_overlay_widget.dart:161:66 - deprecated_member_use
+warning - Unused import: 'top_bar.dart' - lib\features\gamification\presentation\widgets\varsity_orbit_panel.dart:6:8 - unused_import
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\varsity_orbit_panel.dart:37:42 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\varsity_orbit_panel.dart:41:34 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\varsity_orbit_panel.dart:53:36 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\varsity_orbit_panel.dart:54:70 - deprecated_member_use
+warning - The value of the local variable 'text' isn't used - lib\features\gamification\presentation\widgets\varsity_orbit_panel.dart:114:36 - unused_local_variable
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\varsity_orbit_panel.dart:137:59 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\varsity_orbit_panel.dart:151:61 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\varsity_orbit_panel.dart:193:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\varsity_orbit_panel.dart:193:74 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\gamification\presentation\widgets\varsity_orbit_panel.dart:195:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\add_expense_sheet.dart:115:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\add_expense_sheet.dart:160:57 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\add_expense_sheet.dart:175:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\add_income_sheet.dart:112:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\add_income_sheet.dart:161:45 - deprecated_member_use
+warning - Unused import: '../../../core/database/database.dart' - lib\features\ledger\presentation\expenses_tab.dart:4:8 - unused_import
+warning - Unused import: 'package:fl_chart/fl_chart.dart' - lib\features\ledger\presentation\flight_deck_page.dart:6:8 - unused_import
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\flight_deck_page.dart:117:38 - deprecated_member_use
+   info - Use 'isNotEmpty' instead of 'length' to test whether the collection is empty - lib\features\ledger\presentation\flight_deck_page.dart:204:15 - prefer_is_empty
+   info - Don't invoke 'print' in production code - lib\features\ledger\presentation\flight_deck_page.dart:212:13 - avoid_print
+warning - The value of the local variable 'system' isn't used - lib\features\ledger\presentation\flight_deck_page.dart:275:11 - unused_local_variable
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\flight_deck_page.dart:354:29 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\flight_deck_page.dart:355:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\flight_deck_page.dart:359:32 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\flight_deck_page.dart:359:63 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\flight_deck_page.dart:370:36 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\flight_deck_page.dart:399:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\flight_deck_page.dart:413:53 - deprecated_member_use
+warning - The value of the local variable 'panelHeight' isn't used - lib\features\ledger\presentation\flight_deck_page.dart:505:18 - unused_local_variable
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\flight_deck_page.dart:858:43 - deprecated_member_use
+   info - Statements in an if should be enclosed in a block - lib\features\ledger\presentation\flight_deck_page.dart:877:21 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\features\ledger\presentation\flight_deck_page.dart:923:21 - curly_braces_in_flow_control_structures
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\flight_deck_page.dart:986:38 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\flight_deck_page.dart:987:36 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\flight_deck_page.dart:1399:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\flight_deck_page.dart:1404:61 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\flight_deck_page.dart:2193:24 - deprecated_member_use
+warning - The '!' will have no effect because the receiver can't be null - lib\features\ledger\presentation\flight_deck_page.dart:2220:48 - unnecessary_non_null_assertion
+warning - The '!' will have no effect because the receiver can't be null - lib\features\ledger\presentation\flight_deck_page.dart:2250:51 - unnecessary_non_null_assertion
+warning - The declaration '_buildIntervalSelector' isn't referenced - lib\features\ledger\presentation\flight_deck_page.dart:2331:10 - unused_element
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\flight_deck_page.dart:2357:53 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\flight_deck_page.dart:2434:24 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\flight_deck_page.dart:2435:43 - deprecated_member_use
+warning - A value for optional parameter 'isDashed' isn't ever given - lib\features\ledger\presentation\flight_deck_page.dart:2466:10 - unused_element_parameter
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\flight_deck_page.dart:2522:34 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\flight_deck_page.dart:2633:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\flight_deck_page.dart:2707:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\flight_deck_page.dart:2726:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\flight_deck_page.dart:2731:61 - deprecated_member_use
+warning - The value of the local variable 'range' isn't used - lib\features\ledger\presentation\flight_deck_page.dart:2861:11 - unused_local_variable
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\flight_deck_page.dart:2920:29 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\logistics_page.dart:52:39 - deprecated_member_use
+warning - The value of the local variable 'refineryNotifier' isn't used - lib\features\ledger\presentation\logistics_page.dart:126:21 - unused_local_variable
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\logistics_page.dart:506:39 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\logistics_page.dart:612:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\logistics_page.dart:615:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\logistics_page.dart:620:48 - deprecated_member_use
+warning - The declaration '_buildGlassmorphButton' isn't referenced - lib\features\ledger\presentation\logistics_page.dart:632:10 - unused_element
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\logistics_page.dart:645:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\logistics_page.dart:646:36 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\logistics_page.dart:687:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\logistics_page.dart:862:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\logistics_page.dart:863:34 - deprecated_member_use
+warning - The declaration '_buildActionButton' isn't referenced - lib\features\ledger\presentation\logistics_page.dart:1009:10 - unused_element
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\logistics_page.dart:1031:36 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\logistics_page.dart:1070:38 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\logistics_page.dart:1100:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\logistics_page.dart:1162:36 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\logistics_page.dart:1401:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\logistics_page.dart:1402:34 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\logistics_page.dart:1485:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\logistics_page.dart:1487:53 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\logistics_page.dart:1503:44 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\logistics_page.dart:1540:56 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\logistics_page.dart:1543:58 - deprecated_member_use
+warning - Unused import: '../../gamification/services/tutorial_keys.dart' - lib\features\ledger\presentation\main_screen.dart:5:8 - unused_import
+warning - The value of the field '_currentIndex' isn't used - lib\features\ledger\presentation\main_screen.dart:22:7 - unused_field
+   info - Don't use 'BuildContext's across async gaps - lib\features\ledger\presentation\main_screen.dart:56:38 - use_build_context_synchronously
+   info - The private field _particles could be 'final' - lib\features\ledger\presentation\reactor_core_page.dart:31:18 - prefer_final_fields
+   info - The private field _criticalTexts could be 'final' - lib\features\ledger\presentation\reactor_core_page.dart:32:22 - prefer_final_fields
+warning - The value of the local variable 'refinedFuel' isn't used - lib\features\ledger\presentation\reactor_core_page.dart:67:19 - unused_local_variable
+warning - The value of the local variable 'totalSavings' isn't used - lib\features\ledger\presentation\reactor_core_page.dart:68:19 - unused_local_variable
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\reactor_core_page.dart:82:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\reactor_core_page.dart:206:29 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\reactor_core_page.dart:211:44 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\reactor_core_page.dart:226:39 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\reactor_core_page.dart:241:39 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\reactor_core_page.dart:356:59 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\reactor_core_page.dart:377:32 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\reactor_core_page.dart:428:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ledger\presentation\reactor_core_page.dart:447:39 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\sms_sync\presentation\sms_sync_button.dart:207:54 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\sms_sync\presentation\sms_sync_button.dart:210:63 - deprecated_member_use
+   info - Don't invoke 'print' in production code - lib\features\trading\data\market_service.dart:182:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\trading\data\market_service.dart:212:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\trading\data\market_service.dart:217:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\trading\data\market_service.dart:239:9 - avoid_print
+   info - The variable name '_getMockSectorB_Fleets' isn't a lowerCamelCase identifier - lib\features\trading\data\market_service.dart:401:21 - non_constant_identifier_names
+   info - The variable name '_getMockSectorB_Thrusters' isn't a lowerCamelCase identifier - lib\features\trading\data\market_service.dart:426:21 - non_constant_identifier_names
+   info - 'background' is deprecated and shouldn't be used. Use surface instead. This feature was deprecated after v3.18.0-0.1.pre - lib\main.dart:63:11 - deprecated_member_use
+   info - 'onBackground' is deprecated and shouldn't be used. Use onSurface instead. This feature was deprecated after v3.18.0-0.1.pre - lib\main.dart:67:11 - deprecated_member_use
+   info - Parameter 'key' could be a super parameter - lib\widgets\reactor_gauge.dart:6:9 - use_super_parameters
+
+flutter : 220 issues found. 
+(ran in 4.2s)
+At line:1 char:1
++ flutter analyze 2>&1 | 
+ForEach-Object { $_ } | 
+Out-File -Encoding asc ...
++ ~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : 
+    NotSpecified: (220 issue  
+  s found. (ran in 4.2s):St   
+ ring) [], RemoteException
+    + FullyQualifiedErrorId : 
+    NativeCommandError
+ 

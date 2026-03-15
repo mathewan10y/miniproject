@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'features/gamification/services/tutorial_engine_service.dart';
 import 'core/config/app_secrets.dart';
 import 'features/ledger/presentation/main_screen.dart';
 
@@ -19,7 +21,27 @@ Future<void> main() async {
   // Initialize Supabase with credentials from .env
   await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
 
-  runApp(const ProviderScope(child: CyberFinanceApp()));
+  // Ensure an auth session exists — required for RLS on Flutter Web.
+  // If already signed in (persisted session), this is a no-op.
+  final auth = Supabase.instance.client.auth;
+  if (auth.currentSession == null) {
+    try {
+      await auth.signInAnonymously();
+    } catch (e) {
+      debugPrint('[Auth] Anonymous sign-in failed: $e');
+    }
+  }
+
+  final prefs = await SharedPreferences.getInstance();
+
+  runApp(
+    ProviderScope(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+      ],
+      child: const CyberFinanceApp(),
+    ),
+  );
 }
 
 class CyberFinanceApp extends StatelessWidget {
@@ -38,12 +60,11 @@ class CyberFinanceApp extends StatelessWidget {
         colorScheme: const ColorScheme.dark(
           primary: Color(0xFF00D9FF), // Cyan
           secondary: Color(0xFF00B8D4), // Darker cyan
-          background: Color(0xFF0A0E27), // Dark space
-          surface: Color(0xFF1A1F3A), // Dark panel
+          surface: Color(0xFF0A0E27), // Dark space
+          surfaceContainer: Color(0xFF1A1F3A), // Dark panel
           onPrimary: Colors.white,
           onSecondary: Colors.white,
-          onBackground: Color(0xFFE0FFFF), // Light cyan
-          onSurface: Color(0xFFE0FFFF),
+          onSurface: Color(0xFFE0FFFF), // Light cyan
         ),
         textTheme: TextTheme(
           displayLarge: GoogleFonts.orbitron(
