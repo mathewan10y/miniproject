@@ -83,7 +83,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
                 SafeArea(
                   child: Column(
                     children: [
-                      const TopBar(title: "REACTOR CORE"),
+                      const TopBar(title: "REACTOR CORE", showCodex: true),
                       Expanded(
                         child: LayoutBuilder(
                           builder: (context, constraints) {

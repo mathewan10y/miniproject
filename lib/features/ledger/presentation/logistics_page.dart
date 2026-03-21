@@ -93,7 +93,11 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
           child: Column(
             children: [
               // Header
-              const TopBar(title: 'LOGISTICS BAY', actions: SmsSyncButton()),
+              TopBar(
+                title: 'LOGISTICS BAY',
+                showCodex: false,
+                leftActions: const SmsSyncButton(),
+              ),
               // Content area - Transaction list or Analytics
               Expanded(
                 child: expensesAsync.when(

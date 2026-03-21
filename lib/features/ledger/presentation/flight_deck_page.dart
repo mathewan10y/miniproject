@@ -320,10 +320,23 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
           Column(
             children: [
               TopBar(
-                title: "FLIGHT DECK",
-                onVarsityToggle:
-                    () =>
-                        setState(() => _showVarsityPanel = !_showVarsityPanel),
+                title: "", // Empty title to remove from TopBar
+                showCodex: false,
+                showDevMode: false, // Remove DevMode button from Flight Deck
+                actions: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  child: Text(
+                    "FLIGHT DECK",
+                    style: GoogleFonts.orbitron(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                    ),
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ),
               Expanded(flex: 8, child: _buildTelemetryPanel()),
               SizedBox(
@@ -1091,6 +1104,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
@@ -1114,16 +1128,25 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
               ),
             ],
           ),
-          Row(
+          // Buy/Sell buttons column with PNL below
+          Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              _buildTradeButton("SELL", Colors.pinkAccent),
-              const SizedBox(width: 4),
-              // ── Quantity Selector ──
-              _buildQuantitySelector(),
-              const SizedBox(width: 4),
-              _buildTradeButton("BUY", Colors.cyan),
+              // Buttons row
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildTradeButton("SELL", Colors.pinkAccent),
+                  const SizedBox(width: 4),
+                  // ── Quantity Selector ──
+                  _buildQuantitySelector(),
+                  const SizedBox(width: 4),
+                  _buildTradeButton("BUY", Colors.cyan),
+                ],
+              ),
+              // PNL displayed below buttons when active
               if (_tradeMode != TradeMode.none) ...[
-                const SizedBox(width: 8),
+                const SizedBox(height: 8),
                 _buildActiveTradeHeader(),
               ],
             ],
@@ -1138,7 +1161,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
       key: _qtyButtonKey,
       onTap: () => _showQuantityPopup(),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
         decoration: BoxDecoration(
           color: const Color(0xFF131722),
           border: Border.all(color: Colors.white24),
@@ -2283,7 +2306,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
           color: effectiveColor.withOpacity(canAfford ? 0.1 : 0.05),
           border: Border.all(color: effectiveColor),

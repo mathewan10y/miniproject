@@ -16,11 +16,24 @@ class TopBar extends ConsumerWidget {
   /// modifying the shared TopBar layout.
   final Widget? actions;
 
+  /// Optional widget rendered on the left side of the TopBar, after the
+  /// CODEX and dev/user buttons. Useful for additional left-side controls.
+  final Widget? leftActions;
+
+  /// Whether to show CODEX button
+  final bool showCodex;
+
+  /// Whether to show DevMode toggle
+  final bool showDevMode;
+
   const TopBar({
     super.key,
     required this.title,
     this.onVarsityToggle,
+    this.showCodex = true, // Default to true
+    this.showDevMode = true, // Default to true
     this.actions,
+    this.leftActions,
   });
 
   @override
@@ -29,137 +42,141 @@ class TopBar extends ConsumerWidget {
     final fuel = winery?.refinedFuel ?? 0.0;
 
     return Container(
-      height: 60,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      height: 75,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5), 
       decoration: BoxDecoration(
         color: Colors.black.withAlpha((0.8 * 255).toInt()),
         border: Border(bottom: BorderSide(color: Colors.cyan.withAlpha((0.3 * 255).toInt()))),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
         children: [
-          // Title & Left Controls
+          // Top row: Page title
           Expanded(
-            child: Row(
-              children: [
-                if (onVarsityToggle != null)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: IconButton(
-                      icon: const Icon(Icons.school, color: Colors.cyan),
-                      onPressed: onVarsityToggle,
-                      tooltip: "Varsity Orbit",
-                    ),
+            flex: 1,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 2),
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: Text(
+                  title,
+                  style: GoogleFonts.orbitron(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.0,
                   ),
-
-                Expanded(
-                  child: Text(
-                    title,
-                    style: GoogleFonts.orbitron(
-                      color: Colors.white,
-                      fontSize: 18, // slightly reduced to fit mobile gracefully
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.5,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(width: 12),
-                // CODEX button — opens Captain's Log
-                GestureDetector(
-                  key: TutorialKeys.codexBtnKey(),
-                  onTap: () {
-                    showDialog(
-                      context: context,
-                      barrierColor: Colors.black87,
-                      builder: (_) => const AcademyCodexDialog(),
-                    );
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF00D9FF).withAlpha((0.08 * 255).toInt()),
-                      border: Border.all(
-                          color: const Color(0xFF00D9FF).withAlpha((0.35 * 255).toInt()), width: 1),
-                      borderRadius: BorderRadius.circular(6),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF00D9FF).withAlpha((0.12 * 255).toInt()),
-                          blurRadius: 8,
-                          spreadRadius: 1,
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.auto_stories_outlined,
-                            color: Color(0xFF00D9FF), size: 16),
-                        const SizedBox(width: 6),
-                        Text(
-                          'CODEX',
-                          style: GoogleFonts.orbitron(
-                            color: const Color(0xFF00D9FF),
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.5,
+              ),
+            ),
+          ),
+          
+          // Bottom row: Controls
+          Expanded(
+            flex: 1,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Left Controls
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (showCodex) ...[
+                      GestureDetector(
+                        key: TutorialKeys.codexBtnKey(),
+                        onTap: () {
+                          showDialog(
+                            context: context,
+                            barrierColor: Colors.black87,
+                            builder: (_) => const AcademyCodexDialog(),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), // Reduced padding to fix overflow
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF00D9FF).withAlpha((0.08 * 255).toInt()),
+                            border: Border.all(
+                              color: const Color(0xFF00D9FF).withAlpha((0.35 * 255).toInt()), width: 1),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.auto_stories_outlined,
+                                    color: Color(0xFF00D9FF), size: 18), // Much larger icon
+                              const SizedBox(width: 6),
+                              Text(
+                                'CODEX',
+                                style: GoogleFonts.orbitron(
+                                  color: const Color(0xFF00D9FF),
+                                  fontSize: 12, // Much larger font
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
+                      ),
+                      const SizedBox(width: 2),
+                    ],
+                    
+                    // Dev / User mode toggle
+                    if (showDevMode) ...[
+                      const _DevModeToggle(),
+                      const SizedBox(width: 2),
+                    ],
+                    
+                    // Left Actions (additional left-side controls)
+                    if (leftActions != null) ...[
+                      leftActions!,
+                      const SizedBox(width: 2),
+                    ],
+                  ],
+                ),
+                
+                // Center Controls
+                if (actions != null) ...[actions!],
+                
+                // Right Controls
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), // Reduced padding to fix overflow
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.1),
+                        border: Border.all(color: Colors.green.withOpacity(0.5)),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.local_gas_station,
+                            color: Colors.green,
+                            size: 18, // Much larger icon
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            fuel.toStringAsFixed(0),
+                            style: GoogleFonts.shareTechMono(
+                              color: Colors.green,
+                              fontSize: 15, // Much larger font
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
+                    
+                    const SizedBox(width: 2),
+                    _buildBotIcon(context, ref, 'lib/assets/case.png', BotType.aura),
+                    const SizedBox(width: 2),
+                    _buildBotIcon(context, ref, 'lib/assets/tars.png', BotType.crash),
+                  ],
                 ),
               ],
             ),
-          ),
-
-          const SizedBox(width: 8),
-
-          // Right Side: (optional actions) + Fuel & Bots
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Page-specific action button (e.g. SmsSyncButton on Logistics)
-              if (actions != null) ...[actions!, const SizedBox(width: 8)],
-
-              // Dev / User mode toggle
-              const _DevModeToggle(),
-              const SizedBox(width: 8),
-
-              // Fuel Display
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
-                  border: Border.all(color: Colors.green.withOpacity(0.5)),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.local_gas_station,
-                      color: Colors.green,
-                      size: 14,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      fuel.toStringAsFixed(0),
-                      style: GoogleFonts.shareTechMono(
-                        color: Colors.green,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(width: 8),
-
-              // Bot Icons
-              _buildBotIcon(context, ref, 'lib/assets/case.png', BotType.aura),
-              const SizedBox(width: 8),
-              _buildBotIcon(context, ref, 'lib/assets/tars.png', BotType.crash),
-            ],
           ),
         ],
       ),
@@ -177,8 +194,8 @@ class TopBar extends ConsumerWidget {
         ref.read(botChatProvider.notifier).openChat(type);
       },
       child: Container(
-        width: 40,
-        height: 40,
+        width: 44, // Much larger from 36
+        height: 44, // Much larger from 36
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           border: Border.all(color: Colors.white24),
@@ -563,7 +580,7 @@ class _DevModeToggle extends ConsumerWidget {
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), // Reduced padding to fix overflow
         decoration: BoxDecoration(
           color: isDevMode
               ? Colors.amber.withOpacity(0.12)
@@ -591,16 +608,15 @@ class _DevModeToggle extends ConsumerWidget {
             Icon(
               isDevMode ? Icons.developer_mode : Icons.person_outline,
               color: isDevMode ? Colors.amber : Colors.white38,
-              size: 14,
+              size: 16, // Much larger icon
             ),
-            const SizedBox(width: 5),
+            const SizedBox(width: 2),
             Text(
               isDevMode ? 'DEV' : 'USER',
               style: GoogleFonts.orbitron(
                 color: isDevMode ? Colors.amber : Colors.white38,
-                fontSize: 9,
+                fontSize: 11, // Much larger font
                 fontWeight: FontWeight.bold,
-                letterSpacing: 1.5,
               ),
             ),
           ],
