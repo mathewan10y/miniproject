@@ -20,17 +20,25 @@ class ReactorCorePage extends ConsumerStatefulWidget {
 }
 
 class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
+  late AnimationController _refineController;
+  late Animation<double> _refineAnimation;
 
   // Refinery state
   Timer? _refineryTimer;
+  Timer? _fuelConversionTimer;
   bool _isRefining = false;
   bool _isCriticalHit = false;
   bool _isDisposed = false;
   List<Particle> _particles = [];
   List<CriticalText> _criticalTexts = [];
+  
+  // Animation state
+  double _pendingFuel = 0.0;
+  double _convertedFuel = 0.0;
+  double _visualOreLevel = 0.0; // For smooth reactor core draining animation
 
   @override
   void initState() {
@@ -43,13 +51,24 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
+    
+    _refineController = AnimationController(
+      duration: const Duration(milliseconds: 1400), // 1.4 seconds to drain 10% from reactor core
+      vsync: this,
+    );
+    
+    _refineAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _refineController, curve: Curves.easeOutCubic),
+    );
   }
 
   @override
   void dispose() {
     _isDisposed = true;
     _refineryTimer?.cancel();
+    _fuelConversionTimer?.cancel();
     _pulseController.dispose();
+    _refineController.dispose();
     super.dispose();
   }
 
@@ -67,7 +86,9 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
             final rawOre = refineryState?.rawOre ?? 0;
 
             // Calculate ore level for reactor gauge (0-1 based on raw ore)
-            double oreLevel = (rawOre / 10000.0).clamp(
+            // Use visual ore level during animation for smooth draining effect
+            double displayOre = _isRefining ? _visualOreLevel : rawOre.toDouble();
+            double oreLevel = (displayOre / 10000.0).clamp(
               0.0,
               1.0,
             ); // Max 10000 ore for full reactor
@@ -249,96 +270,119 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
   }
 
   // Refinery Methods
-  void _startRefining() {
-    if (_refineryTimer != null) return;
-
-    // STRICT HOLD: No immediate state change. Timer only.
-    _refineryTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-
-      // Update UI state on first tick
-      if (!_isRefining) {
-        setState(() {
-          _isRefining = true;
-        });
-      }
-
-      _processRefinementTick();
-    });
-  }
-
-  void _stopRefining() {
-    _refineryTimer?.cancel();
-    _refineryTimer = null;
-
-    if (mounted && !_isDisposed) {
-      try {
-        setState(() {
-          _isRefining = false;
-          _isCriticalHit = false;
-        });
-      } catch (e) {
-        // Ignore errors during dispose
-      }
-    }
-  }
-
-  void _processRefinementTick() {
-    if (!mounted) return;
+  void _processSingleTap() {
+    if (_isRefining) return; // Brief debounce to prevent animation clipping
 
     final refineryNotifier = ref.read(refineryProvider.notifier);
     final refineryState = ref.read(refineryProvider).valueOrNull;
+    final currentOre = refineryState?.rawOre ?? 0;
 
-    // Stop if no ore left
-    if ((refineryState?.rawOre ?? 0) <= 0) {
-      _stopRefining();
-      return;
+    if (currentOre <= 0) return; // Nothing to refine
+
+    // Process up to 1000 ore per tap (10% of max capacity)
+    final int oreToConsume = math.min(currentOre, 1000);
+    final double fuelAdded = oreToConsume * 0.8; // 80% Efficiency
+
+    setState(() {
+      _isRefining = true;
+      _pendingFuel = fuelAdded;
+      _convertedFuel = 0.0;
+      _visualOreLevel = currentOre.toDouble(); // Store starting ore level for animation
+    });
+
+    // Start the reactor core draining animation
+    _refineController.reset();
+    _refineController.forward();
+    
+    // Cancel any existing conversion timer
+    _fuelConversionTimer?.cancel();
+    
+    // Handle gamification (20% chance for critical hit visuals)
+    final bool isCritical = math.Random().nextDouble() < 0.20;
+    
+    if (isCritical) {
+      setState(() => _isCriticalHit = true);
+      _addCriticalText();
     }
-
-    // Use the existing processRefinementTick method which consumes 10 ore
-    final result = refineryNotifier.processRefinementTick();
-
-    if (result.fuelAdded > 0) {
-      // Trigger haptic feedback
-      HapticFeedback.lightImpact(); // Lighter impact for rapid fire
-
-      // Handle critical hit
-      if (result.isCritical) {
-        if (mounted) {
-          setState(() {
-            _isCriticalHit = true;
-          });
-        }
-
-        // Flash effect
-        Future.delayed(const Duration(milliseconds: 100), () {
-          if (mounted) {
-            setState(() {
-              _isCriticalHit = false;
-            });
-          }
-        });
-
-        // Add critical text
-        _addCriticalText();
+    
+    // Create smooth draining effect over 1.4 seconds with 10 frames
+    _fuelConversionTimer = Timer.periodic(const Duration(milliseconds: 140), (timer) {
+      if (!mounted || _refineController.isDismissed) {
+        timer.cancel();
+        return;
       }
+      
+      final animationProgress = _refineAnimation.value;
+      final oreToDrain = oreToConsume / 10.0; // Divide 10% into 10 equal frames
+      
+      if (oreToDrain > 0.1) { // Only drain if there's a meaningful amount
+        // Actually consume the ore in real-time for each frame
+        refineryNotifier.processRefinementTickWithAmount(oreToDrain.toInt(), 0.0);
+        
+        // Update visual ore level to match actual state
+        final currentState = ref.read(refineryProvider).valueOrNull;
+        setState(() {
+          _visualOreLevel = currentState?.rawOre?.toDouble() ?? _visualOreLevel;
+        });
+        
+        // Spawn particles at each frame for continuous visual feedback
+        _spawnParticles(isCritical);
+      }
+      
+      // When animation is complete, add the fuel and stop particles
+      if (animationProgress >= 1.0) {
+        timer.cancel();
+        
+        // Add the fuel after all ore is consumed
+        refineryNotifier.processRefinementTickWithAmount(0, fuelAdded);
+        
+        setState(() {
+          _convertedFuel = fuelAdded;
+        });
+        
+        // Immediately clear all particles when refinement completes
+        setState(() {
+          _particles.clear();
+          _criticalTexts.clear();
+        });
+        
+        HapticFeedback.heavyImpact();
+      } else {
+        // Light haptic feedback during animation
+        HapticFeedback.selectionClick();
+      }
+    });
 
-      // Spawn particles
-      _spawnParticles(result.isCritical);
-    }
+    HapticFeedback.mediumImpact(); 
 
-    // Clean up old particles and texts
-    _cleanupParticles();
+    // Reset after animation completes
+    Future.delayed(const Duration(milliseconds: 1600), () {
+      if (mounted) {
+        setState(() {
+          _isRefining = false;
+          _isCriticalHit = false;
+          _pendingFuel = 0.0;
+          _convertedFuel = 0.0;
+          _visualOreLevel = 0.0;
+        });
+        _cleanupParticles();
+      }
+    });
   }
 
   void _spawnParticles(bool isCritical) {
     if (!mounted) return;
     final screenSize = MediaQuery.of(context).size;
-    // Spawn from Center (Reactor) instead of bottom
-    final reactorPosition = Offset(screenSize.width / 2, screenSize.height / 2);
+    
+    // Calculate exact reactor position based on layout
+    // Reactor is centered in the available space (below TopBar, above button)
+    final topBarHeight = 75.0; // TopBar height
+    final buttonAreaHeight = 120.0; // Space for refine button
+    final availableHeight = screenSize.height - topBarHeight - buttonAreaHeight;
+    final reactorY = topBarHeight + (availableHeight / 2) + 80.0; // Move down 80px from exact center
+    final reactorX = screenSize.width / 2; // Center horizontally
+    
+    final reactorPosition = Offset(reactorX, reactorY);
 
     // Spawn cyan/gold particles flowing to the right side tab
     for (int i = 0; i < 4; i++) {
@@ -358,7 +402,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
                   ? 12.0
                   : 8.0 +
                       math.Random().nextDouble() * 8.0, // Bigger size (8-16)
-          lifetime: 2.5, // Increased lifetime to reach edge
+          lifetime: 1.5, // Reduced lifetime to prevent persistence after refinement
         ),
       );
     }
@@ -375,7 +419,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
             velocity: Offset(velocityX, velocityY),
             color: Colors.grey.withOpacity(0.4),
             size: 15.0, // Bigger smoke
-            lifetime: 3.0,
+            lifetime: 2.0, // Reduced lifetime for smoke particles
           ),
         );
       }
@@ -397,11 +441,14 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
     if (!mounted) return;
     final now = DateTime.now().millisecondsSinceEpoch / 1000.0;
 
-    _particles.removeWhere(
-      (particle) => now - particle.createdAt > particle.lifetime,
-    );
+    // Only cleanup if not actively refining (particles are cleared immediately on completion)
+    if (!_isRefining) {
+      _particles.removeWhere(
+        (particle) => now - particle.createdAt > particle.lifetime * 0.8, // Remove at 80% of lifetime
+      );
 
-    _criticalTexts.removeWhere((text) => now - text.createdAt > 1.5);
+      _criticalTexts.removeWhere((text) => now - text.createdAt > 1.0); // Remove critical texts sooner
+    }
 
     if (_particles.isNotEmpty || _criticalTexts.isNotEmpty) {
       setState(() {});
@@ -430,9 +477,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
     final glowColor = borderColor.withOpacity(0.35);
 
     return GestureDetector(
-      onTapDown: (_) => _startRefining(),
-      onTapUp: (_) => _stopRefining(),
-      onTapCancel: () => _stopRefining(),
+      onTap: _processSingleTap,
       child: ConstrainedBox(
         constraints: BoxConstraints(
           maxWidth: MediaQuery.of(context).size.width * 0.5,
@@ -488,9 +533,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
                       ),
                       child: Icon(
                         _isRefining
-                            ? (_isCriticalHit
-                                ? Icons.flash_on_rounded
-                                : Icons.autorenew_rounded)
+                            ? Icons.flash_on_rounded
                             : Icons.science_rounded,
                         color: Colors.white,
                         size: 22,
@@ -505,18 +548,12 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
                         AnimatedSwitcher(
                           duration: const Duration(milliseconds: 200),
                           child: Text(
-                            _isRefining
-                                ? (_isCriticalHit ? 'CRITICAL!' : 'REFINING')
-                                : 'REFINE',
-                            key: ValueKey(
-                              _isRefining ? _isCriticalHit : 'idle',
-                            ),
+                            _isRefining ? 'REFINING...' : 'REFINE',
+                            key: ValueKey(_isRefining ? 'active' : 'idle'),
                             style: TextStyle(
                               color:
                                   _isRefining
-                                      ? (_isCriticalHit
-                                          ? Colors.yellow
-                                          : activeColor)
+                                      ? activeColor
                                       : idleColor,
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
@@ -525,7 +562,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
                           ),
                         ),
                         Text(
-                          _isRefining ? 'Converting ore...' : '10 Ore per tick',
+                          '1000 Ore per tap',
                           style: TextStyle(
                             color: borderColor.withOpacity(0.6),
                             fontSize: 10,
