@@ -65,9 +65,9 @@ class _BossFightScreenState extends ConsumerState<BossFightScreen> with SingleTi
         } else if (_userHp <= 0) {
           _loseSequence();
         } else {
-          // Move to next question
+          // Move to next question with bounds checking
           setState(() {
-            _currentQuestionIndex++;
+            _currentQuestionIndex = (_currentQuestionIndex + 1) % _quizzes.length;
             _selectedIndex = null;
             _hasAnswered = false;
           });
@@ -229,7 +229,7 @@ class _BossFightScreenState extends ConsumerState<BossFightScreen> with SingleTi
                   child: Column(
                     children: [
                       Text(
-                        "QUESTION ${_currentQuestionIndex + 1}/3",
+                        "QUESTION ${_currentQuestionIndex + 1}/${_quizzes.length}",
                         style: GoogleFonts.orbitron(color: Colors.redAccent, fontSize: 12, letterSpacing: 2),
                         textAlign: TextAlign.center,
                       ),
