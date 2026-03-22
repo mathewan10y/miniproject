@@ -14,6 +14,7 @@ import '../../gamification/presentation/widgets/top_bar.dart';
 import '../../gamification/presentation/widgets/levels_panel.dart';
 import '../../gamification/services/tutorial_keys.dart';
 import '../../gamification/user_stats_provider.dart';
+import '../../gamification/services/tutorial_engine_service.dart';
 
 class ReactorCorePage extends ConsumerStatefulWidget {
   const ReactorCorePage({super.key});
@@ -677,7 +678,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
               ),
             ),
             content: Text(
-              'This will reset:\n• Reactor core to 0\n• Fuel to 0\n• All engineering levels to 1\n• Auto-injector to 0',
+              'This will reset:\n• Reactor core to 0\n• Fuel to 0\n• All engineering levels to 1\n• Auto-injector to 0\n• User level to 1\n• All codex progress\n• All tutorial states',
               style: GoogleFonts.shareTechMono(
                 color: Colors.white,
                 fontSize: 14,
@@ -710,14 +711,16 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
         );
 
         if (confirmed == true) {
-          // Perform the reset
+          // Perform the complete reset
           await ref.read(refineryProvider.notifier).resetReactorCore();
+          await ref.read(userStatsProvider.notifier).resetUserProgress();
+          await ref.read(tutorialEngineProvider).clearAllTutorialStates();
           
           // Show success message
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('DATA RESET SUCCESSFULLY'),
+                content: Text('ALL DATA RESET SUCCESSFULLY'),
                 backgroundColor: Colors.green,
                 duration: Duration(seconds: 2),
               ),
