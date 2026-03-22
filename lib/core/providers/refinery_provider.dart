@@ -26,9 +26,18 @@ class RefineryNotifier extends AsyncNotifier<RefinerySystem> {
     print('REFINERY: Loading saved state...');
     final completer = Completer<void>();
     _initialLoad = completer.future;
-
+    
     final result = await _load();
-
+    
+    // Check and apply auto-injection immediately on startup
+    final oreToAdd = result.checkAndApplyAutoInjection();
+    if (oreToAdd > 0) {
+      final next = _snapshot(result);
+      state = AsyncData(next);
+      await _save(next);
+      print('REFINERY: Auto-injected $oreToAdd Ore on startup');
+    }
+    
     completer.complete(); // signal that load is done
     print('REFINERY: Loaded ore=${result.rawOre} fuel=${result.refinedFuel}');
     return result;
@@ -46,7 +55,11 @@ class RefineryNotifier extends AsyncNotifier<RefinerySystem> {
       return RefinerySystem()
         ..totalSavings = (map['totalSavings'] as num?)?.toDouble() ?? 0.0
         ..rawOre = (map['rawOre'] as int?) ?? 0
-        ..refinedFuel = (map['refinedFuel'] as num?)?.toDouble() ?? 0.0;
+        ..refinedFuel = (map['refinedFuel'] as num?)?.toDouble() ?? 0.0
+        ..efficiencyLevel = (map['efficiencyLevel'] as int?) ?? 1
+        ..capacityLevel = (map['capacityLevel'] as int?) ?? 1
+        ..autoInjectorLevel = (map['autoInjectorLevel'] as int?) ?? 0
+        ..lastAutoInjectTimeMs = (map['lastAutoInjectTimeMs'] as int?) ?? 0;
     } catch (_) {
       return RefinerySystem();
     }
@@ -61,6 +74,10 @@ class RefineryNotifier extends AsyncNotifier<RefinerySystem> {
         'totalSavings': s.totalSavings,
         'rawOre': s.rawOre,
         'refinedFuel': s.refinedFuel,
+        'efficiencyLevel': s.efficiencyLevel,
+        'capacityLevel': s.capacityLevel,
+        'autoInjectorLevel': s.autoInjectorLevel,
+        'lastAutoInjectTimeMs': s.lastAutoInjectTimeMs,
       }),
     );
     print('REFINERY: Saved ore=${s.rawOre} fuel=${s.refinedFuel}');
@@ -72,7 +89,11 @@ class RefineryNotifier extends AsyncNotifier<RefinerySystem> {
       RefinerySystem()
         ..totalSavings = src.totalSavings
         ..rawOre = src.rawOre
-        ..refinedFuel = src.refinedFuel;
+        ..refinedFuel = src.refinedFuel
+        ..efficiencyLevel = src.efficiencyLevel
+        ..capacityLevel = src.capacityLevel
+        ..autoInjectorLevel = src.autoInjectorLevel
+        ..lastAutoInjectTimeMs = src.lastAutoInjectTimeMs;
 
   // Returns the live state. Must only be called AFTER _initialLoad has resolved
   // (i.e., inside methods that already await _initialLoad).
@@ -147,6 +168,105 @@ class RefineryNotifier extends AsyncNotifier<RefinerySystem> {
     final next = _snapshot(s);
     state = AsyncData(next);
     _save(next);
+  }
+
+  // ── Engineering Upgrade Methods ────────────────────────────────────────
+  
+  Future<bool> purchaseEfficiencyUpgrade() async {
+    await _initialLoad;
+    final s = _current;
+    final cost = s.nextEfficiencyCost;
+    if (s.refinedFuel < cost) return false;
+    
+    // Create new state with updated values
+    final newState = RefinerySystem()
+      ..totalSavings = s.totalSavings
+      ..rawOre = s.rawOre
+      ..refinedFuel = s.refinedFuel - cost
+      ..efficiencyLevel = s.efficiencyLevel + 1
+      ..capacityLevel = s.capacityLevel
+      ..autoInjectorLevel = s.autoInjectorLevel
+      ..lastAutoInjectTimeMs = s.lastAutoInjectTimeMs;
+    
+    state = AsyncData(newState);
+    await _save(newState);
+    return true;
+  }
+
+  Future<bool> purchaseCapacityUpgrade() async {
+    await _initialLoad;
+    final s = _current;
+    final cost = s.nextCapacityCost;
+    if (s.refinedFuel < cost) return false;
+    
+    // Create new state with updated values
+    final newState = RefinerySystem()
+      ..totalSavings = s.totalSavings
+      ..rawOre = s.rawOre
+      ..refinedFuel = s.refinedFuel - cost
+      ..efficiencyLevel = s.efficiencyLevel
+      ..capacityLevel = s.capacityLevel + 1
+      ..autoInjectorLevel = s.autoInjectorLevel
+      ..lastAutoInjectTimeMs = s.lastAutoInjectTimeMs;
+    
+    state = AsyncData(newState);
+    await _save(newState);
+    return true;
+  }
+
+  Future<bool> purchaseAutoInjector() async {
+    await _initialLoad;
+    final s = _current;
+    final cost = s.autoInjectorCost;
+    if (s.refinedFuel < cost) return false;
+    
+    // Create new state with updated values
+    final newState = RefinerySystem()
+      ..totalSavings = s.totalSavings
+      ..rawOre = s.rawOre
+      ..refinedFuel = s.refinedFuel - cost
+      ..efficiencyLevel = s.efficiencyLevel
+      ..capacityLevel = s.capacityLevel
+      ..autoInjectorLevel = s.autoInjectorLevel + 1
+      ..lastAutoInjectTimeMs = DateTime.now().millisecondsSinceEpoch;
+    
+    state = AsyncData(newState);
+    await _save(newState);
+    return true;
+  }
+
+  // ── Auto-Injection Check ──────────────────────────────────────
+  
+  Future<int> checkAndApplyAutoInjection() async {
+    await _initialLoad;
+    final s = _current;
+    final oreToAdd = s.checkAndApplyAutoInjection();
+    
+    if (oreToAdd > 0) {
+      final next = _snapshot(s);
+      state = AsyncData(next);
+      await _save(next);
+    }
+    
+    return oreToAdd;
+  }
+
+  // ── Reset Methods ────────────────────────────────────────────────
+  
+  Future<void> resetReactorCore() async {
+    await _initialLoad;
+    
+    final resetState = RefinerySystem()
+      ..totalSavings = 0.0
+      ..rawOre = 0
+      ..refinedFuel = 0.0
+      ..efficiencyLevel = 1
+      ..capacityLevel = 1
+      ..autoInjectorLevel = 0
+      ..lastAutoInjectTimeMs = 0;
+    
+    state = AsyncData(resetState);
+    await _save(resetState);
   }
 
   int calculateOreFromIncome(double amount) =>

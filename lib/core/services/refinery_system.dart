@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:math';
 
 class RefineryResult {
@@ -18,6 +19,73 @@ class RefineryResult {
 }
 
 class RefinerySystem {
+  int efficiencyLevel = 1;
+  int capacityLevel = 1;
+  int autoInjectorLevel = 0; // Max level 5
+  int lastAutoInjectTimeMs = 0;
+  
+  // Static progression tables for non-linear upgrades
+  static const List<double> _efficiencyMap = [
+    0.70, 0.75, 0.80, 0.82, 0.84, 0.86, 0.88, 0.90, 0.92, 0.94
+  ];
+  
+  static const List<int> _capacityMap = [
+    10000, 12000, 14000, 16000, 18000, 20000, 25000, 30000, 40000, 50000
+  ];
+  
+  // Dynamic getters for current values
+  double get currentEfficiency => _efficiencyMap[efficiencyLevel - 1];
+  int get maxCapacity => _capacityMap[capacityLevel - 1];
+  bool get canUnlockAutoInjector => efficiencyLevel >= 6 && capacityLevel >= 6;
+  
+  // Dynamic cost calculations
+  int get nextEfficiencyCost => efficiencyLevel >= 10 ? 0 : efficiencyLevel * 5000;
+  int get nextCapacityCost => capacityLevel >= 10 ? 0 : capacityLevel * 4000;
+  int get autoInjectorCost => 30000; // Flat cost per level
+  
+  // Auto-injection logic
+  int checkAndApplyAutoInjection() {
+    if (autoInjectorLevel == 0) return 0;
+    
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final timeDiff = now - lastAutoInjectTimeMs;
+    
+    // A 10-hour cycle is 36,000,000 ms
+    const cycleMs = 36000000;
+    final cyclesPassed = (timeDiff / cycleMs).floor();
+    
+    if (cyclesPassed > 0) {
+      final oreToAdd = cyclesPassed * (1000 * autoInjectorLevel);
+      final actualOreToAdd = math.min(oreToAdd, maxCapacity - rawOre); // Don't exceed max capacity
+      rawOre += actualOreToAdd;
+      lastAutoInjectTimeMs += (cyclesPassed * cycleMs);
+      return actualOreToAdd;
+    }
+    
+    return 0;
+  }
+  
+  // Purchase methods
+  bool purchaseEfficiencyUpgrade(int availableFuel) {
+    if (efficiencyLevel >= 10) return false;
+    efficiencyLevel++;
+    return true;
+  }
+  
+  bool purchaseCapacityUpgrade(int availableFuel) {
+    if (capacityLevel >= 10) return false;
+    capacityLevel++;
+    return true;
+  }
+  
+  bool purchaseAutoInjector(int availableFuel) {
+    if (autoInjectorLevel >= 5) return false;
+    autoInjectorLevel++;
+    lastAutoInjectTimeMs = DateTime.now().millisecondsSinceEpoch; // Reset timer on purchase
+    return true;
+  }
+  
+  // Legacy methods for compatibility
   double totalSavings = 0.0;
   int rawOre = 0;
   double refinedFuel = 0.0;
@@ -95,7 +163,10 @@ class RefinerySystem {
   void processIncomeTransaction(double amount) {
     totalSavings += amount;
     final oreGenerated = calculateOreFromIncome(amount);
-    rawOre += oreGenerated;
+    final actualOreToAdd = math.min(oreGenerated, maxCapacity - rawOre); // Don't exceed max capacity
+    rawOre += actualOreToAdd;
+    // Safety check: ensure we never exceed max capacity
+    rawOre = rawOre.clamp(0, maxCapacity);
   }
 
   // Integration method for expense transactions
@@ -110,7 +181,7 @@ class RefinerySystem {
     // NOTE: This uses the exact same algorithm as income (calculateOreFromIncome) 
     // to ensure symmetry, as requested.
     final oreToReduce = calculateOreFromIncome(amount);
-    print('DEBUG: Procesing Expense: $amount. Reducing Ore by: $oreToReduce. Current Ore: $rawOre');
+    print('DEBUG: Processing Expense: $amount. Reducing Ore by: $oreToReduce. Current Ore: $rawOre');
     rawOre = (rawOre - oreToReduce).clamp(0, rawOre); // Don't go negative
   }
 
@@ -142,6 +213,10 @@ class RefinerySystem {
   // Get current state
   Map<String, dynamic> getState() {
     return {
+      'efficiencyLevel': efficiencyLevel,
+      'capacityLevel': capacityLevel,
+      'autoInjectorLevel': autoInjectorLevel,
+      'lastAutoInjectTimeMs': lastAutoInjectTimeMs,
       'totalSavings': totalSavings,
       'rawOre': rawOre,
       'refinedFuel': refinedFuel,
@@ -150,6 +225,10 @@ class RefinerySystem {
 
   // Reset system (for testing)
   void reset() {
+    efficiencyLevel = 1;
+    capacityLevel = 1;
+    autoInjectorLevel = 0;
+    lastAutoInjectTimeMs = 0;
     totalSavings = 0.0;
     rawOre = 0;
     refinedFuel = 0.0;

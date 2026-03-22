@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'dart:async';
 import 'dart:ui' as ui;
 import 'dart:math' as math;
@@ -8,9 +9,11 @@ import '../expense_provider.dart';
 import '../income_provider.dart';
 import '../../../widgets/reactor_gauge.dart';
 import '../../../core/providers/refinery_provider.dart';
+import 'widgets/engineering_dialog.dart';
 import '../../gamification/presentation/widgets/top_bar.dart';
 import '../../gamification/presentation/widgets/levels_panel.dart';
 import '../../gamification/services/tutorial_keys.dart';
+import '../../gamification/user_stats_provider.dart';
 
 class ReactorCorePage extends ConsumerStatefulWidget {
   const ReactorCorePage({super.key});
@@ -88,10 +91,10 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
             // Calculate ore level for reactor gauge (0-1 based on raw ore)
             // Use visual ore level during animation for smooth draining effect
             double displayOre = _isRefining ? _visualOreLevel : rawOre.toDouble();
-            double oreLevel = (displayOre / 10000.0).clamp(
+            double oreLevel = (displayOre / (refineryState?.maxCapacity ?? 10000.0)).clamp(
               0.0,
               1.0,
-            ); // Max 10000 ore for full reactor
+            ); // Use dynamic max capacity
 
             return Stack(
               fit: StackFit.expand,
@@ -116,6 +119,54 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
+                                    // ENGINEERING button (above raw ore)
+                                    Container(
+                                      width: double.infinity,
+                                      decoration: BoxDecoration(
+                                        border: Border.all(color: const Color(0xFF00D9FF), width: 2),
+                                        borderRadius: BorderRadius.circular(8),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: const Color(0xFF00D9FF).withOpacity(0.3),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Material(
+                                        color: Colors.transparent,
+                                        child: InkWell(
+                                          borderRadius: BorderRadius.circular(6),
+                                          onTap: () {
+                                            showDialog(
+                                              context: context,
+                                              barrierColor: Colors.black87,
+                                              builder: (_) => const EngineeringDialog(),
+                                            );
+                                          },
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                                            child: Row(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                const Icon(Icons.build, color: Color(0xFF00D9FF), size: 20),
+                                                const SizedBox(width: 12),
+                                                Text(
+                                                  'ENGINEERING',
+                                                  style: GoogleFonts.shareTechMono(
+                                                    color: const Color(0xFF00D9FF),
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.bold,
+                                                    letterSpacing: 2,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 20),
                                     // UNREFINED ORE display (above reactor)
                                     _buildHolographicContainer(
                                       child: Column(
@@ -143,9 +194,9 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
                                                 ),
                                               ),
                                               const SizedBox(height: 8),
-                                              const Text(
-                                                'REFINERY EFFICIENCY: 80%',
-                                                style: TextStyle(
+                                              Text(
+                                                'REFINERY EFFICIENCY: ${((refineryState?.currentEfficiency ?? 0.8) * 100).toInt()}%',
+                                                style: const TextStyle(
                                                   color: Color(0xFF00B8D4),
                                                   fontSize: 12,
                                                   letterSpacing: 1,
@@ -189,12 +240,39 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
                 ..._particles.map((particle) => _buildParticle(particle)),
                 // Critical hit texts
                 ..._criticalTexts.map((text) => _buildCriticalText(text)),
-                // Hold to refine button
+                // Refine and reset buttons
                 Positioned(
                   bottom: 24,
                   left: 0,
                   right: 0,
-                  child: Center(child: _buildRefineButton()),
+                  child: Consumer(
+                    builder: (context, ref, child) {
+                      final isDevMode = ref.watch(devModeProvider);
+                      
+                      if (isDevMode) {
+                        // Dev mode: show both buttons side by side
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // Refine button (left)
+                            SizedBox(
+                              width: MediaQuery.of(context).size.width * 0.4,
+                              child: _buildRefineButton(),
+                            ),
+                            const SizedBox(width: 16),
+                            // Reset button (right)
+                            SizedBox(
+                              width: MediaQuery.of(context).size.width * 0.4,
+                              child: _buildResetButton(),
+                            ),
+                          ],
+                        );
+                      } else {
+                        // Normal mode: show only refine button centered
+                        return Center(child: _buildRefineButton());
+                      }
+                    },
+                  ),
                 ),
 
                 // Chat Overlay
@@ -281,7 +359,8 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
 
     // Process up to 1000 ore per tap (10% of max capacity)
     final int oreToConsume = math.min(currentOre, 1000);
-    final double fuelAdded = oreToConsume * 0.8; // 80% Efficiency
+    final double efficiency = refineryState?.currentEfficiency ?? 0.8;
+    final double fuelAdded = oreToConsume * efficiency;
 
     setState(() {
       _isRefining = true;
@@ -574,6 +653,127 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
                   ],
                 ),
               ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResetButton() {
+    return GestureDetector(
+      onTap: () async {
+        // Show confirmation dialog
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: Colors.black,
+            title: Text(
+              'RESET ALL DATA?',
+              style: GoogleFonts.orbitron(
+                color: const Color(0xFF00D9FF),
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            content: Text(
+              'This will reset:\n• Reactor core to 0\n• Fuel to 0\n• All engineering levels to 1\n• Auto-injector to 0',
+              style: GoogleFonts.shareTechMono(
+                color: Colors.white,
+                fontSize: 14,
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text(
+                  'CANCEL',
+                  style: GoogleFonts.shareTechMono(
+                    color: Colors.grey,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: Text(
+                  'RESET',
+                  style: GoogleFonts.shareTechMono(
+                    color: Colors.redAccent,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+
+        if (confirmed == true) {
+          // Perform the reset
+          await ref.read(refineryProvider.notifier).resetReactorCore();
+          
+          // Show success message
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('DATA RESET SUCCESSFULLY'),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+        }
+      },
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.4,
+          minWidth: 120,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF6D0B0B), Color(0xFFD32F2F)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              border: Border.all(
+                color: Colors.redAccent,
+                width: 2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.redAccent.withOpacity(0.35),
+                  blurRadius: 12,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.symmetric(
+              vertical: 16,
+              horizontal: 24,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.refresh,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'RESET',
+                  style: GoogleFonts.orbitron(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
