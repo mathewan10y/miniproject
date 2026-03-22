@@ -27,6 +27,28 @@ class _BossFightScreenState extends ConsumerState<BossFightScreen> with SingleTi
   void initState() {
     super.initState();
     _quizzes = QuizData.getBossQuizzes(widget.levelId);
+    
+    // Safety check: ensure we always have questions
+    if (_quizzes.isEmpty) {
+      _quizzes = [
+        const QuizQuestion(
+          question: "SYSTEM ERROR: What should you do when encountering unexpected issues?",
+          options: ["Panic", "Report the bug", "Ignore it"],
+          correctIndex: 1,
+        ),
+        const QuizQuestion(
+          question: "EMERGENCY: What is the most important principle in trading?",
+          options: ["Never lose money", "Always be right", "Trade every day"],
+          correctIndex: 0,
+        ),
+        const QuizQuestion(
+          question: "BACKUP: When should you take profits?",
+          options: ["Never", "When you reach your target", "When your friend says so"],
+          correctIndex: 1,
+        ),
+      ];
+    }
+    
     _shakeController = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
   }
 
@@ -41,7 +63,10 @@ class _BossFightScreenState extends ConsumerState<BossFightScreen> with SingleTi
   }
 
   void _submitAnswer() {
-    if (_selectedIndex == null) return;
+    if (_selectedIndex == null || _quizzes.isEmpty) return;
+    if (_currentQuestionIndex >= _quizzes.length) {
+      _currentQuestionIndex = 0; // Reset if out of bounds
+    }
     setState(() => _hasAnswered = true);
     
     final isCorrect = _selectedIndex == _quizzes[_currentQuestionIndex].correctIndex;
