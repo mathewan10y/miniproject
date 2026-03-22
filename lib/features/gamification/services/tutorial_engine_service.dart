@@ -49,7 +49,8 @@ class TutorialEngineService {
       if (key.startsWith('hasSeenPhase') || 
           key.startsWith('hasSeenCodex') || 
           key.startsWith('hasSeenLevel') ||
-          key.startsWith('codex_sublevels_')) {
+          key.startsWith('codex_sublevels_') ||
+          key.startsWith('boss_fight_completed_')) {
         await _prefs.remove(key);
       }
     }

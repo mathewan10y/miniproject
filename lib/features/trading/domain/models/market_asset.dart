@@ -33,7 +33,8 @@ class MarketAsset {
   final double percentChange24h;
   final AssetType type;
   final AssetSubType subType;
-  final int minLevelRequired;
+  final String sector;
+  final int requiredLevel;
 
   MarketAsset({
     required this.id,
@@ -43,13 +44,13 @@ class MarketAsset {
     required this.percentChange24h,
     required this.type,
     required this.subType,
-    required this.minLevelRequired,
+    required this.sector,
+    required this.requiredLevel,
   });
 
-  bool isLocked(int userLevel) {
-    // User requested to disable locking for testing
-    return false; 
-    // Original logic: return userLevel < minLevelRequired;
+  bool isLocked(int userLevel, bool isDevMode) {
+    if (isDevMode) return false; // Dev mode unlocks everything
+    return userLevel < requiredLevel;
   }
 
   factory MarketAsset.fromJson(Map<String, dynamic> json) {
@@ -61,7 +62,8 @@ class MarketAsset {
       percentChange24h: (json['price_change_percentage_24h'] as num?)?.toDouble() ?? 0.0,
       type: AssetType.warpDrive, // Default to High Risk for Crypto API
       subType: AssetSubType.crypto, // API returns crypto
-      minLevelRequired: 1, 
+      sector: 'OUTER RIM', // Default for crypto API
+      requiredLevel: 6, // Default for crypto API
     );
   }
 }

@@ -662,6 +662,22 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
   }
 
   Widget _buildResetButton() {
+    // Red theme for reset button (matching refine button structure)
+    final idleGradient = const LinearGradient(
+      colors: [Color(0xFF8B0000), Color(0xFFFF0000)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
+    final activeGradient = const LinearGradient(
+      colors: [Color(0xFF6D0B0B), Color(0xFFD32F2F)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
+    final activeColor = const Color(0xFFFF5252);
+    final idleColor = const Color(0xFFFF0000);
+    final borderColor = idleColor;
+    final glowColor = borderColor.withOpacity(0.35);
+
     return GestureDetector(
       onTap: () async {
         // Show confirmation dialog
@@ -735,48 +751,83 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(20),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF6D0B0B), Color(0xFFD32F2F)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              border: Border.all(
-                color: Colors.redAccent,
-                width: 2,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.redAccent.withOpacity(0.35),
-                  blurRadius: 12,
-                  spreadRadius: 2,
+          child: BackdropFilter(
+            filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: idleColor.withOpacity(0.10),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: borderColor.withOpacity(0.45),
+                  width: 1.4,
                 ),
-              ],
-            ),
-            padding: const EdgeInsets.symmetric(
-              vertical: 16,
-              horizontal: 24,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.refresh,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'RESET',
-                  style: GoogleFonts.orbitron(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.5,
+                boxShadow: [
+                  BoxShadow(
+                    color: glowColor.withOpacity(0.22),
+                    blurRadius: 18,
+                    spreadRadius: 1,
+                    offset: const Offset(0, 4),
                   ),
+                ],
+              ),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Gradient icon circle
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: idleGradient,
+                        boxShadow: [
+                          BoxShadow(
+                            color: borderColor.withOpacity(0.50),
+                            blurRadius: 14,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.refresh_rounded,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    // Labels
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'RESET',
+                          style: TextStyle(
+                            color: idleColor,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                        Text(
+                          'DEV MODE',
+                          style: TextStyle(
+                            color: Colors.white54,
+                            fontSize: 10,
+                            fontWeight: FontWeight.normal,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),

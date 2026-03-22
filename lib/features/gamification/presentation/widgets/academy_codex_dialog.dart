@@ -121,6 +121,7 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
   Widget build(BuildContext context) {
     final stats   = ref.watch(userStatsProvider).valueOrNull;
     final isDev   = ref.watch(devModeProvider);
+    // Use user's actual level, boss fight completion logic will handle unlocking
     final maxLvl  = isDev ? 6 : (stats?.currentLevel ?? 1);
     final size    = MediaQuery.of(context).size;
     final narrow  = size.width < 620;

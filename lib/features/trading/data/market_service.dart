@@ -44,7 +44,8 @@ final liveMarketAssetsProvider = StreamProvider<List<MarketAsset>>((ref) async* 
         percentChange24h: asset.percentChange24h,
         type: asset.type,
         subType: asset.subType,
-        minLevelRequired: asset.minLevelRequired,
+        sector: asset.sector,
+        requiredLevel: asset.requiredLevel,
       );
     }).toList();
 
@@ -127,11 +128,8 @@ class MixedMarketService implements MarketRepository {
         final List<dynamic> data = json.decode(response.body);
         assets.addAll(data.map((json) {
           final asset = MarketAsset.fromJson(json);
-          // Customize levels for Crypto
-          int level = 1;
-          if (asset.symbol.toUpperCase() == 'BTC') level = 5; // Bitcoin is high level
-          if (asset.symbol.toUpperCase() == 'ETH') level = 3;
-          if (asset.symbol.toUpperCase() == 'DOGE') level = 1;
+          // Customize levels for Crypto - all OUTER RIM assets require level 6
+          int level = 6; // All crypto assets are high risk and require level 6
 
           return MarketAsset(
             id: asset.id,
@@ -141,7 +139,8 @@ class MixedMarketService implements MarketRepository {
             percentChange24h: asset.percentChange24h,
             type: AssetType.warpDrive, // Crypto is Warp Drive (High Risk)
             subType: AssetSubType.crypto,
-            minLevelRequired: level,
+            sector: 'OUTER RIM',
+            requiredLevel: level,
           );
         }));
       } else {
@@ -191,19 +190,19 @@ class MixedMarketService implements MarketRepository {
             final double price = _toInr(symbol, priceRaw);
 
             if (symbol == 'AAPL') {
-              assets.add(_buildAsset('aapl', 'AAPL', 'Apple Inc. (INR)', price, change, AssetType.thruster, AssetSubType.stock, 3));
+              assets.add(_buildAsset('aapl', 'AAPL', 'Apple Inc. (INR)', price, change, AssetType.thruster, AssetSubType.stock, 4, 'MAIN SEQUENCE'));
             } else if (symbol == 'RELIANCE.NS') {
-              assets.add(_buildAsset('reliance', 'RELIANCE', 'Reliance Ind.', price, change, AssetType.thruster, AssetSubType.stock, 3));
+              assets.add(_buildAsset('reliance', 'RELIANCE', 'Reliance Ind.', price, change, AssetType.thruster, AssetSubType.stock, 4, 'MAIN SEQUENCE'));
             } else if (symbol == '^GSPC') {
-              assets.add(_buildAsset('sp500', 'SPX', 'S&P 500 (INR)', price, change, AssetType.fleet, AssetSubType.marketIndex, 4));
+              assets.add(_buildAsset('sp500', 'SPX', 'S&P 500 (INR)', price, change, AssetType.fleet, AssetSubType.marketIndex, 4, 'MAIN SEQUENCE'));
             } else if (symbol == '^IXIC') {
-              assets.add(_buildAsset('nasdaq', 'NDX', 'NASDAQ (INR)', price, change, AssetType.fleet, AssetSubType.marketIndex, 4));
+              assets.add(_buildAsset('nasdaq', 'NDX', 'NASDAQ (INR)', price, change, AssetType.fleet, AssetSubType.marketIndex, 4, 'MAIN SEQUENCE'));
             } else if (symbol == 'GC=F') {
-              assets.add(_buildAsset('gold', 'GOLD', 'Gold (INR/oz)', price, change, AssetType.lifeSupport, AssetSubType.forex, 2));
+              assets.add(_buildAsset('gold', 'GOLD', 'Gold (INR/oz)', price, change, AssetType.lifeSupport, AssetSubType.forex, 2, 'INNER CORE'));
             } else if (symbol == 'CL=F') {
-              assets.add(_buildAsset('oil', 'OIL', 'Crude Oil (INR)', price, change, AssetType.lifeSupport, AssetSubType.forex, 2));
+              assets.add(_buildAsset('oil', 'OIL', 'Crude Oil (INR)', price, change, AssetType.lifeSupport, AssetSubType.forex, 2, 'INNER CORE'));
             } else if (symbol == 'INR=X') {
-              assets.add(_buildAsset('usdinr', 'USD/INR', 'USD/INR Rate', priceRaw, change, AssetType.lifeSupport, AssetSubType.forex, 1));
+              assets.add(_buildAsset('usdinr', 'USD/INR', 'USD/INR Rate', priceRaw, change, AssetType.lifeSupport, AssetSubType.forex, 2, 'INNER CORE'));
             }
           }
         }
@@ -219,8 +218,11 @@ class MixedMarketService implements MarketRepository {
       assets.addAll(_getMockSectorB_Fleets());
       assets.add(_getMockSectorA('gold', 'Gold', 2030.50, 2));
       assets.add(_getMockSectorA('oil', 'Crude Oil', 78.40, 2));
-      assets.add(_getMockSectorA('usdinr', 'USD/INR', 83.12, 1));
+      assets.add(_getMockSectorA('usdinr', 'USD/INR', 83.12, 2));
     }
+
+    // Sort assets by required level for natural grouping in UI
+    assets.sort((a, b) => a.requiredLevel.compareTo(b.requiredLevel));
 
     return assets;
   }
@@ -321,7 +323,7 @@ class MixedMarketService implements MarketRepository {
   MarketAsset _buildAsset(
     String id, String symbol, String name,
     double price, double change,
-    AssetType type, AssetSubType subType, int level,
+    AssetType type, AssetSubType subType, int level, String sector,
   ) {
     return MarketAsset(
       id: id,
@@ -331,7 +333,8 @@ class MixedMarketService implements MarketRepository {
       percentChange24h: change,
       type: type,
       subType: subType,
-      minLevelRequired: level,
+      sector: sector,
+      requiredLevel: level,
     );
   }
 
@@ -392,9 +395,9 @@ class MixedMarketService implements MarketRepository {
 
   List<MarketAsset> _getMockSectorC() {
     return [
-      MarketAsset(id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', currentPrice: 42000.0, percentChange24h: 2.5, type: AssetType.warpDrive, subType: AssetSubType.crypto, minLevelRequired: 5),
-      MarketAsset(id: 'ethereum', symbol: 'ETH', name: 'Ethereum', currentPrice: 2200.0, percentChange24h: -1.2, type: AssetType.warpDrive, subType: AssetSubType.crypto, minLevelRequired: 3),
-      MarketAsset(id: 'dogecoin', symbol: 'DOGE', name: 'Dogecoin', currentPrice: 0.15, percentChange24h: 5.0, type: AssetType.warpDrive, subType: AssetSubType.crypto, minLevelRequired: 1),
+      MarketAsset(id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', currentPrice: 42000.0, percentChange24h: 2.5, type: AssetType.warpDrive, subType: AssetSubType.crypto, sector: 'OUTER RIM', requiredLevel: 6),
+      MarketAsset(id: 'ethereum', symbol: 'ETH', name: 'Ethereum', currentPrice: 2200.0, percentChange24h: -1.2, type: AssetType.warpDrive, subType: AssetSubType.crypto, sector: 'OUTER RIM', requiredLevel: 6),
+      MarketAsset(id: 'dogecoin', symbol: 'DOGE', name: 'Dogecoin', currentPrice: 0.15, percentChange24h: 5.0, type: AssetType.warpDrive, subType: AssetSubType.crypto, sector: 'OUTER RIM', requiredLevel: 6),
     ];
   }
 
@@ -408,7 +411,8 @@ class MixedMarketService implements MarketRepository {
         percentChange24h: 0.5,
         type: AssetType.fleet,
         subType: AssetSubType.marketIndex,
-        minLevelRequired: 4
+        sector: 'MAIN SEQUENCE',
+        requiredLevel: 4
       ),
       MarketAsset(
         id: 'nasdaq',
@@ -418,7 +422,8 @@ class MixedMarketService implements MarketRepository {
         percentChange24h: 0.8,
         type: AssetType.fleet,
         subType: AssetSubType.marketIndex,
-        minLevelRequired: 4
+        sector: 'MAIN SEQUENCE',
+        requiredLevel: 4
       ),
     ];
   }
@@ -437,7 +442,8 @@ class MixedMarketService implements MarketRepository {
         percentChange24h: (random.nextDouble() - 0.5) * 3.0,
         type: AssetType.thruster,
         subType: AssetSubType.stock,
-        minLevelRequired: 3
+        sector: 'MAIN SEQUENCE',
+        requiredLevel: 4
       ),
       MarketAsset(
         id: 'reliance',
@@ -447,7 +453,8 @@ class MixedMarketService implements MarketRepository {
         percentChange24h: (random.nextDouble() - 0.5) * 4.0,
         type: AssetType.thruster,
         subType: AssetSubType.stock,
-        minLevelRequired: 3
+        sector: 'MAIN SEQUENCE',
+        requiredLevel: 4
       ),
     ];
   }
@@ -463,7 +470,8 @@ class MixedMarketService implements MarketRepository {
       percentChange24h: (random.nextDouble() - 0.5) * 1.5,
       type: AssetType.lifeSupport,
       subType: AssetSubType.forex,
-      minLevelRequired: level,
+      sector: 'INNER CORE',
+      requiredLevel: level,
     );
   }
 }
