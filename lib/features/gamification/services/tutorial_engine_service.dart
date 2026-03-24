@@ -70,7 +70,8 @@ class TutorialEngineService extends ChangeNotifier {
           key.startsWith('hasSeenCodex') || 
           key.startsWith('hasSeenLevel') ||
           key.startsWith('codex_sublevels_') ||
-          key.startsWith('boss_fight_completed_')) {
+          key.startsWith('boss_fight_completed_') ||
+          key.startsWith('tut_')) { // Add contextual tutorial keys
         await _prefs.remove(key);
       }
     }

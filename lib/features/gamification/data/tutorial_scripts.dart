@@ -1,4 +1,5 @@
 import '../presentation/widgets/tutorial_overlay_widget.dart';
+import 'package:flutter/material.dart';
 
 class TutorialScripts {
   // Contextual Onboarding Scripts
@@ -7,17 +8,17 @@ class TutorialScripts {
     const DialogNode(CharacterSpeaker.aura, "Log your real-world 'INCOME' and 'EXPENSES' here. This generates 'Raw Ore' in the central gauge."),
     const DialogNode(CharacterSpeaker.crash, "Yeah, assuming you actually have income. Tap 'REFINE' to convert that raw Ore into usable 'Refined Fuel'."),
     const DialogNode(CharacterSpeaker.aura, "Please excuse my counterpart, Captain. His sarcasm and roasting subroutines cannot be disabled. You can spend your Refined Fuel in the 'ENGINEERING' bay to permanently upgrade your reactor's efficiency."),
-    const DialogNode(CharacterSpeaker.aura, "Consult your 'ACADEMY CODEX' in the top bar. Reading these manuals and surviving Boss Fights levels you up and unlocks new trading sectors!"),
+    const DialogNode(CharacterSpeaker.aura, "Consult your 'ACADEMY CODEX' in the top bar. Reading these manuals and surviving Boss Fights levels you up and unlocks new trading sectors!", alignment: Alignment.bottomCenter),
     const DialogNode(CharacterSpeaker.crash, "Don't just stand there staring at the core. Swipe left and right to navigate the rest of this flying rust bucket."),
   ];
 
   static final List<DialogNode> flightDeckIntro = [
     const DialogNode(CharacterSpeaker.aura, "Welcome to the Flight Deck. Here, you will invest your Refined Fuel into market assets."),
     const DialogNode(CharacterSpeaker.crash, "This is where you make it or break it. Buy low, sell high. Don't come crying to me if you get liquidated."),
-    const DialogNode(CharacterSpeaker.aura, "Use the SECTOR tabs at the bottom. Higher risk sectors will unlock as you complete more Academy Codex levels."),
-    const DialogNode(CharacterSpeaker.aura, "Before executing a 'BUY' or 'SELL', tap 'ANALYZE' to run a deep-space fundamental scan on the asset."),
-    const DialogNode(CharacterSpeaker.aura, "During an active trade, monitor the Take Profit (TP) and Stop Loss (SL) lines on your main display to automatically secure gains or prevent catastrophic fuel leaks."),
-    const DialogNode(CharacterSpeaker.crash, "Swipe up on the Bottom Panel to track your Open Positions and Trade History. Keep a close eye on your PNL, Captain."),
+    const DialogNode(CharacterSpeaker.aura, "Use the SECTOR tabs at the bottom. Higher risk sectors will unlock as you complete more Academy Codex levels.", alignment: Alignment.topCenter),
+    const DialogNode(CharacterSpeaker.aura, "Before executing a 'BUY' or 'SELL', tap 'ANALYZE' to run a deep-space fundamental scan on the asset.", alignment: Alignment.bottomCenter),
+    const DialogNode(CharacterSpeaker.crash, "During an active trade, monitor the Take Profit (TP) and Stop Loss (SL) lines on your main display to automatically secure gains or prevent catastrophic fuel leaks."),
+    const DialogNode(CharacterSpeaker.aura, "Swipe up on the Bottom Panel to track your Open Positions and Trade History. Keep a close eye on your PNL, Captain.", alignment: Alignment.topCenter),
   ];
 
   static final List<DialogNode> logisticsIntro = [

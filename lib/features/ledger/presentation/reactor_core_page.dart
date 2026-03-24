@@ -745,6 +745,30 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
                 duration: Duration(seconds: 2),
               ),
             );
+            
+            // Trigger reactor tutorial after reset
+            Future.delayed(const Duration(milliseconds: 1500), () {
+              if (!mounted) return;
+              
+              final engine = ref.read(tutorialEngineProvider);
+              if (!engine.hasSeenReactorTutorial) {
+                showGeneralDialog(
+                  context: context,
+                  barrierColor: const Color(0x44000000), // More transparent dark tint (26% opacity), NO BLUR
+                  barrierDismissible: false,
+                  pageBuilder: (ctx, anim1, anim2) => Scaffold(
+                    backgroundColor: Colors.transparent,
+                    body: TutorialOverlayWidget(
+                      dialogs: TutorialScripts.reactorCoreIntro,
+                      onComplete: () {
+                        if (ctx.mounted) Navigator.of(ctx).pop();
+                        engine.markReactorTutorialSeen();
+                      },
+                    ),
+                  ),
+                );
+              }
+            });
           }
         }
       },

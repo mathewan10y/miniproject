@@ -94,7 +94,7 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
          if (script.isNotEmpty) {
              await showGeneralDialog(
                  context: context,
-                 barrierColor: Colors.black87,
+                 barrierColor: const Color(0x44000000), // More transparent dark tint (26% opacity), NO BLUR
                  pageBuilder: (ctx, anim1, anim2) => Scaffold(
                      backgroundColor: Colors.transparent, 
                      body: TutorialOverlayWidget(
