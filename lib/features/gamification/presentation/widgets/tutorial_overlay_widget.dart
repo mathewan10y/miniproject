@@ -126,11 +126,16 @@ class _TutorialOverlayWidgetState extends ConsumerState<TutorialOverlayWidget> {
                             BoxShadow(color: shadowColor, blurRadius: 20, spreadRadius: -5),
                           ]
                         ),
-                        // Here we could use Image.asset(avatarImage) if assets exist, but fall back to Icon just in case.
-                        child: Icon(
-                          isAura ? Icons.smart_toy_outlined : Icons.bug_report_outlined,
-                          color: themeColor,
-                          size: 50,
+                        // Use actual avatar images (tars.png and case.png)
+                        child: ClipOval(
+                          child: Image.asset(
+                            isAura ? 'lib/assets/tars.png' : 'lib/assets/case.png',
+                            width: 50,
+                            height: 50,
+                            fit: BoxFit.cover,
+                            filterQuality: FilterQuality.high,
+                            semanticLabel: isAura ? 'AURA Avatar' : 'CRASH Avatar',
+                          ),
                         ),
                       ),
                     ],
