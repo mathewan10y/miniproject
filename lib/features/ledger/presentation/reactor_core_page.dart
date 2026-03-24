@@ -31,6 +31,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
   late Animation<double> _pulseAnimation;
   late AnimationController _refineController;
   late Animation<double> _refineAnimation;
+  final FocusNode _focusNode = FocusNode();
 
   // Refinery state
   Timer? _refineryTimer;
@@ -66,28 +67,6 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
     _refineAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _refineController, curve: Curves.easeOutCubic),
     );
-    
-    // Trigger contextual tutorial on first visit
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final engine = ref.read(tutorialEngineProvider);
-      if (!engine.hasSeenReactorTutorial) {
-        showGeneralDialog(
-          context: context,
-          barrierColor: Colors.black87, // Dark tint, NO BLUR
-          barrierDismissible: false,
-          pageBuilder: (ctx, anim1, anim2) => Scaffold(
-            backgroundColor: Colors.transparent,
-            body: TutorialOverlayWidget(
-              dialogs: TutorialScripts.reactorCoreIntro,
-              onComplete: () {
-                if (ctx.mounted) Navigator.of(ctx).pop();
-                engine.markReactorTutorialSeen();
-              },
-            ),
-          ),
-        );
-      }
-    });
   }
 
   @override
@@ -97,6 +76,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
     _fuelConversionTimer?.cancel();
     _pulseController.dispose();
     _refineController.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 

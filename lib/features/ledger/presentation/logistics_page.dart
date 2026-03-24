@@ -24,6 +24,7 @@ class LogisticsPage extends ConsumerStatefulWidget {
 }
 
 class _LogisticsPageState extends ConsumerState<LogisticsPage> {
+  final FocusNode _focusNode = FocusNode();
   DateTime _selectedDay = DateTime.now();
   DateTime _focusedDay = DateTime.now();
   bool _showAnalytics = false;
@@ -71,33 +72,12 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
     // We intentionally scroll to the maximum possible extent.
     final initialOffset = (_pastDays * (_podWidth + 8)).toDouble();
     _weekStripController = ScrollController(initialScrollOffset: initialOffset);
-    
-    // Trigger contextual tutorial on first visit
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final engine = ref.read(tutorialEngineProvider);
-      if (!engine.hasSeenLogisticsTutorial) {
-        showGeneralDialog(
-          context: context,
-          barrierColor: Colors.black87, // Dark tint, NO BLUR
-          barrierDismissible: false,
-          pageBuilder: (ctx, anim1, anim2) => Scaffold(
-            backgroundColor: Colors.transparent,
-            body: TutorialOverlayWidget(
-              dialogs: TutorialScripts.logisticsIntro,
-              onComplete: () {
-                if (ctx.mounted) Navigator.of(ctx).pop();
-                engine.markLogisticsTutorialSeen();
-              },
-            ),
-          ),
-        );
-      }
-    });
   }
 
   @override
   void dispose() {
     _weekStripController.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 

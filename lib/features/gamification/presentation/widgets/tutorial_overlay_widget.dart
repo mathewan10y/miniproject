@@ -73,7 +73,7 @@ class _TutorialOverlayWidgetState extends ConsumerState<TutorialOverlayWidget> {
           children: [
             // 1. The Background: Dark overlay without blur
             Positioned.fill(
-              child: Container(color: const Color(0xAA0B0E14)),
+              child: Container(color: const Color(0x44000000)), // More transparent black (26% opacity)
             ),
 
             // 4. Developer Skip Button

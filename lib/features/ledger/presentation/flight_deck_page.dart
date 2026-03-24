@@ -30,6 +30,7 @@ class FlightDeckPage extends ConsumerStatefulWidget {
 
 class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
     with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
+  final FocusNode _focusNode = FocusNode();
   late final AnimationController _fuelAnimationController;
   late final AnimationController _radarController;
   final List<Particle> _particles = [];
@@ -98,26 +99,6 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
 
     // ── Restore previously cached chart data from the Riverpod provider ──
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Trigger contextual tutorial on first visit
-      final engine = ref.read(tutorialEngineProvider);
-      if (!engine.hasSeenFlightDeckTutorial) {
-        showGeneralDialog(
-          context: context,
-          barrierColor: Colors.black87, // Dark tint, NO BLUR
-          barrierDismissible: false,
-          pageBuilder: (ctx, anim1, anim2) => Scaffold(
-            backgroundColor: Colors.transparent,
-            body: TutorialOverlayWidget(
-              dialogs: TutorialScripts.flightDeckIntro,
-              onComplete: () {
-                if (ctx.mounted) Navigator.of(ctx).pop();
-                engine.markFlightDeckTutorialSeen();
-              },
-            ),
-          ),
-        );
-      }
-      
       final cached = ref.read(flightDeckChartProvider);
       if (cached.hasData && mounted) {
         setState(() {
@@ -143,6 +124,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
     _fuelAnimationController.dispose();
     _radarController.dispose();
     _particleTimer?.cancel();
+    _focusNode.dispose();
     super.dispose();
   }
 
