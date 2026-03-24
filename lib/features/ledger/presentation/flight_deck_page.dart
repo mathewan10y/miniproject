@@ -17,6 +17,9 @@ import '../../trading/data/portfolio_provider.dart';
 import '../../trading/domain/models/open_position.dart';
 import '../../trading/presentation/stock_analysis_overlay.dart';
 import '../../trading/data/flight_deck_state_provider.dart';
+import '../../gamification/services/tutorial_engine_service.dart';
+import '../../gamification/data/tutorial_scripts.dart';
+import '../../gamification/presentation/widgets/tutorial_overlay_widget.dart';
 
 class FlightDeckPage extends ConsumerStatefulWidget {
   const FlightDeckPage({super.key});
@@ -95,6 +98,26 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
 
     // ── Restore previously cached chart data from the Riverpod provider ──
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Trigger contextual tutorial on first visit
+      final engine = ref.read(tutorialEngineProvider);
+      if (!engine.hasSeenFlightDeckTutorial) {
+        showGeneralDialog(
+          context: context,
+          barrierColor: Colors.black87, // Dark tint, NO BLUR
+          barrierDismissible: false,
+          pageBuilder: (ctx, anim1, anim2) => Scaffold(
+            backgroundColor: Colors.transparent,
+            body: TutorialOverlayWidget(
+              dialogs: TutorialScripts.flightDeckIntro,
+              onComplete: () {
+                if (ctx.mounted) Navigator.of(ctx).pop();
+                engine.markFlightDeckTutorialSeen();
+              },
+            ),
+          ),
+        );
+      }
+      
       final cached = ref.read(flightDeckChartProvider);
       if (cached.hasData && mounted) {
         setState(() {

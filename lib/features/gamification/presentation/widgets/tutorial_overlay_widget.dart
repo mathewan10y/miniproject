@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
@@ -72,12 +71,9 @@ class _TutorialOverlayWidgetState extends ConsumerState<TutorialOverlayWidget> {
         color: Colors.transparent,
         child: Stack(
           children: [
-            // 1. The Background: Heavy blur + dark overlay
+            // 1. The Background: Dark overlay without blur
             Positioned.fill(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: Container(color: const Color(0xAA0B0E14)),
-              ),
+              child: Container(color: const Color(0xAA0B0E14)),
             ),
 
             // 4. Developer Skip Button

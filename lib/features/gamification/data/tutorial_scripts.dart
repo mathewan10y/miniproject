@@ -1,6 +1,33 @@
 import '../presentation/widgets/tutorial_overlay_widget.dart';
 
 class TutorialScripts {
+  // Contextual Onboarding Scripts
+  static final List<DialogNode> reactorCoreIntro = [
+    const DialogNode(CharacterSpeaker.aura, "Welcome to the Reactor Core, Captain. This is the heart of your ship's economy."),
+    const DialogNode(CharacterSpeaker.aura, "Log your real-world 'INCOME' and 'EXPENSES' here. This generates 'Raw Ore' in the central gauge."),
+    const DialogNode(CharacterSpeaker.crash, "Yeah, assuming you actually have income. Tap 'REFINE' to convert that raw Ore into usable 'Refined Fuel'."),
+    const DialogNode(CharacterSpeaker.aura, "Please excuse my counterpart, Captain. His sarcasm and roasting subroutines cannot be disabled. You can spend your Refined Fuel in the 'ENGINEERING' bay to permanently upgrade your reactor's efficiency."),
+    const DialogNode(CharacterSpeaker.aura, "Consult your 'ACADEMY CODEX' in the top bar. Reading these manuals and surviving Boss Fights levels you up and unlocks new trading sectors!"),
+    const DialogNode(CharacterSpeaker.crash, "Don't just stand there staring at the core. Swipe left and right to navigate the rest of this flying rust bucket."),
+  ];
+
+  static final List<DialogNode> flightDeckIntro = [
+    const DialogNode(CharacterSpeaker.aura, "Welcome to the Flight Deck. Here, you will invest your Refined Fuel into market assets."),
+    const DialogNode(CharacterSpeaker.crash, "This is where you make it or break it. Buy low, sell high. Don't come crying to me if you get liquidated."),
+    const DialogNode(CharacterSpeaker.aura, "Use the SECTOR tabs at the bottom. Higher risk sectors will unlock as you complete more Academy Codex levels."),
+    const DialogNode(CharacterSpeaker.aura, "Before executing a 'BUY' or 'SELL', tap 'ANALYZE' to run a deep-space fundamental scan on the asset."),
+    const DialogNode(CharacterSpeaker.aura, "During an active trade, monitor the Take Profit (TP) and Stop Loss (SL) lines on your main display to automatically secure gains or prevent catastrophic fuel leaks."),
+    const DialogNode(CharacterSpeaker.crash, "Swipe up on the Bottom Panel to track your Open Positions and Trade History. Keep a close eye on your PNL, Captain."),
+  ];
+
+  static final List<DialogNode> logisticsIntro = [
+    const DialogNode(CharacterSpeaker.aura, "This is the Logistics Bay. It tracks your financial trajectory and spending habits over time."),
+    const DialogNode(CharacterSpeaker.aura, "Use the 'SHOW ANALYSIS' toggle to view a detailed breakdown of where your resources are going."),
+    const DialogNode(CharacterSpeaker.aura, "For maximum efficiency, tap the message icon in the Top Bar to intercept and sync your real-time banking transmissions."),
+    const DialogNode(CharacterSpeaker.crash, "And if you want a brutal reality check on your terrible spending habits, hit the bot icons on the top bar to chat with us directly. I'm always ready to roast you."),
+  ];
+
+  // Original Codex Scripts
   static List<DialogNode> getCodexScript(int level) {
     switch (level) {
       case 0:

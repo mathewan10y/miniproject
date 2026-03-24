@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
 
 final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
   throw UnimplementedError('Initialize sharedPreferencesProvider in main.dart');
@@ -10,10 +11,29 @@ final tutorialEngineProvider = Provider<TutorialEngineService>((ref) {
   return TutorialEngineService(prefs);
 });
 
-class TutorialEngineService {
+class TutorialEngineService extends ChangeNotifier {
   final SharedPreferences _prefs;
 
   TutorialEngineService(this._prefs);
+
+  // Contextual Onboarding Tracking
+  bool get hasSeenReactorTutorial => _prefs.getBool('tut_reactor') ?? false;
+  Future<void> markReactorTutorialSeen() async {
+    await _prefs.setBool('tut_reactor', true);
+    notifyListeners();
+  }
+
+  bool get hasSeenFlightDeckTutorial => _prefs.getBool('tut_flight') ?? false;
+  Future<void> markFlightDeckTutorialSeen() async {
+    await _prefs.setBool('tut_flight', true);
+    notifyListeners();
+  }
+
+  bool get hasSeenLogisticsTutorial => _prefs.getBool('tut_logistics') ?? false;
+  Future<void> markLogisticsTutorialSeen() async {
+    await _prefs.setBool('tut_logistics', true);
+    notifyListeners();
+  }
 
   // Phase 1 Onboarding
   bool get hasSeenPhase1 => _prefs.getBool('hasSeenPhase1') ?? false;

@@ -12,6 +12,9 @@ import 'add_income_sheet.dart';
 import '../../gamification/presentation/widgets/top_bar.dart';
 import '../../sms_sync/presentation/sms_sync_button.dart';
 import '../../gamification/services/tutorial_keys.dart';
+import '../../gamification/services/tutorial_engine_service.dart';
+import '../../gamification/data/tutorial_scripts.dart';
+import '../../gamification/presentation/widgets/tutorial_overlay_widget.dart';
 
 class LogisticsPage extends ConsumerStatefulWidget {
   const LogisticsPage({super.key});
@@ -68,6 +71,28 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
     // We intentionally scroll to the maximum possible extent.
     final initialOffset = (_pastDays * (_podWidth + 8)).toDouble();
     _weekStripController = ScrollController(initialScrollOffset: initialOffset);
+    
+    // Trigger contextual tutorial on first visit
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final engine = ref.read(tutorialEngineProvider);
+      if (!engine.hasSeenLogisticsTutorial) {
+        showGeneralDialog(
+          context: context,
+          barrierColor: Colors.black87, // Dark tint, NO BLUR
+          barrierDismissible: false,
+          pageBuilder: (ctx, anim1, anim2) => Scaffold(
+            backgroundColor: Colors.transparent,
+            body: TutorialOverlayWidget(
+              dialogs: TutorialScripts.logisticsIntro,
+              onComplete: () {
+                if (ctx.mounted) Navigator.of(ctx).pop();
+                engine.markLogisticsTutorialSeen();
+              },
+            ),
+          ),
+        );
+      }
+    });
   }
 
   @override

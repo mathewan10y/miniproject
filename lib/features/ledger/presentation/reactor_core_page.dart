@@ -15,6 +15,8 @@ import '../../gamification/presentation/widgets/levels_panel.dart';
 import '../../gamification/services/tutorial_keys.dart';
 import '../../gamification/user_stats_provider.dart';
 import '../../gamification/services/tutorial_engine_service.dart';
+import '../../gamification/data/tutorial_scripts.dart';
+import '../../gamification/presentation/widgets/tutorial_overlay_widget.dart';
 
 class ReactorCorePage extends ConsumerStatefulWidget {
   const ReactorCorePage({super.key});
@@ -64,6 +66,28 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
     _refineAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _refineController, curve: Curves.easeOutCubic),
     );
+    
+    // Trigger contextual tutorial on first visit
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final engine = ref.read(tutorialEngineProvider);
+      if (!engine.hasSeenReactorTutorial) {
+        showGeneralDialog(
+          context: context,
+          barrierColor: Colors.black87, // Dark tint, NO BLUR
+          barrierDismissible: false,
+          pageBuilder: (ctx, anim1, anim2) => Scaffold(
+            backgroundColor: Colors.transparent,
+            body: TutorialOverlayWidget(
+              dialogs: TutorialScripts.reactorCoreIntro,
+              onComplete: () {
+                if (ctx.mounted) Navigator.of(ctx).pop();
+                engine.markReactorTutorialSeen();
+              },
+            ),
+          ),
+        );
+      }
+    });
   }
 
   @override
