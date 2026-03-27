@@ -38,7 +38,7 @@ class QuizData {
     if (_bossQuizLists.containsKey(levelId)) {
       return _bossQuizLists[levelId]!;
     }
-    // Fallback: create 3 questions from the single boss quiz
+    // Fallback: create 6 questions to handle extended fights
     final singleQuiz = getBossQuiz(levelId);
     return [
       singleQuiz,
@@ -50,6 +50,21 @@ class QuizData {
       const QuizQuestion(
         question: "BOSS: When should you take profits?",
         options: ["Never", "When you reach your target", "When your friend says so"],
+        correctIndex: 1,
+      ),
+      const QuizQuestion(
+        question: "BOSS: What is the most important rule in trading?",
+        options: ["Never lose money", "Always be right", "Trade every day"],
+        correctIndex: 0,
+      ),
+      const QuizQuestion(
+        question: "BOSS: How should you approach market volatility?",
+        options: ["Ignore it completely", "Have a strategy and stick to it", "Panic sell immediately"],
+        correctIndex: 1,
+      ),
+      const QuizQuestion(
+        question: "BOSS: What separates successful traders from failures?",
+        options: ["Luck", "Discipline and risk management", "Inside information"],
         correctIndex: 1,
       ),
     ];
@@ -392,6 +407,21 @@ class QuizData {
         options: ["Never", "When you reach your target", "When your friend says so"],
         correctIndex: 1,
       ),
+      const QuizQuestion(
+        question: "BOSS: What is the most important rule in trading?",
+        options: ["Never lose money", "Always be right", "Trade every day"],
+        correctIndex: 0,
+      ),
+      const QuizQuestion(
+        question: "BOSS: How should you approach market volatility?",
+        options: ["Ignore it completely", "Have a strategy and stick to it", "Panic sell immediately"],
+        correctIndex: 1,
+      ),
+      const QuizQuestion(
+        question: "BOSS: What separates successful traders from failures?",
+        options: ["Luck", "Discipline and risk management", "Inside information"],
+        correctIndex: 1,
+      ),
     ],
     1: [
       const QuizQuestion(
@@ -407,6 +437,21 @@ class QuizData {
       const QuizQuestion(
         question: "BOSS: When should you take profits?",
         options: ["Never", "When you reach your target", "When your friend says so"],
+        correctIndex: 1,
+      ),
+      const QuizQuestion(
+        question: "BOSS: What is the most important rule in trading?",
+        options: ["Never lose money", "Always be right", "Trade every day"],
+        correctIndex: 0,
+      ),
+      const QuizQuestion(
+        question: "BOSS: How should you approach market volatility?",
+        options: ["Ignore it completely", "Have a strategy and stick to it", "Panic sell immediately"],
+        correctIndex: 1,
+      ),
+      const QuizQuestion(
+        question: "BOSS: What separates successful traders from failures?",
+        options: ["Luck", "Discipline and risk management", "Inside information"],
         correctIndex: 1,
       ),
     ],
@@ -426,6 +471,21 @@ class QuizData {
         options: ["Never", "When you reach your target", "When your friend says so"],
         correctIndex: 1,
       ),
+      const QuizQuestion(
+        question: "BOSS: What is the most important rule in trading?",
+        options: ["Never lose money", "Always be right", "Trade every day"],
+        correctIndex: 0,
+      ),
+      const QuizQuestion(
+        question: "BOSS: How should you approach market volatility?",
+        options: ["Ignore it completely", "Have a strategy and stick to it", "Panic sell immediately"],
+        correctIndex: 1,
+      ),
+      const QuizQuestion(
+        question: "BOSS: What separates successful traders from failures?",
+        options: ["Luck", "Discipline and risk management", "Inside information"],
+        correctIndex: 1,
+      ),
     ],
     3: [
       const QuizQuestion(
@@ -441,6 +501,21 @@ class QuizData {
       const QuizQuestion(
         question: "BOSS: When should you take profits?",
         options: ["Never", "When you reach your target", "When your friend says so"],
+        correctIndex: 1,
+      ),
+      const QuizQuestion(
+        question: "BOSS: What is the most important rule in trading?",
+        options: ["Never lose money", "Always be right", "Trade every day"],
+        correctIndex: 0,
+      ),
+      const QuizQuestion(
+        question: "BOSS: How should you approach market volatility?",
+        options: ["Ignore it completely", "Have a strategy and stick to it", "Panic sell immediately"],
+        correctIndex: 1,
+      ),
+      const QuizQuestion(
+        question: "BOSS: What separates successful traders from failures?",
+        options: ["Luck", "Discipline and risk management", "Inside information"],
         correctIndex: 1,
       ),
     ],
@@ -460,6 +535,21 @@ class QuizData {
         options: ["Never", "When you reach your target", "When your friend says so"],
         correctIndex: 1,
       ),
+      const QuizQuestion(
+        question: "BOSS: What is the most important rule in trading?",
+        options: ["Never lose money", "Always be right", "Trade every day"],
+        correctIndex: 0,
+      ),
+      const QuizQuestion(
+        question: "BOSS: How should you approach market volatility?",
+        options: ["Ignore it completely", "Have a strategy and stick to it", "Panic sell immediately"],
+        correctIndex: 1,
+      ),
+      const QuizQuestion(
+        question: "BOSS: What separates successful traders from failures?",
+        options: ["Luck", "Discipline and risk management", "Inside information"],
+        correctIndex: 1,
+      ),
     ],
     5: [
       const QuizQuestion(
@@ -477,6 +567,21 @@ class QuizData {
         options: ["Never", "When you reach your target", "When your friend says so"],
         correctIndex: 1,
       ),
+      const QuizQuestion(
+        question: "BOSS: What is the most important rule in trading?",
+        options: ["Never lose money", "Always be right", "Trade every day"],
+        correctIndex: 0,
+      ),
+      const QuizQuestion(
+        question: "BOSS: How should you approach market volatility?",
+        options: ["Ignore it completely", "Have a strategy and stick to it", "Panic sell immediately"],
+        correctIndex: 1,
+      ),
+      const QuizQuestion(
+        question: "BOSS: What separates successful traders from failures?",
+        options: ["Luck", "Discipline and risk management", "Inside information"],
+        correctIndex: 1,
+      ),
     ],
     6: [
       const QuizQuestion(
@@ -492,6 +597,21 @@ class QuizData {
       const QuizQuestion(
         question: "BOSS: When should you take profits?",
         options: ["Never", "When you reach your target", "When your friend says so"],
+        correctIndex: 1,
+      ),
+      const QuizQuestion(
+        question: "BOSS: What is the most important rule in trading?",
+        options: ["Never lose money", "Always be right", "Trade every day"],
+        correctIndex: 0,
+      ),
+      const QuizQuestion(
+        question: "BOSS: How should you approach market volatility?",
+        options: ["Ignore it completely", "Have a strategy and stick to it", "Panic sell immediately"],
+        correctIndex: 1,
+      ),
+      const QuizQuestion(
+        question: "BOSS: What separates successful traders from failures?",
+        options: ["Luck", "Discipline and risk management", "Inside information"],
         correctIndex: 1,
       ),
     ],

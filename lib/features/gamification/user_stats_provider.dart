@@ -61,6 +61,20 @@ class UserStatsNotifier extends AsyncNotifier<UserStatsModel> {
     ));
   }
 
+  // ── Reset Methods ────────────────────────────────────────────────────────────
+
+  Future<void> resetUserProgress() async {
+    final resetStats = UserStatsModel(
+      userId: 'default_user',
+      tradingCredits: _kDefaultCredits,
+      xp: 0,
+      currentLevel: 1,
+    );
+    
+    state = AsyncData(resetStats);
+    await _save(resetStats);
+  }
+
   Future<void> setLevel(int level) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_kLevelKey, level);

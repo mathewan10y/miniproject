@@ -11,13 +11,15 @@ import '../../trading/data/market_service.dart';
 import '../../trading/domain/models/market_asset.dart';
 import 'flight_deck_page_wickpainter.dart';
 import '../../gamification/presentation/widgets/top_bar.dart';
-
 import '../../gamification/presentation/widgets/varsity_orbit_panel.dart';
-
+import '../../gamification/user_stats_provider.dart';
 import '../../trading/data/portfolio_provider.dart';
 import '../../trading/domain/models/open_position.dart';
 import '../../trading/presentation/stock_analysis_overlay.dart';
 import '../../trading/data/flight_deck_state_provider.dart';
+import '../../gamification/services/tutorial_engine_service.dart';
+import '../../gamification/data/tutorial_scripts.dart';
+import '../../gamification/presentation/widgets/tutorial_overlay_widget.dart';
 
 class FlightDeckPage extends ConsumerStatefulWidget {
   const FlightDeckPage({super.key});
@@ -28,6 +30,7 @@ class FlightDeckPage extends ConsumerStatefulWidget {
 
 class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
     with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
+  final FocusNode _focusNode = FocusNode();
   late final AnimationController _fuelAnimationController;
   late final AnimationController _radarController;
   final List<Particle> _particles = [];
@@ -121,6 +124,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
     _fuelAnimationController.dispose();
     _radarController.dispose();
     _particleTimer?.cancel();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -266,6 +270,8 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
     String sectorName,
     Color sectorColor,
     List<AssetSubType> allowedTypes,
+    int userLevel,
+    bool isDevMode,
   ) {
     showModalBottomSheet(
       context: context,
@@ -286,6 +292,8 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
             sectorName: sectorName,
             sectorColor: sectorColor,
             allowedTypes: allowedTypes,
+            userLevel: userLevel,
+            isDevMode: isDevMode,
             onAssetSelected: (asset) {
               Navigator.pop(context);
               _onAssetSelected(asset);
@@ -299,6 +307,10 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
     super.build(context); // required by AutomaticKeepAliveClientMixin
     final system = ref.watch(refineryProvider).valueOrNull;
     final assetsAsync = ref.watch(marketAssetsProvider);
+    final stats = ref.watch(userStatsProvider).valueOrNull;
+    final isDev = ref.watch(devModeProvider);
+    final maxLvl = isDev ? 6 : (stats?.currentLevel ?? 1);
+    
     ref.listen(refineryProvider, (previous, next) {
       final nextFuel = next.valueOrNull?.refinedFuel ?? 0;
       final prevFuel = previous?.valueOrNull?.refinedFuel ?? 0;
@@ -320,16 +332,29 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
           Column(
             children: [
               TopBar(
-                title: "FLIGHT DECK",
-                onVarsityToggle:
-                    () =>
-                        setState(() => _showVarsityPanel = !_showVarsityPanel),
+                title: "", // Empty title to remove from TopBar
+                showCodex: false,
+                showDevMode: false, // Remove DevMode button from Flight Deck
+                actions: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  child: Text(
+                    "FLIGHT DECK",
+                    style: GoogleFonts.orbitron(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                    ),
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ),
               Expanded(flex: 8, child: _buildTelemetryPanel()),
               SizedBox(
                 height: 80,
                 child: assetsAsync.when(
-                  data: (assets) => _buildControlDock(context, assets),
+                  data: (assets) => _buildControlDock(context, assets, maxLvl, isDev),
                   loading:
                       () => const Center(
                         child: CircularProgressIndicator(color: Colors.cyan),
@@ -1091,6 +1116,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
@@ -1114,16 +1140,25 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
               ),
             ],
           ),
-          Row(
+          // Buy/Sell buttons column with PNL below
+          Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              _buildTradeButton("SELL", Colors.pinkAccent),
-              const SizedBox(width: 4),
-              // ── Quantity Selector ──
-              _buildQuantitySelector(),
-              const SizedBox(width: 4),
-              _buildTradeButton("BUY", Colors.cyan),
+              // Buttons row
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildTradeButton("SELL", Colors.pinkAccent),
+                  const SizedBox(width: 4),
+                  // ── Quantity Selector ──
+                  _buildQuantitySelector(),
+                  const SizedBox(width: 4),
+                  _buildTradeButton("BUY", Colors.cyan),
+                ],
+              ),
+              // PNL displayed below buttons when active
               if (_tradeMode != TradeMode.none) ...[
-                const SizedBox(width: 8),
+                const SizedBox(height: 8),
                 _buildActiveTradeHeader(),
               ],
             ],
@@ -1138,7 +1173,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
       key: _qtyButtonKey,
       onTap: () => _showQuantityPopup(),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
         decoration: BoxDecoration(
           color: const Color(0xFF131722),
           border: Border.all(color: Colors.white24),
@@ -2283,7 +2318,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
           color: effectiveColor.withOpacity(canAfford ? 0.1 : 0.05),
           border: Border.all(color: effectiveColor),
@@ -2491,7 +2526,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
     );
   }
 
-  Widget _buildControlDock(BuildContext context, List<MarketAsset> assets) {
+  Widget _buildControlDock(BuildContext context, List<MarketAsset> assets, int userLevel, bool isDevMode) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
@@ -2509,6 +2544,8 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                 AssetSubType.fund,
                 AssetSubType.forex,
               ],
+              userLevel,
+              isDevMode,
             ),
           ),
           const SizedBox(width: 8),
@@ -2520,6 +2557,8 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
               Colors.amber,
               assets,
               [AssetSubType.stock, AssetSubType.marketIndex],
+              userLevel,
+              isDevMode,
             ),
           ),
           const SizedBox(width: 8),
@@ -2531,6 +2570,8 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
               Colors.redAccent,
               assets,
               [AssetSubType.crypto, AssetSubType.future, AssetSubType.option],
+              userLevel,
+              isDevMode,
             ),
           ),
         ],
@@ -2545,9 +2586,11 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
     Color color,
     List<MarketAsset> assets,
     List<AssetSubType> types,
+    int userLevel,
+    bool isDevMode,
   ) {
     return GestureDetector(
-      onTap: () => _showSectorModal(context, assets, label, color, types),
+      onTap: () => _showSectorModal(context, assets, label, color, types, userLevel, isDevMode),
       child: Container(
         decoration: BoxDecoration(
           color: color.withOpacity(0.1),
@@ -2707,6 +2750,8 @@ class _DataPadModal extends StatefulWidget {
   final Color sectorColor;
   final List<AssetSubType> allowedTypes;
   final Function(MarketAsset) onAssetSelected;
+  final int userLevel;
+  final bool isDevMode;
 
   const _DataPadModal({
     required this.assets,
@@ -2714,6 +2759,8 @@ class _DataPadModal extends StatefulWidget {
     required this.sectorColor,
     required this.allowedTypes,
     required this.onAssetSelected,
+    required this.userLevel,
+    required this.isDevMode,
   });
 
   @override
@@ -2840,35 +2887,94 @@ class _DataPadModalState extends State<_DataPadModal> {
                   separatorBuilder: (_, __) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
                     final asset = filteredAssets[index];
-                    return ListTile(
-                      onTap: () => widget.onAssetSelected(asset),
-                      tileColor: Colors.white.withOpacity(0.05),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      leading: CircleAvatar(
-                        backgroundColor: widget.sectorColor.withOpacity(0.2),
-                        child: Icon(
-                          Icons.token,
-                          color: widget.sectorColor,
-                          size: 16,
+                    final isLocked = asset.isLocked(widget.userLevel, widget.isDevMode);
+                    
+                    // Check if this is the first asset of a new sector
+                    bool showSectorHeader = false;
+                    if (index == 0) {
+                      showSectorHeader = true;
+                    } else {
+                      final previousAsset = filteredAssets[index - 1];
+                      showSectorHeader = previousAsset.sector != asset.sector;
+                    }
+                    
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Sector header
+                        if (showSectorHeader)
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: widget.sectorColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: widget.sectorColor.withOpacity(0.3),
+                                width: 1,
+                              ),
+                            ),
+                            child: Text(
+                              'SECTOR ${asset.sector}',
+                              style: GoogleFonts.orbitron(
+                                color: widget.sectorColor,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1,
+                              ),
+                            ),
+                          ),
+                        // Asset tile
+                        Opacity(
+                          opacity: isLocked ? 0.4 : 1.0,
+                          child: ListTile(
+                            onTap: isLocked ? null : () => widget.onAssetSelected(asset),
+                            tileColor: Colors.white.withOpacity(0.05),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            leading: CircleAvatar(
+                              backgroundColor: widget.sectorColor.withOpacity(0.2),
+                              child: Icon(
+                                Icons.token,
+                                color: widget.sectorColor,
+                                size: 16,
+                              ),
+                            ),
+                            title: Text(
+                              asset.symbol,
+                              style: GoogleFonts.orbitron(color: Colors.white),
+                            ),
+                            subtitle: Text(
+                              asset.name,
+                              style: GoogleFonts.shareTechMono(
+                                color: Colors.white54,
+                                fontSize: 10,
+                              ),
+                            ),
+                            trailing: isLocked
+                                ? Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Icon(Icons.lock, color: Colors.white38, size: 16),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        "UNLOCKS AT Lvl ${asset.requiredLevel}",
+                                        style: GoogleFonts.shareTechMono(
+                                          color: Colors.white38,
+                                          fontSize: 8,
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : Text(
+                                    "\$${asset.currentPrice.toStringAsFixed(2)}",
+                                    style: GoogleFonts.shareTechMono(color: Colors.white),
+                                  ),
+                          ),
                         ),
-                      ),
-                      title: Text(
-                        asset.symbol,
-                        style: GoogleFonts.orbitron(color: Colors.white),
-                      ),
-                      subtitle: Text(
-                        asset.name,
-                        style: GoogleFonts.shareTechMono(
-                          color: Colors.white54,
-                          fontSize: 10,
-                        ),
-                      ),
-                      trailing: Text(
-                        "\$${asset.currentPrice.toStringAsFixed(2)}",
-                        style: GoogleFonts.shareTechMono(color: Colors.white),
-                      ),
+                      ],
                     );
                   },
                 ),

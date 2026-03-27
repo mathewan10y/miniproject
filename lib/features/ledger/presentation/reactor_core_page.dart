@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'dart:async';
 import 'dart:ui' as ui;
 import 'dart:math' as math;
@@ -8,9 +9,14 @@ import '../expense_provider.dart';
 import '../income_provider.dart';
 import '../../../widgets/reactor_gauge.dart';
 import '../../../core/providers/refinery_provider.dart';
+import 'widgets/engineering_dialog.dart';
 import '../../gamification/presentation/widgets/top_bar.dart';
 import '../../gamification/presentation/widgets/levels_panel.dart';
 import '../../gamification/services/tutorial_keys.dart';
+import '../../gamification/user_stats_provider.dart';
+import '../../gamification/services/tutorial_engine_service.dart';
+import '../../gamification/data/tutorial_scripts.dart';
+import '../../gamification/presentation/widgets/tutorial_overlay_widget.dart';
 
 class ReactorCorePage extends ConsumerStatefulWidget {
   const ReactorCorePage({super.key});
@@ -20,17 +26,26 @@ class ReactorCorePage extends ConsumerStatefulWidget {
 }
 
 class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
+  late AnimationController _refineController;
+  late Animation<double> _refineAnimation;
+  final FocusNode _focusNode = FocusNode();
 
   // Refinery state
   Timer? _refineryTimer;
+  Timer? _fuelConversionTimer;
   bool _isRefining = false;
   bool _isCriticalHit = false;
   bool _isDisposed = false;
   List<Particle> _particles = [];
   List<CriticalText> _criticalTexts = [];
+  
+  // Animation state
+  double _pendingFuel = 0.0;
+  double _convertedFuel = 0.0;
+  double _visualOreLevel = 0.0; // For smooth reactor core draining animation
 
   @override
   void initState() {
@@ -43,13 +58,25 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
+    
+    _refineController = AnimationController(
+      duration: const Duration(milliseconds: 1400), // 1.4 seconds to drain 10% from reactor core
+      vsync: this,
+    );
+    
+    _refineAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _refineController, curve: Curves.easeOutCubic),
+    );
   }
 
   @override
   void dispose() {
     _isDisposed = true;
     _refineryTimer?.cancel();
+    _fuelConversionTimer?.cancel();
     _pulseController.dispose();
+    _refineController.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -67,10 +94,12 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
             final rawOre = refineryState?.rawOre ?? 0;
 
             // Calculate ore level for reactor gauge (0-1 based on raw ore)
-            double oreLevel = (rawOre / 10000.0).clamp(
+            // Use visual ore level during animation for smooth draining effect
+            double displayOre = _isRefining ? _visualOreLevel : rawOre.toDouble();
+            double oreLevel = (displayOre / (refineryState?.maxCapacity ?? 10000.0)).clamp(
               0.0,
               1.0,
-            ); // Max 10000 ore for full reactor
+            ); // Use dynamic max capacity
 
             return Stack(
               fit: StackFit.expand,
@@ -83,7 +112,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
                 SafeArea(
                   child: Column(
                     children: [
-                      const TopBar(title: "REACTOR CORE"),
+                      const TopBar(title: "REACTOR CORE", showCodex: true),
                       Expanded(
                         child: LayoutBuilder(
                           builder: (context, constraints) {
@@ -95,6 +124,54 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
+                                    // ENGINEERING button (above raw ore)
+                                    Container(
+                                      width: double.infinity,
+                                      decoration: BoxDecoration(
+                                        border: Border.all(color: const Color(0xFF00D9FF), width: 2),
+                                        borderRadius: BorderRadius.circular(8),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: const Color(0xFF00D9FF).withOpacity(0.3),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Material(
+                                        color: Colors.transparent,
+                                        child: InkWell(
+                                          borderRadius: BorderRadius.circular(6),
+                                          onTap: () {
+                                            showDialog(
+                                              context: context,
+                                              barrierColor: Colors.black87,
+                                              builder: (_) => const EngineeringDialog(),
+                                            );
+                                          },
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                                            child: Row(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                const Icon(Icons.build, color: Color(0xFF00D9FF), size: 20),
+                                                const SizedBox(width: 12),
+                                                Text(
+                                                  'ENGINEERING',
+                                                  style: GoogleFonts.shareTechMono(
+                                                    color: const Color(0xFF00D9FF),
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.bold,
+                                                    letterSpacing: 2,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 20),
                                     // UNREFINED ORE display (above reactor)
                                     _buildHolographicContainer(
                                       child: Column(
@@ -122,9 +199,9 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
                                                 ),
                                               ),
                                               const SizedBox(height: 8),
-                                              const Text(
-                                                'REFINERY EFFICIENCY: 80%',
-                                                style: TextStyle(
+                                              Text(
+                                                'REFINERY EFFICIENCY: ${((refineryState?.currentEfficiency ?? 0.8) * 100).toInt()}%',
+                                                style: const TextStyle(
                                                   color: Color(0xFF00B8D4),
                                                   fontSize: 12,
                                                   letterSpacing: 1,
@@ -168,12 +245,39 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
                 ..._particles.map((particle) => _buildParticle(particle)),
                 // Critical hit texts
                 ..._criticalTexts.map((text) => _buildCriticalText(text)),
-                // Hold to refine button
+                // Refine and reset buttons
                 Positioned(
                   bottom: 24,
                   left: 0,
                   right: 0,
-                  child: Center(child: _buildRefineButton()),
+                  child: Consumer(
+                    builder: (context, ref, child) {
+                      final isDevMode = ref.watch(devModeProvider);
+                      
+                      if (isDevMode) {
+                        // Dev mode: show both buttons side by side
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // Refine button (left)
+                            SizedBox(
+                              width: MediaQuery.of(context).size.width * 0.4,
+                              child: _buildRefineButton(),
+                            ),
+                            const SizedBox(width: 16),
+                            // Reset button (right)
+                            SizedBox(
+                              width: MediaQuery.of(context).size.width * 0.4,
+                              child: _buildResetButton(),
+                            ),
+                          ],
+                        );
+                      } else {
+                        // Normal mode: show only refine button centered
+                        return Center(child: _buildRefineButton());
+                      }
+                    },
+                  ),
                 ),
 
                 // Chat Overlay
@@ -249,96 +353,120 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
   }
 
   // Refinery Methods
-  void _startRefining() {
-    if (_refineryTimer != null) return;
-
-    // STRICT HOLD: No immediate state change. Timer only.
-    _refineryTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-
-      // Update UI state on first tick
-      if (!_isRefining) {
-        setState(() {
-          _isRefining = true;
-        });
-      }
-
-      _processRefinementTick();
-    });
-  }
-
-  void _stopRefining() {
-    _refineryTimer?.cancel();
-    _refineryTimer = null;
-
-    if (mounted && !_isDisposed) {
-      try {
-        setState(() {
-          _isRefining = false;
-          _isCriticalHit = false;
-        });
-      } catch (e) {
-        // Ignore errors during dispose
-      }
-    }
-  }
-
-  void _processRefinementTick() {
-    if (!mounted) return;
+  void _processSingleTap() {
+    if (_isRefining) return; // Brief debounce to prevent animation clipping
 
     final refineryNotifier = ref.read(refineryProvider.notifier);
     final refineryState = ref.read(refineryProvider).valueOrNull;
+    final currentOre = refineryState?.rawOre ?? 0;
 
-    // Stop if no ore left
-    if ((refineryState?.rawOre ?? 0) <= 0) {
-      _stopRefining();
-      return;
+    if (currentOre <= 0) return; // Nothing to refine
+
+    // Process up to 1000 ore per tap (10% of max capacity)
+    final int oreToConsume = math.min(currentOre, 1000);
+    final double efficiency = refineryState?.currentEfficiency ?? 0.8;
+    final double fuelAdded = oreToConsume * efficiency;
+
+    setState(() {
+      _isRefining = true;
+      _pendingFuel = fuelAdded;
+      _convertedFuel = 0.0;
+      _visualOreLevel = currentOre.toDouble(); // Store starting ore level for animation
+    });
+
+    // Start the reactor core draining animation
+    _refineController.reset();
+    _refineController.forward();
+    
+    // Cancel any existing conversion timer
+    _fuelConversionTimer?.cancel();
+    
+    // Handle gamification (20% chance for critical hit visuals)
+    final bool isCritical = math.Random().nextDouble() < 0.20;
+    
+    if (isCritical) {
+      setState(() => _isCriticalHit = true);
+      _addCriticalText();
     }
-
-    // Use the existing processRefinementTick method which consumes 10 ore
-    final result = refineryNotifier.processRefinementTick();
-
-    if (result.fuelAdded > 0) {
-      // Trigger haptic feedback
-      HapticFeedback.lightImpact(); // Lighter impact for rapid fire
-
-      // Handle critical hit
-      if (result.isCritical) {
-        if (mounted) {
-          setState(() {
-            _isCriticalHit = true;
-          });
-        }
-
-        // Flash effect
-        Future.delayed(const Duration(milliseconds: 100), () {
-          if (mounted) {
-            setState(() {
-              _isCriticalHit = false;
-            });
-          }
-        });
-
-        // Add critical text
-        _addCriticalText();
+    
+    // Create smooth draining effect over 1.4 seconds with 10 frames
+    _fuelConversionTimer = Timer.periodic(const Duration(milliseconds: 140), (timer) {
+      if (!mounted || _refineController.isDismissed) {
+        timer.cancel();
+        return;
       }
+      
+      final animationProgress = _refineAnimation.value;
+      final oreToDrain = oreToConsume / 10.0; // Divide 10% into 10 equal frames
+      
+      if (oreToDrain > 0.1) { // Only drain if there's a meaningful amount
+        // Actually consume the ore in real-time for each frame
+        refineryNotifier.processRefinementTickWithAmount(oreToDrain.toInt(), 0.0);
+        
+        // Update visual ore level to match actual state
+        final currentState = ref.read(refineryProvider).valueOrNull;
+        setState(() {
+          _visualOreLevel = currentState?.rawOre?.toDouble() ?? _visualOreLevel;
+        });
+        
+        // Spawn particles at each frame for continuous visual feedback
+        _spawnParticles(isCritical);
+      }
+      
+      // When animation is complete, add the fuel and stop particles
+      if (animationProgress >= 1.0) {
+        timer.cancel();
+        
+        // Add the fuel after all ore is consumed
+        refineryNotifier.processRefinementTickWithAmount(0, fuelAdded);
+        
+        setState(() {
+          _convertedFuel = fuelAdded;
+        });
+        
+        // Immediately clear all particles when refinement completes
+        setState(() {
+          _particles.clear();
+          _criticalTexts.clear();
+        });
+        
+        HapticFeedback.heavyImpact();
+      } else {
+        // Light haptic feedback during animation
+        HapticFeedback.selectionClick();
+      }
+    });
 
-      // Spawn particles
-      _spawnParticles(result.isCritical);
-    }
+    HapticFeedback.mediumImpact(); 
 
-    // Clean up old particles and texts
-    _cleanupParticles();
+    // Reset after animation completes
+    Future.delayed(const Duration(milliseconds: 1600), () {
+      if (mounted) {
+        setState(() {
+          _isRefining = false;
+          _isCriticalHit = false;
+          _pendingFuel = 0.0;
+          _convertedFuel = 0.0;
+          _visualOreLevel = 0.0;
+        });
+        _cleanupParticles();
+      }
+    });
   }
 
   void _spawnParticles(bool isCritical) {
     if (!mounted) return;
     final screenSize = MediaQuery.of(context).size;
-    // Spawn from Center (Reactor) instead of bottom
-    final reactorPosition = Offset(screenSize.width / 2, screenSize.height / 2);
+    
+    // Calculate exact reactor position based on layout
+    // Reactor is centered in the available space (below TopBar, above button)
+    final topBarHeight = 75.0; // TopBar height
+    final buttonAreaHeight = 120.0; // Space for refine button
+    final availableHeight = screenSize.height - topBarHeight - buttonAreaHeight;
+    final reactorY = topBarHeight + (availableHeight / 2) + 80.0; // Move down 80px from exact center
+    final reactorX = screenSize.width / 2; // Center horizontally
+    
+    final reactorPosition = Offset(reactorX, reactorY);
 
     // Spawn cyan/gold particles flowing to the right side tab
     for (int i = 0; i < 4; i++) {
@@ -358,7 +486,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
                   ? 12.0
                   : 8.0 +
                       math.Random().nextDouble() * 8.0, // Bigger size (8-16)
-          lifetime: 2.5, // Increased lifetime to reach edge
+          lifetime: 1.5, // Reduced lifetime to prevent persistence after refinement
         ),
       );
     }
@@ -375,7 +503,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
             velocity: Offset(velocityX, velocityY),
             color: Colors.grey.withOpacity(0.4),
             size: 15.0, // Bigger smoke
-            lifetime: 3.0,
+            lifetime: 2.0, // Reduced lifetime for smoke particles
           ),
         );
       }
@@ -397,11 +525,14 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
     if (!mounted) return;
     final now = DateTime.now().millisecondsSinceEpoch / 1000.0;
 
-    _particles.removeWhere(
-      (particle) => now - particle.createdAt > particle.lifetime,
-    );
+    // Only cleanup if not actively refining (particles are cleared immediately on completion)
+    if (!_isRefining) {
+      _particles.removeWhere(
+        (particle) => now - particle.createdAt > particle.lifetime * 0.8, // Remove at 80% of lifetime
+      );
 
-    _criticalTexts.removeWhere((text) => now - text.createdAt > 1.5);
+      _criticalTexts.removeWhere((text) => now - text.createdAt > 1.0); // Remove critical texts sooner
+    }
 
     if (_particles.isNotEmpty || _criticalTexts.isNotEmpty) {
       setState(() {});
@@ -430,9 +561,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
     final glowColor = borderColor.withOpacity(0.35);
 
     return GestureDetector(
-      onTapDown: (_) => _startRefining(),
-      onTapUp: (_) => _stopRefining(),
-      onTapCancel: () => _stopRefining(),
+      onTap: _processSingleTap,
       child: ConstrainedBox(
         constraints: BoxConstraints(
           maxWidth: MediaQuery.of(context).size.width * 0.5,
@@ -488,9 +617,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
                       ),
                       child: Icon(
                         _isRefining
-                            ? (_isCriticalHit
-                                ? Icons.flash_on_rounded
-                                : Icons.autorenew_rounded)
+                            ? Icons.flash_on_rounded
                             : Icons.science_rounded,
                         color: Colors.white,
                         size: 22,
@@ -505,18 +632,12 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
                         AnimatedSwitcher(
                           duration: const Duration(milliseconds: 200),
                           child: Text(
-                            _isRefining
-                                ? (_isCriticalHit ? 'CRITICAL!' : 'REFINING')
-                                : 'REFINE',
-                            key: ValueKey(
-                              _isRefining ? _isCriticalHit : 'idle',
-                            ),
+                            _isRefining ? 'REFINING...' : 'REFINE',
+                            key: ValueKey(_isRefining ? 'active' : 'idle'),
                             style: TextStyle(
                               color:
                                   _isRefining
-                                      ? (_isCriticalHit
-                                          ? Colors.yellow
-                                          : activeColor)
+                                      ? activeColor
                                       : idleColor,
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
@@ -525,11 +646,209 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
                           ),
                         ),
                         Text(
-                          _isRefining ? 'Converting ore...' : '10 Ore per tick',
+                          '1000 Ore per tap',
                           style: TextStyle(
                             color: borderColor.withOpacity(0.6),
                             fontSize: 10,
                             letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResetButton() {
+    // Red theme for reset button (matching refine button structure)
+    final idleGradient = const LinearGradient(
+      colors: [Color(0xFF8B0000), Color(0xFFFF0000)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
+    final activeGradient = const LinearGradient(
+      colors: [Color(0xFF6D0B0B), Color(0xFFD32F2F)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
+    final activeColor = const Color(0xFFFF5252);
+    final idleColor = const Color(0xFFFF0000);
+    final borderColor = idleColor;
+    final glowColor = borderColor.withOpacity(0.35);
+
+    return GestureDetector(
+      onTap: () async {
+        // Show confirmation dialog
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: Colors.black,
+            title: Text(
+              'RESET ALL DATA?',
+              style: GoogleFonts.orbitron(
+                color: const Color(0xFF00D9FF),
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            content: Text(
+              'This will reset:\n• Reactor core to 0\n• Fuel to 0\n• All engineering levels to 1\n• Auto-injector to 0\n• User level to 1\n• All codex progress\n• All tutorial states',
+              style: GoogleFonts.shareTechMono(
+                color: Colors.white,
+                fontSize: 14,
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text(
+                  'CANCEL',
+                  style: GoogleFonts.shareTechMono(
+                    color: Colors.grey,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: Text(
+                  'RESET',
+                  style: GoogleFonts.shareTechMono(
+                    color: Colors.redAccent,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+
+        if (confirmed == true) {
+          // Perform the complete reset
+          await ref.read(refineryProvider.notifier).resetReactorCore();
+          await ref.read(userStatsProvider.notifier).resetUserProgress();
+          await ref.read(tutorialEngineProvider).clearAllTutorialStates();
+          
+          // Show success message
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('ALL DATA RESET SUCCESSFULLY'),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 2),
+              ),
+            );
+            
+            // Trigger reactor tutorial after reset
+            Future.delayed(const Duration(milliseconds: 1500), () {
+              if (!mounted) return;
+              
+              final engine = ref.read(tutorialEngineProvider);
+              if (!engine.hasSeenReactorTutorial) {
+                showGeneralDialog(
+                  context: context,
+                  barrierColor: const Color(0x44000000), // More transparent dark tint (26% opacity), NO BLUR
+                  barrierDismissible: false,
+                  pageBuilder: (ctx, anim1, anim2) => Scaffold(
+                    backgroundColor: Colors.transparent,
+                    body: TutorialOverlayWidget(
+                      dialogs: TutorialScripts.reactorCoreIntro,
+                      onComplete: () {
+                        if (ctx.mounted) Navigator.of(ctx).pop();
+                        engine.markReactorTutorialSeen();
+                      },
+                    ),
+                  ),
+                );
+              }
+            });
+          }
+        }
+      },
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.4,
+          minWidth: 120,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: BackdropFilter(
+            filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: idleColor.withOpacity(0.10),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: borderColor.withOpacity(0.45),
+                  width: 1.4,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: glowColor.withOpacity(0.22),
+                    blurRadius: 18,
+                    spreadRadius: 1,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Gradient icon circle
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: idleGradient,
+                        boxShadow: [
+                          BoxShadow(
+                            color: borderColor.withOpacity(0.50),
+                            blurRadius: 14,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.refresh_rounded,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    // Labels
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'RESET',
+                          style: TextStyle(
+                            color: idleColor,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                        Text(
+                          'DEV MODE',
+                          style: TextStyle(
+                            color: Colors.white54,
+                            fontSize: 10,
+                            fontWeight: FontWeight.normal,
+                            letterSpacing: 0.8,
                           ),
                         ),
                       ],

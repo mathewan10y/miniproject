@@ -94,7 +94,7 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
          if (script.isNotEmpty) {
              await showGeneralDialog(
                  context: context,
-                 barrierColor: Colors.black87,
+                 barrierColor: const Color(0x44000000), // More transparent dark tint (26% opacity), NO BLUR
                  pageBuilder: (ctx, anim1, anim2) => Scaffold(
                      backgroundColor: Colors.transparent, 
                      body: TutorialOverlayWidget(
@@ -121,6 +121,7 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
   Widget build(BuildContext context) {
     final stats   = ref.watch(userStatsProvider).valueOrNull;
     final isDev   = ref.watch(devModeProvider);
+    // Use user's actual level, boss fight completion logic will handle unlocking
     final maxLvl  = isDev ? 6 : (stats?.currentLevel ?? 1);
     final size    = MediaQuery.of(context).size;
     final narrow  = size.width < 620;
@@ -184,16 +185,17 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
         const Icon(Icons.auto_stories_outlined, color: Color(0xFF00D9FF), size: 18),
         const SizedBox(width: 8),
         Text(
-          narrow ? "CAPTAIN'S LOG" : "CAPTAIN'S LOG  ·  U.G.F. OPERATIONS MANUAL",
+          narrow ? "CAPTAIN'S LOG" : "CAPTAIN'S LOG",
           style: GoogleFonts.orbitron(color: const Color(0xFF00D9FF), fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.5),
+          overflow: TextOverflow.ellipsis,
         ),
         const Spacer(),
         if (isDev) ...[
           _badge('DEV', Colors.amber, Icons.developer_mode),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6), // Reduced spacing
         ],
         _badge('ONLINE', Colors.greenAccent, Icons.circle, iconSize: 8),
-        const SizedBox(width: 10),
+        const SizedBox(width: 8), // Reduced spacing
         _iconBtn(Icons.close, Colors.white38, () => Navigator.of(ctx).pop()),
       ]),
     );
@@ -213,7 +215,7 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
   );
 
   Widget _badge(String label, Color c, IconData icon, {double iconSize = 12}) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3), // Reduced padding
     decoration: BoxDecoration(
       color: c.withOpacity(0.08),
       border: Border.all(color: c.withOpacity(0.4)),
@@ -221,8 +223,8 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
     ),
     child: Row(mainAxisSize: MainAxisSize.min, children: [
       Icon(icon, color: c, size: iconSize),
-      const SizedBox(width: 5),
-      Text(label, style: GoogleFonts.shareTechMono(color: c, fontSize: 10)),
+      const SizedBox(width: 4), // Reduced spacing
+      Text(label, style: GoogleFonts.shareTechMono(color: c, fontSize: 9)), // Reduced font size
     ]),
   );
 
@@ -246,7 +248,7 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
                 Padding(
                   padding: const EdgeInsets.fromLTRB(14, 14, 14, 8),
                   child: Row(children: [
-                    Text('MISSION LEVELS', style: GoogleFonts.orbitron(color: Colors.white24, fontSize: 8, letterSpacing: 2)),
+                    Text('MISSION LEVELS', style: GoogleFonts.orbitron(color: Colors.white24, fontSize: 7, letterSpacing: 1.5)),
                   ]),
                 ),
                 Container(height: 1, color: Colors.white.withOpacity(0.06)),
@@ -260,7 +262,7 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
                 Padding(
                   padding: const EdgeInsets.all(12),
                   child: Text('U.G.F. OPERATIONS MANUAL v7.0',
-                    style: GoogleFonts.shareTechMono(color: Colors.white12, fontSize: 7, letterSpacing: 0.8)),
+                    style: GoogleFonts.shareTechMono(color: Colors.white12, fontSize: 6, letterSpacing: 0.6)),
                 ),
               ]),
             ),
@@ -300,7 +302,7 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             decoration: BoxDecoration(
               color: sel ? m.accent.withOpacity(0.1) : Colors.transparent,
               borderRadius: BorderRadius.circular(8),
@@ -324,11 +326,11 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
                   Text(m.title,
                     style: GoogleFonts.orbitron(
                       color: locked ? Colors.white24 : sel ? m.accent : Colors.white54,
-                      fontSize: 8, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                      fontSize: 7, fontWeight: FontWeight.bold, letterSpacing: 0.4),
                     overflow: TextOverflow.ellipsis),
                   Text(locked ? 'LOCKED' : m.subtitle,
                     style: GoogleFonts.shareTechMono(
-                      color: locked ? Colors.white12 : Colors.white30, fontSize: 8),
+                      color: locked ? Colors.white12 : Colors.white30, fontSize: 7),
                     overflow: TextOverflow.ellipsis),
                 ])),
               ]),

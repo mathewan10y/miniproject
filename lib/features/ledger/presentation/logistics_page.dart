@@ -12,6 +12,9 @@ import 'add_income_sheet.dart';
 import '../../gamification/presentation/widgets/top_bar.dart';
 import '../../sms_sync/presentation/sms_sync_button.dart';
 import '../../gamification/services/tutorial_keys.dart';
+import '../../gamification/services/tutorial_engine_service.dart';
+import '../../gamification/data/tutorial_scripts.dart';
+import '../../gamification/presentation/widgets/tutorial_overlay_widget.dart';
 
 class LogisticsPage extends ConsumerStatefulWidget {
   const LogisticsPage({super.key});
@@ -21,6 +24,7 @@ class LogisticsPage extends ConsumerStatefulWidget {
 }
 
 class _LogisticsPageState extends ConsumerState<LogisticsPage> {
+  final FocusNode _focusNode = FocusNode();
   DateTime _selectedDay = DateTime.now();
   DateTime _focusedDay = DateTime.now();
   bool _showAnalytics = false;
@@ -73,6 +77,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
   @override
   void dispose() {
     _weekStripController.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -93,7 +98,11 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
           child: Column(
             children: [
               // Header
-              const TopBar(title: 'LOGISTICS BAY', actions: SmsSyncButton()),
+              TopBar(
+                title: 'LOGISTICS BAY',
+                showCodex: false,
+                leftActions: const SmsSyncButton(),
+              ),
               // Content area - Transaction list or Analytics
               Expanded(
                 child: expensesAsync.when(
