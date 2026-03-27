@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'features/gamification/services/tutorial_engine_service.dart';
 import 'core/config/app_secrets.dart';
+import 'features/auth/login_screen.dart';
 import 'features/ledger/presentation/main_screen.dart';
 
 Future<void> main() async {
@@ -21,24 +22,11 @@ Future<void> main() async {
   // Initialize Supabase with credentials from .env
   await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
 
-  // Ensure an auth session exists — required for RLS on Flutter Web.
-  // If already signed in (persisted session), this is a no-op.
-  final auth = Supabase.instance.client.auth;
-  if (auth.currentSession == null) {
-    try {
-      await auth.signInAnonymously();
-    } catch (e) {
-      debugPrint('[Auth] Anonymous sign-in failed: $e');
-    }
-  }
-
   final prefs = await SharedPreferences.getInstance();
 
   runApp(
     ProviderScope(
-      overrides: [
-        sharedPreferencesProvider.overrideWithValue(prefs),
-      ],
+      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
       child: const CyberFinanceApp(),
     ),
   );
@@ -105,7 +93,69 @@ class CyberFinanceApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const MainScreen(),
+      home: const AuthGate(),
+    );
+  }
+}
+
+// ── Auth Gate ─────────────────────────────────────────────────────────────────
+
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<AuthState>(
+      stream: Supabase.instance.client.auth.onAuthStateChange,
+      builder: (context, snapshot) {
+        // Still waiting for the first auth event
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const _AuthLoadingScreen();
+        }
+
+        final session = snapshot.data?.session;
+        if (session != null) {
+          return const MainScreen();
+        }
+        return const LoginScreen();
+      },
+    );
+  }
+}
+
+// ── Themed Loading Screen (shown while auth state resolves) ───────────────────
+
+class _AuthLoadingScreen extends StatelessWidget {
+  const _AuthLoadingScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0A0E27),
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(
+              width: 48,
+              height: 48,
+              child: CircularProgressIndicator(
+                color: Color(0xFF00D9FF),
+                strokeWidth: 2.5,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'INITIALIZING SYSTEMS...',
+              style: GoogleFonts.orbitron(
+                fontSize: 12,
+                color: const Color(0xFF00D9FF).withAlpha(180),
+                letterSpacing: 3,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

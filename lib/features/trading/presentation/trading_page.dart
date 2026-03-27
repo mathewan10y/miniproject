@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -141,7 +141,7 @@ class _TradingPageState extends ConsumerState<TradingPage>
             takeProfit: tp,
           ),
           balanceAfter: balanceAfter,
-        );
+        ); // async — fire and update UI via state
 
     _showSnack(
       'LONG ${qty.toStringAsFixed(2)} ${widget.asset.symbol} @ â‚¹${price.toStringAsFixed(2)}',
@@ -196,7 +196,7 @@ class _TradingPageState extends ConsumerState<TradingPage>
             takeProfit: tp,
           ),
           balanceAfter: balanceAfter,
-        );
+        ); // async — fire and update UI via state
 
     _showSnack(
       'SHORT ${qty.toStringAsFixed(2)} ${widget.asset.symbol} @ â‚¹${price.toStringAsFixed(2)}',
@@ -204,7 +204,7 @@ class _TradingPageState extends ConsumerState<TradingPage>
     );
   }
 
-  void _closePositionById(String positionId) {
+  Future<void> _closePositionById(String positionId) async {
     final portfolio = ref.read(portfolioProvider.notifier);
     final existing = portfolio.getPositionById(positionId);
     if (existing == null) return;
@@ -222,7 +222,7 @@ class _TradingPageState extends ConsumerState<TradingPage>
 
     final balanceAfter =
         ref.read(refineryProvider).valueOrNull?.refinedFuel ?? 0.0;
-    portfolio.closePosition(
+    await portfolio.closePosition(
       positionId,
       currentPrice,
       balanceAfter: balanceAfter,
@@ -292,7 +292,8 @@ class _TradingPageState extends ConsumerState<TradingPage>
 
 
     final stats = ref.watch(refineryProvider).valueOrNull;
-    final portfolioState = ref.watch(portfolioProvider);
+    final portfolioState =
+        ref.watch(portfolioProvider).valueOrNull ?? const PortfolioState();
 
     // Compute account stats
     final balance = stats?.refinedFuel ?? 0.0;

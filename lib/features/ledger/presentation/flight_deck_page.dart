@@ -1532,7 +1532,8 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
 
   Widget _buildTradeManagerPanel() {
     final stats = ref.watch(refineryProvider).valueOrNull;
-    final portfolioState = ref.watch(portfolioProvider);
+    final portfolioState =
+        ref.watch(portfolioProvider).valueOrNull ?? const PortfolioState();
     final balance = stats?.refinedFuel ?? 0.0;
     final currentPrice = _selectedAsset?.currentPrice ?? 0;
     final unrealizedPnl = portfolioState.positions.fold(
@@ -1727,7 +1728,8 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
   }
 
   Widget _buildPositionsPanel() {
-    final portfolioState = ref.watch(portfolioProvider);
+    final portfolioState =
+        ref.watch(portfolioProvider).valueOrNull ?? const PortfolioState();
     final positions = portfolioState.positions;
     final currentPrice = _selectedAsset?.currentPrice ?? 0;
 
@@ -1846,7 +1848,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                   ),
                 ),
                 GestureDetector(
-                  onTap: () {
+                  onTap: () async {
                     final p = ref
                         .read(portfolioProvider.notifier)
                         .getPositionById(pos.id);
@@ -1861,7 +1863,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                             .valueOrNull
                             ?.refinedFuel ??
                         0.0;
-                    ref
+                    await ref
                         .read(portfolioProvider.notifier)
                         .closePosition(pos.id, currentPrice, balanceAfter: bal);
                     _resetTrade();
@@ -1893,7 +1895,8 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
   }
 
   Widget _buildHistoryPanel() {
-    final portfolioState = ref.watch(portfolioProvider);
+    final portfolioState =
+        ref.watch(portfolioProvider).valueOrNull ?? const PortfolioState();
     final history = portfolioState.history;
 
     if (history.isEmpty) {
@@ -2033,7 +2036,8 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
   }
 
   Widget _buildBalanceHistoryPanel() {
-    final portfolioState = ref.watch(portfolioProvider);
+    final portfolioState =
+        ref.watch(portfolioProvider).valueOrNull ?? const PortfolioState();
     final events = portfolioState.balanceHistory;
 
     if (events.isEmpty) {
