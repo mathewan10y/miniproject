@@ -3,6 +3,7 @@ import '../domain/models/open_position.dart';
 import '../domain/models/trade_history_item.dart';
 import 'market_service.dart';
 import '../../../core/providers/refinery_provider.dart';
+import '../../../core/database/database.dart';
 
 /// Holds active positions, closed-trade history, and balance events.
 class PortfolioState {
@@ -39,35 +40,67 @@ class PortfolioState {
       history.fold(0.0, (sum, h) => sum + h.realizedPnl);
 }
 
-class PortfolioNotifier extends Notifier<PortfolioState> {
+class PortfolioNotifier extends AsyncNotifier<PortfolioState> {
+  final _db = AppDatabase();
+
   @override
-  PortfolioState build() => const PortfolioState();
+  Future<PortfolioState> build() async {
+    try {
+      final positions = await _db.getAllOpenPositions();
+      final history = await _db.getAllTradeHistory();
+      return PortfolioState(
+        positions: positions,
+        history: history,
+        balanceHistory: const [],
+      );
+    } catch (e) {
+      // On fetch failure, start with empty state rather than crashing.
+      print('[PortfolioNotifier] build() fetch failed: $e');
+      return const PortfolioState();
+    }
+  }
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+
+  /// Returns the current synced state, or empty if still loading.
+  PortfolioState get _current => state.valueOrNull ?? const PortfolioState();
 
   /// Open a new long/short position (multiple positions per asset allowed).
-  void openPosition(OpenPosition position, {double? balanceAfter}) {
-    state = state.copyWith(
-      positions: [...state.positions, position],
-      balanceHistory: [
-        ...state.balanceHistory,
-        BalanceEvent(
-          timestamp: DateTime.now(),
-          balanceAfter: balanceAfter ?? 0,
-          delta: -(position.totalCost),
-          description:
-              'Opened ${position.isLong ? "LONG" : "SHORT"} ${position.assetSymbol} x${position.quantity.toStringAsFixed(2)}',
-        ),
-      ],
+  Future<void> openPosition(OpenPosition position,
+      {double? balanceAfter}) async {
+    try {
+      await _db.addOpenPosition(position);
+    } catch (e) {
+      print('[PortfolioNotifier] openPosition Supabase insert failed: $e');
+      // Proceed with local update even if remote fails (best-effort)
+    }
+    final current = _current;
+    state = AsyncData(
+      current.copyWith(
+        positions: [...current.positions, position],
+        balanceHistory: [
+          ...current.balanceHistory,
+          BalanceEvent(
+            timestamp: DateTime.now(),
+            balanceAfter: balanceAfter ?? 0,
+            delta: -(position.totalCost),
+            description:
+                'Opened ${position.isLong ? "LONG" : "SHORT"} ${position.assetSymbol} x${position.quantity.toStringAsFixed(2)}',
+          ),
+        ],
+      ),
     );
   }
 
   /// Close a specific position by its unique [positionId].
   /// Returns realized P&L in INR, or null if not found.
-  double? closePosition(String positionId, double currentPriceInr,
-      {double? balanceAfter}) {
-    final index = state.positions.indexWhere((p) => p.id == positionId);
+  Future<double?> closePosition(String positionId, double currentPriceInr,
+      {double? balanceAfter}) async {
+    final current = _current;
+    final index = current.positions.indexWhere((p) => p.id == positionId);
     if (index == -1) return null;
 
-    final position = state.positions[index];
+    final position = current.positions[index];
     final pnl = position.realizedPnl(currentPriceInr);
 
     final historyItem = TradeHistoryItem(
@@ -84,33 +117,45 @@ class PortfolioNotifier extends Notifier<PortfolioState> {
       closedAt: DateTime.now(),
     );
 
-    final updatedPositions = [...state.positions]..removeAt(index);
-    state = state.copyWith(
-      positions: updatedPositions,
-      history: [...state.history, historyItem],
-      balanceHistory: [
-        ...state.balanceHistory,
-        BalanceEvent(
-          timestamp: DateTime.now(),
-          balanceAfter: balanceAfter ?? 0,
-          delta: position.totalCost + pnl,
-          description:
-              'Closed ${position.assetSymbol} · P&L: ${pnl >= 0 ? "+" : ""}₹${pnl.toStringAsFixed(2)}',
-        ),
-      ],
+    // Persist to Supabase (best-effort)
+    try {
+      await Future.wait([
+        _db.deleteOpenPosition(positionId),
+        _db.addTradeHistory(historyItem),
+      ]);
+    } catch (e) {
+      print('[PortfolioNotifier] closePosition Supabase ops failed: $e');
+    }
+
+    final updatedPositions = [...current.positions]..removeAt(index);
+    state = AsyncData(
+      current.copyWith(
+        positions: updatedPositions,
+        history: [...current.history, historyItem],
+        balanceHistory: [
+          ...current.balanceHistory,
+          BalanceEvent(
+            timestamp: DateTime.now(),
+            balanceAfter: balanceAfter ?? 0,
+            delta: position.totalCost + pnl,
+            description:
+                'Closed ${position.assetSymbol} · P&L: ${pnl >= 0 ? "+" : ""}₹${pnl.toStringAsFixed(2)}',
+          ),
+        ],
+      ),
     );
     return pnl;
   }
 
   /// Get all open positions for a given [assetId].
   List<OpenPosition> getPositionsForAsset(String assetId) {
-    return state.positions.where((p) => p.assetId == assetId).toList();
+    return _current.positions.where((p) => p.assetId == assetId).toList();
   }
 
   /// Get a single position by its unique [positionId].
   OpenPosition? getPositionById(String positionId) {
     try {
-      return state.positions.firstWhere((p) => p.id == positionId);
+      return _current.positions.firstWhere((p) => p.id == positionId);
     } catch (_) {
       return null;
     }
@@ -118,7 +163,7 @@ class PortfolioNotifier extends Notifier<PortfolioState> {
 }
 
 final portfolioProvider =
-    NotifierProvider<PortfolioNotifier, PortfolioState>(() {
+    AsyncNotifierProvider<PortfolioNotifier, PortfolioState>(() {
   return PortfolioNotifier();
 });
 
@@ -136,7 +181,9 @@ final autoTradeWatcherProvider = Provider<void>((ref) {
       if (liveAssets == null) return;
 
       final portfolioNotifier = ref.read(portfolioProvider.notifier);
-      final positions = ref.read(portfolioProvider).positions;
+      // Read positions from the async state's value
+      final positions =
+          ref.read(portfolioProvider).valueOrNull?.positions ?? [];
 
       for (final position in positions) {
         try {
@@ -145,25 +192,32 @@ final autoTradeWatcherProvider = Provider<void>((ref) {
 
           bool shouldClose = false;
           if (position.isLong) {
-            if (position.stopLoss != null && currentPrice <= position.stopLoss!) {
+            if (position.stopLoss != null &&
+                currentPrice <= position.stopLoss!) {
               shouldClose = true;
             }
-            if (position.takeProfit != null && currentPrice >= position.takeProfit!) {
+            if (position.takeProfit != null &&
+                currentPrice >= position.takeProfit!) {
               shouldClose = true;
             }
           } else {
-            if (position.stopLoss != null && currentPrice >= position.stopLoss!) {
+            if (position.stopLoss != null &&
+                currentPrice >= position.stopLoss!) {
               shouldClose = true;
             }
-            if (position.takeProfit != null && currentPrice <= position.takeProfit!) {
+            if (position.takeProfit != null &&
+                currentPrice <= position.takeProfit!) {
               shouldClose = true;
             }
           }
 
-          if (shouldClose && portfolioNotifier.getPositionById(position.id) != null) {
+          if (shouldClose &&
+              portfolioNotifier.getPositionById(position.id) != null) {
             final pnl = position.realizedPnl(currentPrice);
             ref.read(refineryProvider.notifier).addFuel(position.totalCost + pnl);
             final stats = ref.read(refineryProvider).valueOrNull;
+            // closePosition is async — fire and forget (the Future will run
+            // independently; Supabase ops are best-effort in the watcher).
             portfolioNotifier.closePosition(
               position.id,
               currentPrice,
@@ -177,4 +231,3 @@ final autoTradeWatcherProvider = Provider<void>((ref) {
     },
   );
 });
-

@@ -1,4 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../features/trading/domain/models/open_position.dart';
+import '../../features/trading/domain/models/trade_history_item.dart';
 
 // ─── Re-export models so existing providers don't need import changes ─────────
 export '../../core/models/expense_model.dart' show ExpenseModel;
@@ -115,7 +117,9 @@ class AppDatabase {
 
   Future<void> addExpense(Expense expense) async {
     try {
-      await _client.from('expenses').insert(expense.toJson());
+      final userId = Supabase.instance.client.auth.currentUser!.id;
+      final json = expense.toJson()..['user_id'] = userId;
+      await _client.from('expenses').insert(json);
     } catch (e) {
       throw Exception('Failed to add expense: $e');
     }
@@ -147,9 +151,11 @@ class AppDatabase {
 
   Future<void> updateExpense(Expense expense) async {
     try {
+      final userId = Supabase.instance.client.auth.currentUser!.id;
+      final json = expense.toJson()..['user_id'] = userId;
       await _client
           .from('expenses')
-          .update(expense.toJson())
+          .update(json)
           .eq('id', expense.id);
     } catch (e) {
       throw Exception('Failed to update expense: $e');
@@ -194,7 +200,9 @@ class AppDatabase {
 
   Future<void> addIncome(Income income) async {
     try {
-      await _client.from('incomes').insert(income.toJson());
+      final userId = Supabase.instance.client.auth.currentUser!.id;
+      final json = income.toJson()..['user_id'] = userId;
+      await _client.from('incomes').insert(json);
     } catch (e) {
       throw Exception('Failed to add income: $e');
     }
@@ -224,7 +232,9 @@ class AppDatabase {
 
   Future<void> updateIncome(Income income) async {
     try {
-      await _client.from('incomes').update(income.toJson()).eq('id', income.id);
+      final userId = Supabase.instance.client.auth.currentUser!.id;
+      final json = income.toJson()..['user_id'] = userId;
+      await _client.from('incomes').update(json).eq('id', income.id);
     } catch (e) {
       throw Exception('Failed to update income: $e');
     }
@@ -263,4 +273,67 @@ class AppDatabase {
       throw Exception('Failed to get incomes by date range: $e');
     }
   }
+
+  // ── Open Positions API ───────────────────────────────────────────────────────
+
+  Future<void> addOpenPosition(OpenPosition position) async {
+    try {
+      final userId = Supabase.instance.client.auth.currentUser!.id;
+      final json = position.toJson()..['user_id'] = userId;
+      await _client.from('open_positions').insert(json);
+    } catch (e) {
+      throw Exception('Failed to add open position: $e');
+    }
+  }
+
+  Future<void> deleteOpenPosition(String id) async {
+    try {
+      await _client.from('open_positions').delete().eq('id', id);
+    } catch (e) {
+      throw Exception('Failed to delete open position: $e');
+    }
+  }
+
+  Future<List<OpenPosition>> getAllOpenPositions() async {
+    try {
+      final rows = await _client
+          .from('open_positions')
+          .select()
+          .order('opened_at', ascending: true);
+      return (rows as List)
+          .map((r) => OpenPosition.fromJson(r as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      print('[AppDatabase] getAllOpenPositions failed: $e');
+      return [];
+    }
+  }
+
+  // ── Trade History API ────────────────────────────────────────────────────────
+
+  Future<void> addTradeHistory(TradeHistoryItem trade) async {
+    try {
+      final userId = Supabase.instance.client.auth.currentUser!.id;
+      final json = trade.toJson()..['user_id'] = userId;
+      await _client.from('trade_history').insert(json);
+    } catch (e) {
+      throw Exception('Failed to add trade history: $e');
+    }
+  }
+
+  Future<List<TradeHistoryItem>> getAllTradeHistory() async {
+    try {
+      final rows = await _client
+          .from('trade_history')
+          .select()
+          .order('closed_at', ascending: false);
+      return (rows as List)
+          .map((r) => TradeHistoryItem.fromJson(r as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      print('[AppDatabase] getAllTradeHistory failed: $e');
+      return [];
+    }
+  }
 }
+
