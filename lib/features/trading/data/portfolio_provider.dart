@@ -147,6 +147,20 @@ class PortfolioNotifier extends AsyncNotifier<PortfolioState> {
     return pnl;
   }
 
+  /// Completely resets the portfolio data both locally and remotely.
+  Future<void> resetPortfolio() async {
+    try {
+      await Future.wait([
+        _db.clearAllOpenPositions(),
+        _db.clearAllTradeHistory(),
+      ]);
+    } catch (e) {
+      print('[PortfolioNotifier] resetPortfolio Supabase ops failed: $e');
+    }
+
+    state = const AsyncData(PortfolioState());
+  }
+
   /// Get all open positions for a given [assetId].
   List<OpenPosition> getPositionsForAsset(String assetId) {
     return _current.positions.where((p) => p.assetId == assetId).toList();

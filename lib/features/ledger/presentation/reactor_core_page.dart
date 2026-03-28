@@ -17,6 +17,9 @@ import '../../gamification/user_stats_provider.dart';
 import '../../gamification/services/tutorial_engine_service.dart';
 import '../../gamification/data/tutorial_scripts.dart';
 import '../../gamification/presentation/widgets/tutorial_overlay_widget.dart';
+import '../../../core/services/audio_service.dart';
+import '../../trading/data/flight_deck_state_provider.dart';
+import '../../trading/data/portfolio_provider.dart';
 
 class ReactorCorePage extends ConsumerStatefulWidget {
   const ReactorCorePage({super.key});
@@ -431,6 +434,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
         });
         
         HapticFeedback.heavyImpact();
+        ref.read(audioServiceProvider).playSound('refine.mp3');
       } else {
         // Light haptic feedback during animation
         HapticFeedback.selectionClick();
@@ -735,6 +739,9 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
           await ref.read(refineryProvider.notifier).resetReactorCore();
           await ref.read(userStatsProvider.notifier).resetUserProgress();
           await ref.read(tutorialEngineProvider).clearAllTutorialStates();
+          
+          ref.read(flightDeckChartProvider.notifier).clearChart();
+          await ref.read(portfolioProvider.notifier).resetPortfolio();
           
           // Show success message
           if (mounted) {

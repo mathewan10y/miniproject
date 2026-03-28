@@ -20,6 +20,7 @@ import '../../trading/data/flight_deck_state_provider.dart';
 import '../../gamification/services/tutorial_engine_service.dart';
 import '../../gamification/data/tutorial_scripts.dart';
 import '../../gamification/presentation/widgets/tutorial_overlay_widget.dart';
+import '../../../core/services/audio_service.dart';
 
 class FlightDeckPage extends ConsumerStatefulWidget {
   const FlightDeckPage({super.key});
@@ -317,6 +318,20 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
       if (nextFuel > prevFuel) {
         _spawnIncomingParticles();
         _fuelAnimationController.forward(from: 0.0);
+      }
+    });
+
+    ref.listen(flightDeckChartProvider, (previous, next) {
+      if (previous?.hasData == true && !next.hasData) {
+        setState(() {
+          _selectedAsset = null;
+          _candles.clear();
+          _tradeMode = TradeMode.none;
+          _entryPrice = null;
+          _slPrice = null;
+          _tpPrice = null;
+          _tradeQuantity = 1.0;
+        });
       }
     });
 
@@ -2263,6 +2278,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
         final isLong = label == "BUY";
 
         if (!canAfford) {
+          ref.read(audioServiceProvider).playSound('error.mp3');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -2283,6 +2299,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
         final statsNotifier = ref.read(refineryProvider.notifier);
         final success = statsNotifier.deductFuel(cost);
         if (!success) {
+          ref.read(audioServiceProvider).playSound('error.mp3');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -2312,6 +2329,8 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
               ),
               balanceAfter: balAfter,
             );
+
+        ref.read(audioServiceProvider).playSound('trade.mp3');
 
         setState(() {
           _tradeMode = isLong ? TradeMode.long : TradeMode.short;

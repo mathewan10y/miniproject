@@ -6,6 +6,7 @@ import '../providers/bot_chat_provider.dart';
 import 'academy_codex_dialog.dart';
 import '../../user_stats_provider.dart';
 import '../../services/tutorial_keys.dart';
+import '../../../settings/presentation/settings_page.dart';
 
 class TopBar extends ConsumerWidget {
   final String title;
@@ -122,9 +123,9 @@ class TopBar extends ConsumerWidget {
                       const SizedBox(width: 2),
                     ],
                     
-                    // Dev / User mode toggle
+                    // Settings Button (Previously DevMode toggle)
                     if (showDevMode) ...[
-                      const _DevModeToggle(),
+                      const _SettingsButton(),
                       const SizedBox(width: 2),
                     ],
                     
@@ -565,57 +566,44 @@ class _BotChatPanelState extends ConsumerState<BotChatPanel> {
   }
 }
 
-// ─── Dev / User Mode Toggle ───────────────────────────────────────────────────
+// ─── Settings Button ─────────────────────────────────────────────────────────
 
-class _DevModeToggle extends ConsumerWidget {
-  const _DevModeToggle();
+class _SettingsButton extends ConsumerWidget {
+  const _SettingsButton();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isDevMode = ref.watch(devModeProvider);
-
     return GestureDetector(
       onTap: () {
-        ref.read(devModeProvider.notifier).state = !isDevMode;
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const SettingsPage()),
+        );
       },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), // Reduced padding to fix overflow
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: isDevMode
-              ? Colors.amber.withOpacity(0.12)
-              : Colors.white.withOpacity(0.04),
+          color: Colors.white.withOpacity(0.04),
           border: Border.all(
-            color: isDevMode
-                ? Colors.amber.withOpacity(0.6)
-                : Colors.white.withOpacity(0.15),
+            color: Colors.white.withOpacity(0.15),
             width: 1,
           ),
           borderRadius: BorderRadius.circular(6),
-          boxShadow: isDevMode
-              ? [
-                  BoxShadow(
-                    color: Colors.amber.withOpacity(0.2),
-                    blurRadius: 8,
-                    spreadRadius: 1,
-                  ),
-                ]
-              : [],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              isDevMode ? Icons.developer_mode : Icons.person_outline,
-              color: isDevMode ? Colors.amber : Colors.white38,
-              size: 16, // Much larger icon
+            const Icon(
+              Icons.settings,
+              color: Colors.white54,
+              size: 16,
             ),
-            const SizedBox(width: 2),
+            const SizedBox(width: 4),
             Text(
-              isDevMode ? 'DEV' : 'USER',
+              'SYS',
               style: GoogleFonts.orbitron(
-                color: isDevMode ? Colors.amber : Colors.white38,
-                fontSize: 11, // Much larger font
+                color: Colors.white54,
+                fontSize: 11,
                 fontWeight: FontWeight.bold,
               ),
             ),
