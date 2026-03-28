@@ -309,6 +309,14 @@ class AppDatabase {
     }
   }
 
+  Future<void> clearAllOpenPositions() async {
+    try {
+      await _client.from('open_positions').delete().neq('id', 'dummy_id_to_delete_all'); // Use neq to delete all
+    } catch (e) {
+      throw Exception('Failed to clear all open positions: $e');
+    }
+  }
+
   // ── Trade History API ────────────────────────────────────────────────────────
 
   Future<void> addTradeHistory(TradeHistoryItem trade) async {
@@ -333,6 +341,14 @@ class AppDatabase {
     } catch (e) {
       print('[AppDatabase] getAllTradeHistory failed: $e');
       return [];
+    }
+  }
+
+  Future<void> clearAllTradeHistory() async {
+    try {
+      await _client.from('trade_history').delete().neq('id', 'dummy_id_to_delete_all');
+    } catch (e) {
+      throw Exception('Failed to clear all trade history: $e');
     }
   }
 }

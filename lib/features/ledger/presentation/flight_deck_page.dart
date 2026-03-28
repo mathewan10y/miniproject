@@ -320,6 +320,16 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
       }
     });
 
+    ref.listen(flightDeckChartProvider, (previous, next) {
+      if (!next.hasData && mounted && _selectedAsset != null) {
+        setState(() {
+          _selectedAsset = null;
+          _candles = [];
+          _resetTrade();
+        });
+      }
+    });
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(

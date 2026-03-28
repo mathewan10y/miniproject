@@ -160,6 +160,20 @@ class PortfolioNotifier extends AsyncNotifier<PortfolioState> {
       return null;
     }
   }
+
+  /// Reset the entire portfolio (positions and history) locally and in DB.
+  Future<void> resetPortfolio() async {
+    try {
+      await Future.wait([
+        _db.clearAllOpenPositions(),
+        _db.clearAllTradeHistory(),
+      ]);
+    } catch (e) {
+      print('[PortfolioNotifier] resetPortfolio Supabase ops failed: $e');
+    }
+
+    state = const AsyncData(PortfolioState());
+  }
 }
 
 final portfolioProvider =
