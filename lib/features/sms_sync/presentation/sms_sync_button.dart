@@ -5,6 +5,7 @@ import '../../../features/ledger/expense_provider.dart';
 import '../../../features/ledger/income_provider.dart';
 import '../services/sms_fetch_service.dart';
 import '../services/sms_llm_processor.dart';
+import '../../../core/services/audio_service.dart';
 
 /// A fully self-contained, drop-in button that:
 /// 1. Guards platform support (web, iOS, desktop) — shows a Snackbar if unsupported
@@ -34,6 +35,7 @@ class _SmsSyncButtonState extends ConsumerState<SmsSyncButton> {
   bool _isLoading = false;
 
   Future<void> _onTap() async {
+    ref.read(audioServiceProvider).playSound('buttontap.ogg');
     setState(() => _isLoading = true);
 
     try {

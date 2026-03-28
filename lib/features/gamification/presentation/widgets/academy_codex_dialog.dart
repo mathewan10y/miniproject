@@ -7,6 +7,7 @@ import '../../user_stats_provider.dart';
 import '../../services/tutorial_engine_service.dart';
 import '../../data/tutorial_scripts.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import '../../../../core/services/audio_service.dart';
 import 'tutorial_overlay_widget.dart';
 import 'mini_quiz_sheet.dart';
 import '../pages/boss_fight_screen.dart';
@@ -196,7 +197,10 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
         ],
         _badge('ONLINE', Colors.greenAccent, Icons.circle, iconSize: 8),
         const SizedBox(width: 8), // Reduced spacing
-        _iconBtn(Icons.close, Colors.white38, () => Navigator.of(ctx).pop()),
+        _iconBtn(Icons.close, Colors.white38, () {
+          ref.read(audioServiceProvider).playSound('buttontap.ogg');
+          Navigator.of(ctx).pop();
+        }),
       ]),
     );
   }
@@ -296,6 +300,7 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
       children: [
         GestureDetector(
           onTap: locked ? null : () {
+            ref.read(audioServiceProvider).playSound('buttontap.ogg');
             _select(m.level);
             if (narrow && !_navCollapsed) _toggleNav();
           },

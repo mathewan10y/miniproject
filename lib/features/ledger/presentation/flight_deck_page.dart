@@ -593,9 +593,10 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
           child:
               _selectedAsset != null
                   ? GestureDetector(
-                    onTap:
-                        () =>
-                            showStockAnalysisOverlay(context, _selectedAsset!),
+                    onTap: () {
+                      ref.read(audioServiceProvider).playSound('analyse.mp3');
+                      showStockAnalysisOverlay(context, _selectedAsset!);
+                    },
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: BackdropFilter(
@@ -1114,7 +1115,10 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
 
             // 4. Close (Entire Trade)
             _buildControlItem(
-              onTap: _resetTrade,
+              onTap: () {
+                ref.read(audioServiceProvider).playSound('buttontap.ogg');
+                _resetTrade();
+              },
               child: const Icon(Icons.close, color: Colors.white, size: 16),
               borderColor: Colors.transparent,
             ),
@@ -2223,7 +2227,10 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
         ),
         const SizedBox(width: 16),
         GestureDetector(
-          onTap: _resetTrade,
+          onTap: () {
+            ref.read(audioServiceProvider).playSound('buttontap.ogg');
+            _resetTrade();
+          },
           child: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
@@ -2275,10 +2282,10 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
 
     return GestureDetector(
       onTap: () {
+        ref.read(audioServiceProvider).playSound('buttontap.ogg');
         final isLong = label == "BUY";
 
         if (!canAfford) {
-          ref.read(audioServiceProvider).playSound('error.mp3');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -2299,7 +2306,6 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
         final statsNotifier = ref.read(refineryProvider.notifier);
         final success = statsNotifier.deductFuel(cost);
         if (!success) {
-          ref.read(audioServiceProvider).playSound('error.mp3');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -2330,7 +2336,8 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
               balanceAfter: balAfter,
             );
 
-        ref.read(audioServiceProvider).playSound('trade.mp3');
+        // Success sound override for trade
+        ref.read(audioServiceProvider).playSound('buysell.ogg');
 
         setState(() {
           _tradeMode = isLong ? TradeMode.long : TradeMode.short;
@@ -2490,7 +2497,10 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                 ),
                 const SizedBox(width: 8),
                 GestureDetector(
-                  onTap: () => onUpdate(null), // Close
+                  onTap: () {
+                    ref.read(audioServiceProvider).playSound('buttontap.ogg');
+                    onUpdate(null);
+                  }, // Close
                   child: const Icon(
                     Icons.close,
                     color: Colors.white54,
@@ -2522,6 +2532,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
               return GestureDetector(
                 onTap: () {
                   if (isSelected) return;
+                  ref.read(audioServiceProvider).playSound('buttontap.ogg');
                   setState(() => _selectedInterval = interval);
                   if (_selectedAsset != null) _loadHistory(_selectedAsset!);
                 },
@@ -2613,7 +2624,10 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
     bool isDevMode,
   ) {
     return GestureDetector(
-      onTap: () => _showSectorModal(context, assets, label, color, types, userLevel, isDevMode),
+      onTap: () {
+        ref.read(audioServiceProvider).playSound('sectors.mp3');
+        _showSectorModal(context, assets, label, color, types, userLevel, isDevMode);
+      },
       child: Container(
         decoration: BoxDecoration(
           color: color.withOpacity(0.1),
@@ -2767,7 +2781,7 @@ class _CrosshairPainter extends CustomPainter {
       oldDelegate.position != position;
 }
 
-class _DataPadModal extends StatefulWidget {
+class _DataPadModal extends ConsumerStatefulWidget {
   final List<MarketAsset> assets;
   final String sectorName;
   final Color sectorColor;
@@ -2787,10 +2801,10 @@ class _DataPadModal extends StatefulWidget {
   });
 
   @override
-  State<_DataPadModal> createState() => _DataPadModalState();
+  ConsumerState<_DataPadModal> createState() => _DataPadModalState();
 }
 
-class _DataPadModalState extends State<_DataPadModal> {
+class _DataPadModalState extends ConsumerState<_DataPadModal> {
   String _searchQuery = "";
   late Set<AssetSubType> _selectedSubTypes;
 
@@ -2951,7 +2965,10 @@ class _DataPadModalState extends State<_DataPadModal> {
                         Opacity(
                           opacity: isLocked ? 0.4 : 1.0,
                           child: ListTile(
-                            onTap: isLocked ? null : () => widget.onAssetSelected(asset),
+                            onTap: isLocked ? null : () {
+                              ref.read(audioServiceProvider).playSound('buttontap.ogg');
+                              widget.onAssetSelected(asset);
+                            },
                             tileColor: Colors.white.withOpacity(0.05),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),

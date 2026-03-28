@@ -146,6 +146,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
                                         child: InkWell(
                                           borderRadius: BorderRadius.circular(6),
                                           onTap: () {
+                                            ref.read(audioServiceProvider).playSound('buttontap.ogg');
                                             showDialog(
                                               context: context,
                                               barrierColor: Colors.black87,
@@ -357,7 +358,10 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
 
   // Refinery Methods
   void _processSingleTap() {
-    if (_isRefining) return; // Brief debounce to prevent animation clipping
+    if (!mounted || _isRefining) return;
+    
+    // Play sound instantly on button tap
+    ref.read(audioServiceProvider).playSound('refine.mp3');
 
     final refineryNotifier = ref.read(refineryProvider.notifier);
     final refineryState = ref.read(refineryProvider).valueOrNull;
@@ -434,7 +438,6 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
         });
         
         HapticFeedback.heavyImpact();
-        ref.read(audioServiceProvider).playSound('refine.mp3');
       } else {
         // Light haptic feedback during animation
         HapticFeedback.selectionClick();
@@ -688,6 +691,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
 
     return GestureDetector(
       onTap: () async {
+        ref.read(audioServiceProvider).playSound('reset.mp3');
         // Show confirmation dialog
         final confirmed = await showDialog<bool>(
           context: context,

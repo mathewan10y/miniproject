@@ -15,6 +15,7 @@ import '../../gamification/services/tutorial_keys.dart';
 import '../../gamification/services/tutorial_engine_service.dart';
 import '../../gamification/data/tutorial_scripts.dart';
 import '../../gamification/presentation/widgets/tutorial_overlay_widget.dart';
+import '../../../core/services/audio_service.dart';
 
 class LogisticsPage extends ConsumerStatefulWidget {
   const LogisticsPage({super.key});
@@ -163,16 +164,14 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
   }
 
   void _openAddExpenseSheet(BuildContext context) {
+    ref.read(audioServiceProvider).playSound('buttontap.ogg');
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       builder:
           (ctx) => AddExpenseSheet(
             onExpenseAdded: (double amount) {
-              // Deduct from total savings
               final refineryNotifier = ref.read(refineryProvider.notifier);
-              // Note: We'll need to add a method to deduct from savings
-              // For now, this is a placeholder for the logic
               _showExpenseDeductionSnackBar(context, amount);
             },
           ),
@@ -180,19 +179,17 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
   }
 
   void _openAddIncomeSheet(BuildContext context) {
+    ref.read(audioServiceProvider).playSound('buttontap.ogg');
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       builder:
           (ctx) => AddIncomeSheet(
             onIncomeAdded: (double amount) {
-              // Calculate ore from income
               final refineryNotifier = ref.read(refineryProvider.notifier);
               final oreGenerated = refineryNotifier.calculateOreFromIncome(
                 amount,
               );
-
-              // Show mining success notification
               _showMiningSuccessSnackBar(context, amount, oreGenerated);
             },
           ),
@@ -459,38 +456,62 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
                 ),
               ),
               // EXP / INC pie-mode chips
-              _buildMiniChip(
-                label: 'EXP',
-                active: _pieChartMode == 'expenses',
-                activeColor: Colors.orange,
-                onTap: () => setState(() => _pieChartMode = 'expenses'),
-                isCompact: isCompact,
+              GestureDetector(
+                onTap: () {
+                  ref.read(audioServiceProvider).playSound('buttontap.ogg');
+                  setState(() => _pieChartMode = 'expenses');
+                },
+                child: _buildMiniChip(
+                  label: 'EXP',
+                  active: _pieChartMode == 'expenses',
+                  activeColor: Colors.orange,
+                  onTap: () {},
+                  isCompact: isCompact,
+                ),
               ),
               const SizedBox(width: 4),
-              _buildMiniChip(
-                label: 'INC',
-                active: _pieChartMode == 'incomes',
-                activeColor: const Color(0xFF00E676),
-                onTap: () => setState(() => _pieChartMode = 'incomes'),
-                isCompact: isCompact,
+              GestureDetector(
+                onTap: () {
+                  ref.read(audioServiceProvider).playSound('buttontap.ogg');
+                  setState(() => _pieChartMode = 'incomes');
+                },
+                child: _buildMiniChip(
+                  label: 'INC',
+                  active: _pieChartMode == 'incomes',
+                  activeColor: const Color(0xFF00E676),
+                  onTap: () {},
+                  isCompact: isCompact,
+                ),
               ),
               // Chart-type toggle (compact only)
               if (isCompact) ...[
                 const SizedBox(width: 6),
-                _buildMiniChip(
-                  label: 'PIE',
-                  active: _analyticsChartShow == 'pie',
-                  activeColor: const Color(0xFF00D9FF),
-                  onTap: () => setState(() => _analyticsChartShow = 'pie'),
-                  isCompact: isCompact,
+                GestureDetector(
+                  onTap: () {
+                    ref.read(audioServiceProvider).playSound('buttontap.ogg');
+                    setState(() => _analyticsChartShow = 'pie');
+                  },
+                  child: _buildMiniChip(
+                    label: 'PIE',
+                    active: _analyticsChartShow == 'pie',
+                    activeColor: const Color(0xFF00D9FF),
+                    onTap: () {},
+                    isCompact: isCompact,
+                  ),
                 ),
                 const SizedBox(width: 4),
-                _buildMiniChip(
-                  label: 'BAR',
-                  active: _analyticsChartShow == 'bar',
-                  activeColor: const Color(0xFF00D9FF),
-                  onTap: () => setState(() => _analyticsChartShow = 'bar'),
-                  isCompact: isCompact,
+                GestureDetector(
+                  onTap: () {
+                    ref.read(audioServiceProvider).playSound('buttontap.ogg');
+                    setState(() => _analyticsChartShow = 'bar');
+                  },
+                  child: _buildMiniChip(
+                    label: 'BAR',
+                    active: _analyticsChartShow == 'bar',
+                    activeColor: const Color(0xFF00D9FF),
+                    onTap: () {},
+                    isCompact: isCompact,
+                  ),
                 ),
               ],
             ],
@@ -1032,7 +1053,10 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
     bool isCompact = false,
   }) {
     return GestureDetector(
-      onTap: () => setState(() => _showAnalytics = !_showAnalytics),
+      onTap: () {
+        ref.read(audioServiceProvider).playSound('analyse.mp3');
+        setState(() => _showAnalytics = !_showAnalytics);
+      },
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
         child: BackdropFilter(

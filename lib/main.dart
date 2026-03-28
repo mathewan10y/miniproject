@@ -9,6 +9,7 @@ import 'features/gamification/services/tutorial_engine_service.dart';
 import 'core/config/app_secrets.dart';
 import 'features/auth/login_screen.dart';
 import 'features/ledger/presentation/main_screen.dart';
+import 'core/services/audio_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,11 +33,14 @@ Future<void> main() async {
   );
 }
 
-class CyberFinanceApp extends StatelessWidget {
+class CyberFinanceApp extends ConsumerWidget {
   const CyberFinanceApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Eagerly initialize AudioService to start BGM if enabled
+    ref.read(audioServiceProvider);
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Stardust - Sci-Fi Finance',

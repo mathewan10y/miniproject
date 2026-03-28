@@ -7,6 +7,7 @@ import 'academy_codex_dialog.dart';
 import '../../user_stats_provider.dart';
 import '../../services/tutorial_keys.dart';
 import '../../../settings/presentation/settings_page.dart';
+import '../../../../core/services/audio_service.dart';
 
 class TopBar extends ConsumerWidget {
   final String title;
@@ -87,6 +88,7 @@ class TopBar extends ConsumerWidget {
                       GestureDetector(
                         key: TutorialKeys.codexBtnKey(),
                         onTap: () {
+                          ref.read(audioServiceProvider).playSound('buttontap.ogg');
                           showDialog(
                             context: context,
                             barrierColor: Colors.black87,
@@ -192,6 +194,7 @@ class TopBar extends ConsumerWidget {
   ) {
     return GestureDetector(
       onTap: () {
+        ref.read(audioServiceProvider).playSound('buttontap.ogg');
         ref.read(botChatProvider.notifier).openChat(type);
       },
       child: Container(
@@ -353,8 +356,10 @@ class _BotChatPanelState extends ConsumerState<BotChatPanel> {
                       ),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
-                      onPressed:
-                          () => ref.read(botChatProvider.notifier).closeChat(),
+                      onPressed: () {
+                        ref.read(audioServiceProvider).playSound('buttontap.ogg');
+                        ref.read(botChatProvider.notifier).closeChat();
+                      },
                     ),
                   ],
                 ),
@@ -575,6 +580,7 @@ class _SettingsButton extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
       onTap: () {
+        ref.read(audioServiceProvider).playSound('buttontap.ogg');
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const SettingsPage()),

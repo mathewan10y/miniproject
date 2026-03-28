@@ -74,6 +74,28 @@ class SettingsPage extends ConsumerWidget {
                   ),
                 ),
               ),
+              const SizedBox(height: 12),
+              _buildCard(
+                child: SwitchListTile(
+                  title: Text(
+                    'Background Music (BGM)',
+                    style: GoogleFonts.orbitron(color: Colors.white, fontSize: 16),
+                  ),
+                  subtitle: Text(
+                    'Continuous ambient atmosphere',
+                    style: GoogleFonts.shareTechMono(color: Colors.white54, fontSize: 12),
+                  ),
+                  activeColor: Colors.cyan,
+                  value: settings.isBgmEnabled,
+                  onChanged: (val) {
+                    ref.read(settingsProvider.notifier).toggleBgm();
+                  },
+                  secondary: Icon(
+                    settings.isBgmEnabled ? Icons.music_note : Icons.music_off,
+                    color: settings.isBgmEnabled ? Colors.cyan : Colors.white54,
+                  ),
+                ),
+              ),
               const SizedBox(height: 24),
 
               // Developer Tools
