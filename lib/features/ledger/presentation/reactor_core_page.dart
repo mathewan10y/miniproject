@@ -17,6 +17,9 @@ import '../../gamification/user_stats_provider.dart';
 import '../../gamification/services/tutorial_engine_service.dart';
 import '../../gamification/data/tutorial_scripts.dart';
 import '../../gamification/presentation/widgets/tutorial_overlay_widget.dart';
+import '../../../core/services/audio_service.dart';
+import '../../trading/data/flight_deck_state_provider.dart';
+import '../../trading/data/portfolio_provider.dart';
 
 class ReactorCorePage extends ConsumerStatefulWidget {
   const ReactorCorePage({super.key});
@@ -143,6 +146,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
                                         child: InkWell(
                                           borderRadius: BorderRadius.circular(6),
                                           onTap: () {
+                                            ref.read(audioServiceProvider).playSound('buttontap.ogg');
                                             showDialog(
                                               context: context,
                                               barrierColor: Colors.black87,
@@ -354,7 +358,10 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
 
   // Refinery Methods
   void _processSingleTap() {
-    if (_isRefining) return; // Brief debounce to prevent animation clipping
+    if (!mounted || _isRefining) return;
+    
+    // Play sound instantly on button tap
+    ref.read(audioServiceProvider).playSound('refine.mp3');
 
     final refineryNotifier = ref.read(refineryProvider.notifier);
     final refineryState = ref.read(refineryProvider).valueOrNull;
@@ -684,6 +691,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
 
     return GestureDetector(
       onTap: () async {
+        ref.read(audioServiceProvider).playSound('reset.mp3');
         // Show confirmation dialog
         final confirmed = await showDialog<bool>(
           context: context,
@@ -735,6 +743,9 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
           await ref.read(refineryProvider.notifier).resetReactorCore();
           await ref.read(userStatsProvider.notifier).resetUserProgress();
           await ref.read(tutorialEngineProvider).clearAllTutorialStates();
+          
+          ref.read(flightDeckChartProvider.notifier).clearChart();
+          await ref.read(portfolioProvider.notifier).resetPortfolio();
           
           // Show success message
           if (mounted) {

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../data/varsity_service.dart';
@@ -6,6 +6,7 @@ import '../../domain/models/varsity_level.dart';
 import '../providers/bot_chat_provider.dart';
 import '../../../../core/services/aura_service.dart';
 import '../../../../core/services/crash_service.dart';
+import '../../../../core/services/audio_service.dart';
 
 // Simple provider for the service
 final varsityServiceProvider = Provider<VarsityService>((ref) => VarsityService());
@@ -56,7 +57,10 @@ class _VarsityOrbitPanelState extends ConsumerState<VarsityOrbitPanel> {
                 children: [
                   IconButton(
                     icon: const Icon(Icons.close, color: Colors.white54, size: 20),
-                    onPressed: widget.onClose,
+                    onPressed: () {
+                      ref.read(audioServiceProvider).playSound('buttontap.ogg');
+                      widget.onClose();
+                    },
                   ),
                   const Spacer(),
                   Text(
@@ -199,6 +203,7 @@ class _VarsityOrbitPanelState extends ConsumerState<VarsityOrbitPanel> {
         children: [
           ListTile(
             onTap: () {
+              ref.read(audioServiceProvider).playSound('buttontap.ogg');
               setState(() {
                 if (isExpanded) {
                   _expandedLevelId = null;

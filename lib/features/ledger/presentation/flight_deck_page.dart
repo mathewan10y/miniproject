@@ -20,6 +20,7 @@ import '../../trading/data/flight_deck_state_provider.dart';
 import '../../gamification/services/tutorial_engine_service.dart';
 import '../../gamification/data/tutorial_scripts.dart';
 import '../../gamification/presentation/widgets/tutorial_overlay_widget.dart';
+import '../../../core/services/audio_service.dart';
 
 class FlightDeckPage extends ConsumerStatefulWidget {
   const FlightDeckPage({super.key});
@@ -320,6 +321,20 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
       }
     });
 
+    ref.listen(flightDeckChartProvider, (previous, next) {
+      if (previous?.hasData == true && !next.hasData) {
+        setState(() {
+          _selectedAsset = null;
+          _candles.clear();
+          _tradeMode = TradeMode.none;
+          _entryPrice = null;
+          _slPrice = null;
+          _tpPrice = null;
+          _tradeQuantity = 1.0;
+        });
+      }
+    });
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
@@ -578,9 +593,10 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
           child:
               _selectedAsset != null
                   ? GestureDetector(
-                    onTap:
-                        () =>
-                            showStockAnalysisOverlay(context, _selectedAsset!),
+                    onTap: () {
+                      ref.read(audioServiceProvider).playSound('analyse.mp3');
+                      showStockAnalysisOverlay(context, _selectedAsset!);
+                    },
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: BackdropFilter(
@@ -1099,7 +1115,10 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
 
             // 4. Close (Entire Trade)
             _buildControlItem(
-              onTap: _resetTrade,
+              onTap: () {
+                ref.read(audioServiceProvider).playSound('buttontap.ogg');
+                _resetTrade();
+              },
               child: const Icon(Icons.close, color: Colors.white, size: 16),
               borderColor: Colors.transparent,
             ),
@@ -1171,7 +1190,10 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
   Widget _buildQuantitySelector() {
     return GestureDetector(
       key: _qtyButtonKey,
-      onTap: () => _showQuantityPopup(),
+      onTap: () {
+        ref.read(audioServiceProvider).playSound('buttontap.ogg');
+        _showQuantityPopup();
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
         decoration: BoxDecoration(
@@ -1385,16 +1407,8 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                             width: double.infinity,
                             height: 30,
                             child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.cyan.withAlpha(40),
-                                foregroundColor: Colors.cyan,
-                                side: const BorderSide(color: Colors.cyan),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                padding: EdgeInsets.zero,
-                              ),
-                              onPressed: () {
+                              onPressed: () async {
+                                ref.read(audioServiceProvider).playSound('buttontap.ogg');
                                 final val =
                                     double.tryParse(controller.text) ??
                                     _tradeQuantity;
@@ -1494,6 +1508,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
               final isSelected = _selectedInterval == interval;
               return GestureDetector(
                 onTap: () {
+                  ref.read(audioServiceProvider).playSound('buttontap.ogg');
                   setState(() => _selectedInterval = interval);
                   if (_selectedAsset != null) _loadHistory(_selectedAsset!);
                 },
@@ -1663,6 +1678,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
     final isSelected = _selectedTabIndex == index;
     return GestureDetector(
       onTap: () {
+        ref.read(audioServiceProvider).playSound('buttontap.ogg');
         setState(() {
           _selectedTabIndex = index;
           if (!_isPanelExpanded) _isPanelExpanded = true;
@@ -2208,7 +2224,10 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
         ),
         const SizedBox(width: 16),
         GestureDetector(
-          onTap: _resetTrade,
+          onTap: () {
+            ref.read(audioServiceProvider).playSound('buttontap.ogg');
+            _resetTrade();
+          },
           child: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
@@ -2260,6 +2279,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
 
     return GestureDetector(
       onTap: () {
+        ref.read(audioServiceProvider).playSound('buttontap.ogg');
         final isLong = label == "BUY";
 
         if (!canAfford) {
@@ -2312,6 +2332,9 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
               ),
               balanceAfter: balAfter,
             );
+
+        // Success sound override for trade
+        ref.read(audioServiceProvider).playSound('buysell.ogg');
 
         setState(() {
           _tradeMode = isLong ? TradeMode.long : TradeMode.short;
@@ -2471,7 +2494,10 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                 ),
                 const SizedBox(width: 8),
                 GestureDetector(
-                  onTap: () => onUpdate(null), // Close
+                  onTap: () {
+                    ref.read(audioServiceProvider).playSound('click.ogg');
+                    onUpdate(null);
+                  }, // Close
                   child: const Icon(
                     Icons.close,
                     color: Colors.white54,
@@ -2498,13 +2524,13 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children:
-            intervals.map((interval) {
-              final isSelected = _selectedInterval == interval;
+            intervals.map((timeframe) {
+              final isSelected = _selectedInterval == timeframe;
               return GestureDetector(
                 onTap: () {
                   if (isSelected) return;
-                  setState(() => _selectedInterval = interval);
-                  if (_selectedAsset != null) _loadHistory(_selectedAsset!);
+                  ref.read(audioServiceProvider).playSound('buttontap.ogg');
+                  setState(() => _selectedInterval = timeframe);
                 },
                 child: Container(
                   padding: const EdgeInsets.symmetric(
@@ -2516,7 +2542,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
-                    interval,
+                    timeframe,
                     style: GoogleFonts.shareTechMono(
                       color: isSelected ? Colors.cyan : Colors.white54,
                       fontWeight:
@@ -2594,7 +2620,10 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
     bool isDevMode,
   ) {
     return GestureDetector(
-      onTap: () => _showSectorModal(context, assets, label, color, types, userLevel, isDevMode),
+      onTap: () {
+        ref.read(audioServiceProvider).playSound('sectors.mp3');
+        _showSectorModal(context, assets, label, color, types, userLevel, isDevMode);
+      },
       child: Container(
         decoration: BoxDecoration(
           color: color.withOpacity(0.1),
@@ -2748,7 +2777,7 @@ class _CrosshairPainter extends CustomPainter {
       oldDelegate.position != position;
 }
 
-class _DataPadModal extends StatefulWidget {
+class _DataPadModal extends ConsumerStatefulWidget {
   final List<MarketAsset> assets;
   final String sectorName;
   final Color sectorColor;
@@ -2768,10 +2797,10 @@ class _DataPadModal extends StatefulWidget {
   });
 
   @override
-  State<_DataPadModal> createState() => _DataPadModalState();
+  ConsumerState<_DataPadModal> createState() => _DataPadModalState();
 }
 
-class _DataPadModalState extends State<_DataPadModal> {
+class _DataPadModalState extends ConsumerState<_DataPadModal> {
   String _searchQuery = "";
   late Set<AssetSubType> _selectedSubTypes;
 
@@ -2868,7 +2897,10 @@ class _DataPadModalState extends State<_DataPadModal> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: TextField(
-                  onChanged: (val) => setState(() => _searchQuery = val),
+                  onChanged: (val) {
+                    setState(() => _searchQuery = val);
+                    ref.read(audioServiceProvider).playSound('buttontap.ogg');
+                  },
                   style: GoogleFonts.shareTechMono(color: Colors.white),
                   decoration: InputDecoration(
                     hintText: "SEARCH DATABASE...",
@@ -2932,7 +2964,10 @@ class _DataPadModalState extends State<_DataPadModal> {
                         Opacity(
                           opacity: isLocked ? 0.4 : 1.0,
                           child: ListTile(
-                            onTap: isLocked ? null : () => widget.onAssetSelected(asset),
+                            onTap: isLocked ? null : () {
+                              ref.read(audioServiceProvider).playSound('buttontap.ogg');
+                              widget.onAssetSelected(asset);
+                            },
                             tileColor: Colors.white.withOpacity(0.05),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),

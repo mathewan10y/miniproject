@@ -309,6 +309,15 @@ class AppDatabase {
     }
   }
 
+  Future<void> clearAllOpenPositions() async {
+    try {
+      final userId = Supabase.instance.client.auth.currentUser!.id;
+      await _client.from('open_positions').delete().eq('user_id', userId);
+    } catch (e) {
+      print('[AppDatabase] clearAllOpenPositions failed: $e');
+    }
+  }
+
   // ── Trade History API ────────────────────────────────────────────────────────
 
   Future<void> addTradeHistory(TradeHistoryItem trade) async {
@@ -333,6 +342,15 @@ class AppDatabase {
     } catch (e) {
       print('[AppDatabase] getAllTradeHistory failed: $e');
       return [];
+    }
+  }
+
+  Future<void> clearAllTradeHistory() async {
+    try {
+      final userId = Supabase.instance.client.auth.currentUser!.id;
+      await _client.from('trade_history').delete().eq('user_id', userId);
+    } catch (e) {
+      print('[AppDatabase] clearAllTradeHistory failed: $e');
     }
   }
 }
