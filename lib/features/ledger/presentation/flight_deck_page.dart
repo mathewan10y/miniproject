@@ -4,7 +4,6 @@ import 'dart:math' as math;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/providers/refinery_provider.dart';
 import '../../trading/data/market_service.dart';
@@ -17,9 +16,6 @@ import '../../trading/data/portfolio_provider.dart';
 import '../../trading/domain/models/open_position.dart';
 import '../../trading/presentation/stock_analysis_overlay.dart';
 import '../../trading/data/flight_deck_state_provider.dart';
-import '../../gamification/services/tutorial_engine_service.dart';
-import '../../gamification/data/tutorial_scripts.dart';
-import '../../gamification/presentation/widgets/tutorial_overlay_widget.dart';
 import '../../../core/services/audio_service.dart';
 
 class FlightDeckPage extends ConsumerStatefulWidget {
@@ -222,7 +218,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
           _resetTrade();
           _scrollOffset = 0;
           // Auto-fit: aim for ~80 visible candles, or show all if fewer
-          if (_candles.length > 0) {
+          if (_candles.isNotEmpty) {
             final screenW = MediaQuery.of(context).size.width - 60;
             final targetVisible = _candles.length < 80 ? _candles.length : 80;
             _candleWidth = (screenW / targetVisible).clamp(
@@ -992,8 +988,9 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                   setState(() => _slPrice = price);
                 },
                 onVerticalDragUpdate: (d) {
-                  if (_dragStartGlobalY == null || _dragStartPrice == null)
+                  if (_dragStartGlobalY == null || _dragStartPrice == null) {
                     return;
+                  }
                   final totalDeltaY = d.globalPosition.dy - _dragStartGlobalY!;
                   final startY = priceToY(_dragStartPrice!);
                   setState(() => _slPrice = yToPrice(startY + totalDeltaY));
@@ -1038,8 +1035,9 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                   setState(() => _tpPrice = price);
                 },
                 onVerticalDragUpdate: (d) {
-                  if (_dragStartGlobalY == null || _dragStartPrice == null)
+                  if (_dragStartGlobalY == null || _dragStartPrice == null) {
                     return;
+                  }
                   final totalDeltaY = d.globalPosition.dy - _dragStartGlobalY!;
                   final startY = priceToY(_dragStartPrice!);
                   setState(() => _tpPrice = yToPrice(startY + totalDeltaY));
@@ -2398,7 +2396,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
     required Function(double?) onUpdate,
   }) {
     final bool isActive = activePrice != null;
-    final double price = isActive ? activePrice! : currentPrice;
+    final double price = isActive ? activePrice : currentPrice;
 
     // If docked, use Entry Y. If active, calculate Y from price.
     final double topY = isActive ? priceToY(price) : entryY;
@@ -2428,7 +2426,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
         behavior: HitTestBehavior.opaque,
         onVerticalDragStart: (d) {
           _dragStartGlobalY = d.globalPosition.dy;
-          _dragStartPrice = isActive ? activePrice! : currentPrice;
+          _dragStartPrice = isActive ? activePrice : currentPrice;
           if (!isActive) {
             onUpdate(currentPrice);
           }
@@ -2658,7 +2656,6 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
     VoidCallback? onTap,
     required Widget child,
     Color? borderColor,
-    bool isDashed = false,
   }) {
     return GestureDetector(
       onTap: onTap,

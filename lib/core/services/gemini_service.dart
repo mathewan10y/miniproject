@@ -84,8 +84,9 @@ Instruction: Drop one specific roast about the previous advice or user. Be quick
   }
 
   Future<String> generateResponse(String userMessage, BotType activeBot) async {
-    if (!_isInitialized)
+    if (!_isInitialized) {
       return "SYSTEM ERROR: Neural Link Offline (Check API Key)";
+    }
 
     try {
       final systemPrompt =

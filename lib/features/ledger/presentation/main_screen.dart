@@ -8,7 +8,6 @@ import '../../gamification/user_stats_provider.dart';
 import '../../gamification/services/tutorial_engine_service.dart';
 import '../../gamification/data/tutorial_scripts.dart';
 import '../../gamification/presentation/widgets/tutorial_overlay_widget.dart';
-import '../../gamification/presentation/tutorials/phase1_onboarding.dart';
 import '../expense_provider.dart';
 import '../income_provider.dart';
 

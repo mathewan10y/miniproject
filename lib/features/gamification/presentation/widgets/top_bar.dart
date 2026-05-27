@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:stardust/core/providers/refinery_provider.dart';
 import '../providers/bot_chat_provider.dart';
 import 'academy_codex_dialog.dart';
-import '../../user_stats_provider.dart';
 import '../../services/tutorial_keys.dart';
 import '../../../settings/presentation/settings_page.dart';
 import '../../../../core/services/audio_service.dart';

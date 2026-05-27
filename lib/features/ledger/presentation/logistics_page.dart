@@ -11,10 +11,6 @@ import 'add_expense_sheet.dart';
 import 'add_income_sheet.dart';
 import '../../gamification/presentation/widgets/top_bar.dart';
 import '../../sms_sync/presentation/sms_sync_button.dart';
-import '../../gamification/services/tutorial_keys.dart';
-import '../../gamification/services/tutorial_engine_service.dart';
-import '../../gamification/data/tutorial_scripts.dart';
-import '../../gamification/presentation/widgets/tutorial_overlay_widget.dart';
 import '../../../core/services/audio_service.dart';
 
 class LogisticsPage extends ConsumerStatefulWidget {
@@ -698,8 +694,9 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
               showTitles: true,
               reservedSize: isCompact ? 38 : 48,
               getTitlesWidget: (value, meta) {
-                if (value == meta.min || value == meta.max)
+                if (value == meta.min || value == meta.max) {
                   return const SizedBox();
+                }
                 final label =
                     value >= 1000
                         ? '${(value / 1000).toStringAsFixed(1)}k'

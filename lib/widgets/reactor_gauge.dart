@@ -4,9 +4,9 @@ class ReactorGauge extends StatelessWidget {
   final double fillPercent; // Value between 0.0 and 1.0
 
   const ReactorGauge({
-    Key? key,
+    super.key,
     required this.fillPercent,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

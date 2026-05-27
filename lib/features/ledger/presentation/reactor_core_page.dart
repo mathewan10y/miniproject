@@ -42,8 +42,8 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
   bool _isRefining = false;
   bool _isCriticalHit = false;
   bool _isDisposed = false;
-  List<Particle> _particles = [];
-  List<CriticalText> _criticalTexts = [];
+  final List<Particle> _particles = [];
+  final List<CriticalText> _criticalTexts = [];
   
   // Animation state
   double _pendingFuel = 0.0;
@@ -413,7 +413,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
         // Update visual ore level to match actual state
         final currentState = ref.read(refineryProvider).valueOrNull;
         setState(() {
-          _visualOreLevel = currentState?.rawOre?.toDouble() ?? _visualOreLevel;
+          _visualOreLevel = currentState?.rawOre.toDouble() ?? _visualOreLevel;
         });
         
         // Spawn particles at each frame for continuous visual feedback

@@ -35,7 +35,7 @@ class CreditVault extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '${tradingPower.toStringAsFixed(2)}',
+            tradingPower.toStringAsFixed(2),
             style: TextStyle(
               color: Colors.white,
               fontSize: 36,
