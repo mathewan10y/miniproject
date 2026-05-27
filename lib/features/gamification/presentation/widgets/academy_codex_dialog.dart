@@ -289,7 +289,8 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
     final raw = _loadedContent[m.level] ?? '';
     final subLevelTitles = raw.split('\n').where((line) {
       final trimmed = line.trim();
-      return RegExp(r'^###?\s*\d+\.\d+\s+[A-Za-z]').hasMatch(trimmed);
+      return RegExp(r'^###?\s*\d+\.\d+\s+[A-Za-z]').hasMatch(trimmed) ||
+             RegExp(r'^\d+\.\d+\s+[A-Za-z]').hasMatch(trimmed);
     }).map((s) => s.trim()).toList();
     final allCompleted = subLevelTitles.isNotEmpty && completed.length >= subLevelTitles.length;
     final progress = subLevelTitles.isEmpty ? 0.0 : completed.length / subLevelTitles.length;
@@ -340,7 +341,7 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
                 ])),
               ]),
               // Enhanced progress bar that fills the button
-              if (!locked && subLevelTitles.isNotEmpty) ...[
+              if (subLevelTitles.isNotEmpty) ...[
                 const SizedBox(height: 6),
                 Container(
                   height: 6,
@@ -368,92 +369,25 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
             ]),
           ),
         ),
+
+        // Boss encounter status row (shows when level selected and all sub-levels done)
+
         
-        // Boss fight button when all evaluations completed
-        if (!locked && allCompleted) ...[
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            child: ElevatedButton.icon(
-              onPressed: () {
-                Navigator.of(context).push(MaterialPageRoute(builder: (_) => BossFightScreen(levelId: m.level))).then((_) {
-                  setState((){}); // refresh UI bounds if we level up
-                });
-              },
-              icon: const Icon(Icons.flash_on, size: 12),
-              label: Text("BOSS FIGHT", style: GoogleFonts.shareTechMono(fontSize: 8, fontWeight: FontWeight.bold)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.redAccent.withOpacity(0.2),
-                foregroundColor: Colors.redAccent,
-                side: BorderSide(color: Colors.redAccent.withOpacity(0.5)),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-            ),
-          ),
-        ],
-        
-        // Render sub-level progress and boss tile if selected
-        if (sel && subLevelTitles.isNotEmpty) ...[
-          Padding(
-            padding: const EdgeInsets.only(left: 32, top: 4, bottom: 4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: subLevelTitles.map((title) {
-                final isDone = completed.contains(title);
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Row(
-                    children: [
-                      Icon(isDone ? Icons.check_circle : Icons.circle_outlined, size: 10, color: isDone ? m.accent : Colors.white24),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(title, style: GoogleFonts.shareTechMono(color: isDone ? m.accent : Colors.white54, fontSize: 8)),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-          // Boss Encounter Tile
-          Padding(
-            padding: const EdgeInsets.only(left: 32, right: 8, top: 4, bottom: 12),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-              decoration: BoxDecoration(
-                color: allCompleted ? Colors.redAccent.withOpacity(0.1) : Colors.white10.withOpacity(0.05),
-                border: Border.all(color: allCompleted ? Colors.redAccent.withOpacity(0.5) : Colors.white24),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.security, size: 12, color: allCompleted ? Colors.redAccent : Colors.white24),
-                  const SizedBox(width: 6),
-                  Text(
-                    allCompleted ? "BOSS ENCOUNTER" : "BOSS LOCKED",
-                    style: GoogleFonts.orbitron(
-                      color: allCompleted ? Colors.redAccent : Colors.white24,
-                      fontSize: 8,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
       ],
     );
   }
 
   // ── Loading ─────────────────────────────────────────────────────
-  Widget _loading(Color accent) => Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-    SizedBox(width: 32, height: 32, child: CircularProgressIndicator(color: accent, strokeWidth: 2)),
-    const SizedBox(height: 14),
-    Text('LOADING TRANSMISSION...', style: GoogleFonts.orbitron(color: accent.withOpacity(0.6), fontSize: 11, letterSpacing: 2)),
-  ]));
+  Widget _loading(Color accent) => Center(
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(width: 32, height: 32, child: CircularProgressIndicator(color: accent, strokeWidth: 2)),
+        const SizedBox(height: 14),
+        Text('LOADING TRANSMISSION...', style: GoogleFonts.orbitron(color: accent.withOpacity(0.6), fontSize: 11, letterSpacing: 2)),
+      ],
+    ),
+  );
 
   // ── Content area ────────────────────────────────────────────────
   Widget _content(_LevelMeta meta, int maxLvl) {
@@ -548,7 +482,8 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
     final levelRaw = _loadedContent[meta.level] ?? '';
     final subLevelTitles = levelRaw.split('\n').where((line) {
       final trimmed = line.trim();
-      return RegExp(r'^\d+\.\d+\s+[A-Za-z]').hasMatch(trimmed);
+      return RegExp(r'^###?\s*\d+\.\d+\s+[A-Za-z]').hasMatch(trimmed) ||
+             RegExp(r'^\d+\.\d+\s+[A-Za-z]').hasMatch(trimmed);
     }).map((s) => s.trim()).toList();
     final allCompleted = subLevelTitles.isNotEmpty && completed.length >= subLevelTitles.length;
     
@@ -564,7 +499,8 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
     final raw = _loadedContent[level] ?? '';
     final subLevelTitles = raw.split('\n').where((line) {
       final trimmed = line.trim();
-      return RegExp(r'^\d+\.\d+\s+[A-Za-z]').hasMatch(trimmed);
+      return RegExp(r'^###?\s*\d+\.\d+\s+[A-Za-z]').hasMatch(trimmed) ||
+             RegExp(r'^\d+\.\d+\s+[A-Za-z]').hasMatch(trimmed);
     }).map((s) => s.trim()).toList();
     final isCompleted = subLevelTitles.isNotEmpty && completed.length >= subLevelTitles.length;
     

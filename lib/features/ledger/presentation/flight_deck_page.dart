@@ -1190,7 +1190,10 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
   Widget _buildQuantitySelector() {
     return GestureDetector(
       key: _qtyButtonKey,
-      onTap: () => _showQuantityPopup(),
+      onTap: () {
+        ref.read(audioServiceProvider).playSound('buttontap.ogg');
+        _showQuantityPopup();
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
         decoration: BoxDecoration(
@@ -1404,16 +1407,8 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                             width: double.infinity,
                             height: 30,
                             child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.cyan.withAlpha(40),
-                                foregroundColor: Colors.cyan,
-                                side: const BorderSide(color: Colors.cyan),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                padding: EdgeInsets.zero,
-                              ),
-                              onPressed: () {
+                              onPressed: () async {
+                                ref.read(audioServiceProvider).playSound('buttontap.ogg');
                                 final val =
                                     double.tryParse(controller.text) ??
                                     _tradeQuantity;
@@ -1513,6 +1508,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
               final isSelected = _selectedInterval == interval;
               return GestureDetector(
                 onTap: () {
+                  ref.read(audioServiceProvider).playSound('buttontap.ogg');
                   setState(() => _selectedInterval = interval);
                   if (_selectedAsset != null) _loadHistory(_selectedAsset!);
                 },
@@ -1682,6 +1678,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
     final isSelected = _selectedTabIndex == index;
     return GestureDetector(
       onTap: () {
+        ref.read(audioServiceProvider).playSound('buttontap.ogg');
         setState(() {
           _selectedTabIndex = index;
           if (!_isPanelExpanded) _isPanelExpanded = true;
@@ -2498,7 +2495,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                 const SizedBox(width: 8),
                 GestureDetector(
                   onTap: () {
-                    ref.read(audioServiceProvider).playSound('buttontap.ogg');
+                    ref.read(audioServiceProvider).playSound('click.ogg');
                     onUpdate(null);
                   }, // Close
                   child: const Icon(
@@ -2527,14 +2524,13 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children:
-            intervals.map((interval) {
-              final isSelected = _selectedInterval == interval;
+            intervals.map((timeframe) {
+              final isSelected = _selectedInterval == timeframe;
               return GestureDetector(
                 onTap: () {
                   if (isSelected) return;
                   ref.read(audioServiceProvider).playSound('buttontap.ogg');
-                  setState(() => _selectedInterval = interval);
-                  if (_selectedAsset != null) _loadHistory(_selectedAsset!);
+                  setState(() => _selectedInterval = timeframe);
                 },
                 child: Container(
                   padding: const EdgeInsets.symmetric(
@@ -2546,7 +2542,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
-                    interval,
+                    timeframe,
                     style: GoogleFonts.shareTechMono(
                       color: isSelected ? Colors.cyan : Colors.white54,
                       fontWeight:
@@ -2901,7 +2897,10 @@ class _DataPadModalState extends ConsumerState<_DataPadModal> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: TextField(
-                  onChanged: (val) => setState(() => _searchQuery = val),
+                  onChanged: (val) {
+                    setState(() => _searchQuery = val);
+                    ref.read(audioServiceProvider).playSound('buttontap.ogg');
+                  },
                   style: GoogleFonts.shareTechMono(color: Colors.white),
                   decoration: InputDecoration(
                     hintText: "SEARCH DATABASE...",
