@@ -25,9 +25,14 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   bool _tutorialLaunched = false;
 
   void _checkAndShowTutorial(int pageIndex) {
+    // 1. Capture the context into a local variable BEFORE the async gap
+    final currentContext = context; 
+    
     // Add a small delay to allow the swipe animation to visually settle
     Future.delayed(const Duration(milliseconds: 300), () {
-      if (!context.mounted) return;
+      
+      // 2. Check the captured context
+      if (!currentContext.mounted) return; 
       
       final engine = ref.read(tutorialEngineProvider);
       List<DialogNode>? script;
@@ -47,8 +52,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
       if (script != null && onCompleteAction != null) {
         showGeneralDialog(
-          context: context,
-          barrierColor: const Color(0x44000000), // More transparent dark tint (26% opacity), NO BLUR
+          context: currentContext, // 3. Use the captured context here!
+          barrierColor: const Color(0x44000000), 
           barrierDismissible: false,
           pageBuilder: (ctx, anim1, anim2) => Scaffold(
             backgroundColor: Colors.transparent,
@@ -74,7 +79,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     // Trigger tutorial for initial page after data loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Future.delayed(const Duration(milliseconds: 800), () {
-        if (!mounted) return;
+        if (!context.mounted) return;
         _checkAndShowTutorial(1); // Reactor Core (page 1)
       });
     });

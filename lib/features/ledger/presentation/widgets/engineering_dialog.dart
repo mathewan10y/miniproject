@@ -88,6 +88,7 @@ class EngineeringDialog extends ConsumerWidget {
               refineryState.nextEfficiencyCost,
               () async {
                 final success = await ref.read(refineryProvider.notifier).purchaseEfficiencyUpgrade();
+                if (!context.mounted) return;
                 if (!success) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -120,6 +121,7 @@ class EngineeringDialog extends ConsumerWidget {
               refineryState.nextCapacityCost,
               () async {
                 final success = await ref.read(refineryProvider.notifier).purchaseCapacityUpgrade();
+                if (!context.mounted) return;
                 if (!success) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -350,6 +352,7 @@ class EngineeringDialog extends ConsumerWidget {
             child: ElevatedButton(
               onPressed: (isMaxLevel || !canUnlock || !canAfford) ? null : () async {
                 final success = await ref.read(refineryProvider.notifier).purchaseAutoInjector();
+                if (!context.mounted) return;
                 if (success) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(

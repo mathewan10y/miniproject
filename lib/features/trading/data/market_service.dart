@@ -215,8 +215,8 @@ class MixedMarketService implements MarketRepository {
     // Fallback: use mock data if Yahoo call failed or returned empty
     if (!yahooSuccess) {
       debugPrint('[MarketService] Using mock fallback for stocks/indices/commodities.');
-      assets.addAll(_getMockSectorB_Thrusters());
-      assets.addAll(_getMockSectorB_Fleets());
+      assets.addAll(_getMockSectorBThrusters());
+      assets.addAll(_getMockSectorBFleets());
       assets.add(_getMockSectorA('gold', 'Gold', 2030.50, 2));
       assets.add(_getMockSectorA('oil', 'Crude Oil', 78.40, 2));
       assets.add(_getMockSectorA('usdinr', 'USD/INR', 83.12, 2));
@@ -402,7 +402,7 @@ class MixedMarketService implements MarketRepository {
     ];
   }
 
-  List<MarketAsset> _getMockSectorB_Fleets() {
+  List<MarketAsset> _getMockSectorBFleets() {
     return [
       MarketAsset(
         id: 'sp500',
@@ -429,7 +429,7 @@ class MixedMarketService implements MarketRepository {
     ];
   }
 
-  List<MarketAsset> _getMockSectorB_Thrusters() {
+  List<MarketAsset> _getMockSectorBThrusters() {
     final random = Random();
     double aaplPrice = 185.0 + (random.nextDouble() - 0.5) * 5;
     double reliancePrice = 2500.0 + (random.nextDouble() - 0.5) * 50;

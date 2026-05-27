@@ -17,7 +17,6 @@ import '../../trading/domain/models/open_position.dart';
 import '../../trading/presentation/stock_analysis_overlay.dart';
 import '../../trading/data/flight_deck_state_provider.dart';
 import '../../../core/services/audio_service.dart';
-import 'package:flutter/foundation.dart';
 
 class FlightDeckPage extends ConsumerStatefulWidget {
   const FlightDeckPage({super.key});
