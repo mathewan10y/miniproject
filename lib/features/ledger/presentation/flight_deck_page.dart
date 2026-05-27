@@ -17,6 +17,7 @@ import '../../trading/domain/models/open_position.dart';
 import '../../trading/presentation/stock_analysis_overlay.dart';
 import '../../trading/data/flight_deck_state_provider.dart';
 import '../../../core/services/audio_service.dart';
+import 'package:flutter/foundation.dart';
 
 class FlightDeckPage extends ConsumerStatefulWidget {
   const FlightDeckPage({super.key});
@@ -131,7 +132,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
         _particles[i] = Particle(
           position: _particles[i].position + _particles[i].velocity,
           velocity: _particles[i].velocity,
-          color: _particles[i].color.withOpacity(
+          color: _particles[i].color.withValues(alpha:
             math.max(0, _particles[i].lifetime - 0.05),
           ),
           size: _particles[i].size,
@@ -226,7 +227,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
               _maxCandleWidth,
             );
             _baseCandleWidth = _candleWidth;
-            print(
+            debugPrint(
               '[Chart] Loaded ${_candles.length} candles, showing $targetVisible, candleWidth=$_candleWidth',
             );
           }
@@ -402,12 +403,12 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
       width: double.infinity,
       margin: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.5),
-        border: Border.all(color: Colors.cyan.withOpacity(0.3)),
+        color: Colors.black.withValues(alpha:0.5),
+        border: Border.all(color: Colors.cyan.withValues(alpha:0.3)),
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Colors.cyan.withOpacity(0.1), Colors.black.withOpacity(0.8)],
+          colors: [Colors.cyan.withValues(alpha:0.1), Colors.black.withValues(alpha:0.8)],
         ),
       ),
       child: Stack(
@@ -418,7 +419,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
             child: Text(
               "SYS.MONITOR // ONLINE",
               style: GoogleFonts.shareTechMono(
-                color: Colors.cyan.withOpacity(0.5),
+                color: Colors.cyan.withValues(alpha:0.5),
                 fontSize: 10,
               ),
             ),
@@ -447,7 +448,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: Colors.cyan.withOpacity(
+                    color: Colors.cyan.withValues(alpha:
                       (1.0 - _radarController.value) * 0.5,
                     ),
                     width: 2,
@@ -461,7 +462,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
             decoration: BoxDecoration(
               color: Colors.black54,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.cyan.withOpacity(0.5)),
+              border: Border.all(color: Colors.cyan.withValues(alpha:0.5)),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -603,15 +604,15 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                             vertical: 7,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF7C3AED).withOpacity(0.25),
+                            color: const Color(0xFF7C3AED).withValues(alpha:0.25),
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: const Color(0xFF9C27B0).withOpacity(0.7),
+                              color: const Color(0xFF9C27B0).withValues(alpha:0.7),
                               width: 1.2,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF7C3AED).withOpacity(0.4),
+                                color: const Color(0xFF7C3AED).withValues(alpha:0.4),
                                 blurRadius: 12,
                                 spreadRadius: 0,
                               ),
@@ -970,7 +971,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
           border: Border.all(color: color),
           borderRadius: BorderRadius.circular(4),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 4),
+            BoxShadow(color: Colors.black.withValues(alpha:0.5), blurRadius: 4),
           ],
         ),
         child: Row(
@@ -1100,8 +1101,8 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
               alignment: Alignment.center,
               color:
                   isProfitable
-                      ? Colors.green.withOpacity(0.2)
-                      : Colors.red.withOpacity(0.2),
+                      ? Colors.green.withValues(alpha:0.2)
+                      : Colors.red.withValues(alpha:0.2),
               child: Text(
                 "${pnl >= 0 ? '+' : ''}${pnl.abs().toStringAsFixed(2)}",
                 style: GoogleFonts.shareTechMono(
@@ -1519,12 +1520,12 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                   decoration: BoxDecoration(
                     color:
                         isSelected
-                            ? Colors.cyan.withOpacity(0.2)
+                            ? Colors.cyan.withValues(alpha:0.2)
                             : Colors.transparent,
                     borderRadius: BorderRadius.circular(4),
                     border:
                         isSelected
-                            ? Border.all(color: Colors.cyan.withOpacity(0.5))
+                            ? Border.all(color: Colors.cyan.withValues(alpha:0.5))
                             : null,
                   ),
                   child: Text(
@@ -2345,7 +2346,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
-          color: effectiveColor.withOpacity(canAfford ? 0.1 : 0.05),
+          color: effectiveColor.withValues(alpha:canAfford ? 0.1 : 0.05),
           border: Border.all(color: effectiveColor),
           borderRadius: BorderRadius.circular(4),
         ),
@@ -2373,7 +2374,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
               Text(
                 'LOW FUEL',
                 style: GoogleFonts.shareTechMono(
-                  color: Colors.redAccent.withOpacity(0.7),
+                  color: Colors.redAccent.withValues(alpha:0.7),
                   fontSize: 7,
                   letterSpacing: 0.5,
                 ),
@@ -2536,7 +2537,7 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: isSelected ? Colors.cyan.withOpacity(0.2) : null,
+                    color: isSelected ? Colors.cyan.withValues(alpha:0.2) : null,
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
@@ -2624,8 +2625,8 @@ class _FlightDeckPageState extends ConsumerState<FlightDeckPage>
       },
       child: Container(
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          border: Border.all(color: color.withOpacity(0.3)),
+          color: color.withValues(alpha:0.1),
+          border: Border.all(color: color.withValues(alpha:0.3)),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Column(
@@ -2711,7 +2712,7 @@ class SciFiBackgroundPainter extends CustomPainter {
     // Basic grid
     final paint =
         Paint()
-          ..color = Colors.white.withOpacity(0.03)
+          ..color = Colors.white.withValues(alpha:0.03)
           ..strokeWidth = 1;
 
     const double gridSize = 40;
@@ -2826,7 +2827,7 @@ class _DataPadModalState extends ConsumerState<_DataPadModal> {
       builder: (context, scrollController) {
         return Container(
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.9),
+            color: Colors.black.withValues(alpha:0.9),
             border: Border(
               top: BorderSide(color: widget.sectorColor, width: 2),
             ),
@@ -2903,7 +2904,7 @@ class _DataPadModalState extends ConsumerState<_DataPadModal> {
                     hintText: "SEARCH DATABASE...",
                     hintStyle: GoogleFonts.shareTechMono(color: Colors.white24),
                     filled: true,
-                    fillColor: Colors.white.withOpacity(0.05),
+                    fillColor: Colors.white.withValues(alpha:0.05),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide.none,
@@ -2940,10 +2941,10 @@ class _DataPadModalState extends ConsumerState<_DataPadModal> {
                             margin: const EdgeInsets.only(bottom: 8),
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                             decoration: BoxDecoration(
-                              color: widget.sectorColor.withOpacity(0.1),
+                              color: widget.sectorColor.withValues(alpha:0.1),
                               borderRadius: BorderRadius.circular(6),
                               border: Border.all(
-                                color: widget.sectorColor.withOpacity(0.3),
+                                color: widget.sectorColor.withValues(alpha:0.3),
                                 width: 1,
                               ),
                             ),
@@ -2965,12 +2966,12 @@ class _DataPadModalState extends ConsumerState<_DataPadModal> {
                               ref.read(audioServiceProvider).playSound('buttontap.ogg');
                               widget.onAssetSelected(asset);
                             },
-                            tileColor: Colors.white.withOpacity(0.05),
+                            tileColor: Colors.white.withValues(alpha:0.05),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
                             leading: CircleAvatar(
-                              backgroundColor: widget.sectorColor.withOpacity(0.2),
+                              backgroundColor: widget.sectorColor.withValues(alpha:0.2),
                               child: Icon(
                                 Icons.token,
                                 color: widget.sectorColor,
@@ -3178,7 +3179,7 @@ class _TradeLinePainter extends CustomPainter {
       final y = priceToY(price);
       final paint =
           Paint()
-            ..color = color.withOpacity(0.5)
+            ..color = color.withValues(alpha:0.5)
             ..strokeWidth = 1
             ..style = PaintingStyle.stroke;
       // Dash

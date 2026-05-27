@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../features/trading/domain/models/open_position.dart';
 import '../../features/trading/domain/models/trade_history_item.dart';
+import 'package:flutter/foundation.dart';
 
 // ─── Re-export models so existing providers don't need import changes ─────────
 export '../../core/models/expense_model.dart' show ExpenseModel;
@@ -136,7 +137,7 @@ class AppDatabase {
           .toList();
     } catch (e) {
       // On web, "Failed to fetch" usually means CORS/auth issue — log and return empty.
-      print('[AppDatabase] getAllExpenses failed: $e');
+      debugPrint('[AppDatabase] getAllExpenses failed: $e');
       return [];
     }
   }
@@ -304,7 +305,7 @@ class AppDatabase {
           .map((r) => OpenPosition.fromJson(r as Map<String, dynamic>))
           .toList();
     } catch (e) {
-      print('[AppDatabase] getAllOpenPositions failed: $e');
+      debugPrint('[AppDatabase] getAllOpenPositions failed: $e');
       return [];
     }
   }
@@ -314,7 +315,7 @@ class AppDatabase {
       final userId = Supabase.instance.client.auth.currentUser!.id;
       await _client.from('open_positions').delete().eq('user_id', userId);
     } catch (e) {
-      print('[AppDatabase] clearAllOpenPositions failed: $e');
+      debugPrint('[AppDatabase] clearAllOpenPositions failed: $e');
     }
   }
 
@@ -340,7 +341,7 @@ class AppDatabase {
           .map((r) => TradeHistoryItem.fromJson(r as Map<String, dynamic>))
           .toList();
     } catch (e) {
-      print('[AppDatabase] getAllTradeHistory failed: $e');
+      debugPrint('[AppDatabase] getAllTradeHistory failed: $e');
       return [];
     }
   }
@@ -350,7 +351,7 @@ class AppDatabase {
       final userId = Supabase.instance.client.auth.currentUser!.id;
       await _client.from('trade_history').delete().eq('user_id', userId);
     } catch (e) {
-      print('[AppDatabase] clearAllTradeHistory failed: $e');
+      debugPrint('[AppDatabase] clearAllTradeHistory failed: $e');
     }
   }
 }

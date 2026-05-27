@@ -95,14 +95,14 @@ class _MiniQuizSheetState extends ConsumerState<MiniQuizSheet> {
             if (_hasAnswered) {
               if (isCorrectOption) {
                 borderColor = Colors.greenAccent;
-                bgColor = Colors.greenAccent.withOpacity(0.2);
+                bgColor = Colors.greenAccent.withValues(alpha:0.2);
               } else if (isSelected) {
                 borderColor = Colors.redAccent;
-                bgColor = Colors.redAccent.withOpacity(0.2);
+                bgColor = Colors.redAccent.withValues(alpha:0.2);
               }
             } else if (isSelected) {
               borderColor = const Color(0xFF00D9FF);
-              bgColor = const Color(0xFF00D9FF).withOpacity(0.1);
+              bgColor = const Color(0xFF00D9FF).withValues(alpha:0.1);
             }
 
             return Padding(

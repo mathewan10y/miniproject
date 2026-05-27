@@ -89,7 +89,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
         // Background image
         Image.asset('lib/assets/bg_left.jpg', fit: BoxFit.cover),
         // Dark overlay
-        Container(color: Colors.black.withOpacity(0.5)),
+        Container(color: Colors.black.withValues(alpha:0.5)),
         // Main content
         SafeArea(
           child: Column(
@@ -576,7 +576,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
               vertical: isCompact ? 3 : 5,
             ),
             decoration: BoxDecoration(
-              color: active ? activeColor.withOpacity(0.18) : Colors.black38,
+              color: active ? activeColor.withValues(alpha:0.18) : Colors.black38,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: active ? activeColor : Colors.white24,
@@ -586,7 +586,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
                   active
                       ? [
                         BoxShadow(
-                          color: activeColor.withOpacity(0.4),
+                          color: activeColor.withValues(alpha:0.4),
                           blurRadius: 8,
                           spreadRadius: 0,
                         ),
@@ -619,8 +619,8 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
         decoration: BoxDecoration(
           color:
               isActive
-                  ? const Color(0xFF00D9FF).withOpacity(0.15)
-                  : Colors.black.withOpacity(0.35),
+                  ? const Color(0xFF00D9FF).withValues(alpha:0.15)
+                  : Colors.black.withValues(alpha:0.35),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isActive ? const Color(0xFF00D9FF) : Colors.white24,
@@ -630,7 +630,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
               isActive
                   ? [
                     BoxShadow(
-                      color: const Color(0xFF00D9FF).withOpacity(0.45),
+                      color: const Color(0xFF00D9FF).withValues(alpha:0.45),
                       blurRadius: 10,
                       spreadRadius: 0,
                     ),
@@ -704,7 +704,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
                 return Text(
                   label,
                   style: TextStyle(
-                    color: const Color(0xFFBBDEFF).withOpacity(0.6),
+                    color: const Color(0xFFBBDEFF).withValues(alpha:0.6),
                     fontSize: isCompact ? 8 : 9,
                   ),
                 );
@@ -729,15 +729,15 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
         filter: ui.ImageFilter.blur(sigmaX: 14, sigmaY: 14),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.35),
+            color: Colors.black.withValues(alpha:0.35),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: const Color(0xFF00D9FF).withOpacity(0.25),
+              color: const Color(0xFF00D9FF).withValues(alpha:0.25),
               width: 1.2,
             ),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF00D9FF).withOpacity(0.08),
+                color: const Color(0xFF00D9FF).withValues(alpha:0.08),
                 blurRadius: 20,
                 spreadRadius: 2,
               ),
@@ -762,8 +762,8 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
           decoration: BoxDecoration(
             color:
                 isActive
-                    ? const Color(0xFF00D9FF).withOpacity(0.2)
-                    : Colors.black.withOpacity(0.3),
+                    ? const Color(0xFF00D9FF).withValues(alpha:0.2)
+                    : Colors.black.withValues(alpha:0.3),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: isActive ? const Color(0xFF00D9FF) : Colors.white24,
@@ -804,7 +804,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
           children: [
             Icon(
               Icons.donut_large_outlined,
-              color: const Color(0xFF00D9FF).withOpacity(0.3),
+              color: const Color(0xFF00D9FF).withValues(alpha:0.3),
               size: 48,
             ),
             const SizedBox(height: 10),
@@ -886,7 +886,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
                       fontWeight: FontWeight.bold,
                       shadows: [
                         Shadow(
-                          color: const Color(0xFF00D9FF).withOpacity(0.9),
+                          color: const Color(0xFF00D9FF).withValues(alpha:0.9),
                           blurRadius: 14,
                         ),
                       ],
@@ -895,7 +895,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
                   Text(
                     'TOTAL',
                     style: TextStyle(
-                      color: const Color(0xFF00D9FF).withOpacity(0.75),
+                      color: const Color(0xFF00D9FF).withValues(alpha:0.75),
                       fontSize: radius < 90 ? 8 : 10,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 2.0,
@@ -933,7 +933,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
                         color: color,
                         boxShadow: [
                           BoxShadow(
-                            color: color.withOpacity(0.6),
+                            color: color.withValues(alpha:0.6),
                             blurRadius: 6,
                           ),
                         ],
@@ -1010,7 +1010,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
                               ? totalIncome
                               : totalExpenses) *
                           1.1,
-              color: const Color(0xFF00D9FF).withOpacity(0.07),
+              color: const Color(0xFF00D9FF).withValues(alpha:0.07),
             ),
           ),
         ],
@@ -1036,7 +1036,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
                               ? totalIncome
                               : totalExpenses) *
                           1.1,
-              color: const Color(0xFFFF6D00).withOpacity(0.07),
+              color: const Color(0xFFFF6D00).withValues(alpha:0.07),
             ),
           ),
         ],
@@ -1068,22 +1068,22 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
             decoration: BoxDecoration(
               color:
                   isAnalytics
-                      ? const Color(0xFF7C4DFF).withOpacity(0.15)
-                      : const Color(0xFF00D9FF).withOpacity(0.08),
+                      ? const Color(0xFF7C4DFF).withValues(alpha:0.15)
+                      : const Color(0xFF00D9FF).withValues(alpha:0.08),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color:
                     isAnalytics
-                        ? const Color(0xFF7C4DFF).withOpacity(0.7)
-                        : const Color(0xFF00D9FF).withOpacity(0.4),
+                        ? const Color(0xFF7C4DFF).withValues(alpha:0.7)
+                        : const Color(0xFF00D9FF).withValues(alpha:0.4),
                 width: 1.4,
               ),
               boxShadow: [
                 BoxShadow(
                   color:
                       isAnalytics
-                          ? const Color(0xFF7C4DFF).withOpacity(0.28)
-                          : const Color(0xFF00D9FF).withOpacity(0.14),
+                          ? const Color(0xFF7C4DFF).withValues(alpha:0.28)
+                          : const Color(0xFF00D9FF).withValues(alpha:0.14),
                   blurRadius: 18,
                   spreadRadius: 1,
                   offset: const Offset(0, 4),
@@ -1114,8 +1114,8 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
                       BoxShadow(
                         color:
                             isAnalytics
-                                ? const Color(0xFF7C4DFF).withOpacity(0.5)
-                                : const Color(0xFF00D9FF).withOpacity(0.45),
+                                ? const Color(0xFF7C4DFF).withValues(alpha:0.5)
+                                : const Color(0xFF00D9FF).withValues(alpha:0.45),
                         blurRadius: 10,
                         spreadRadius: 1,
                       ),
@@ -1155,8 +1155,8 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
                         style: TextStyle(
                           color:
                               isAnalytics
-                                  ? const Color(0xFFCE93D8).withOpacity(0.6)
-                                  : const Color(0xFF00D9FF).withOpacity(0.55),
+                                  ? const Color(0xFFCE93D8).withValues(alpha:0.6)
+                                  : const Color(0xFF00D9FF).withValues(alpha:0.55),
                           fontSize: isCompact ? 8 : 9,
                           letterSpacing: 0.4,
                         ),
@@ -1171,8 +1171,8 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
                       : Icons.keyboard_arrow_down,
                   color:
                       isAnalytics
-                          ? const Color(0xFFCE93D8).withOpacity(0.7)
-                          : const Color(0xFF00D9FF).withOpacity(0.7),
+                          ? const Color(0xFFCE93D8).withValues(alpha:0.7)
+                          : const Color(0xFF00D9FF).withValues(alpha:0.7),
                   size: 20,
                 ),
               ],
@@ -1331,7 +1331,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
               showGlow
                   ? [
                     BoxShadow(
-                      color: color.withOpacity(0.3),
+                      color: color.withValues(alpha:0.3),
                       blurRadius: 10,
                       spreadRadius: 2,
                     ),
@@ -1370,7 +1370,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
   ) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        backgroundColor: Colors.cyan.withOpacity(0.9),
+        backgroundColor: Colors.cyan.withValues(alpha:0.9),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         content: Row(
@@ -1400,7 +1400,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        backgroundColor: Colors.orange.withOpacity(0.9),
+        backgroundColor: Colors.orange.withValues(alpha:0.9),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         content: Row(
@@ -1455,12 +1455,12 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
               vertical: compact ? 10 : 14,
             ),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.10),
+              color: color.withValues(alpha:0.10),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: color.withOpacity(0.45), width: 1.4),
+              border: Border.all(color: color.withValues(alpha:0.45), width: 1.4),
               boxShadow: [
                 BoxShadow(
-                  color: color.withOpacity(0.22),
+                  color: color.withValues(alpha:0.22),
                   blurRadius: 18,
                   spreadRadius: 1,
                   offset: const Offset(0, 4),
@@ -1482,7 +1482,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
                             gradient: gradient,
                             boxShadow: [
                               BoxShadow(
-                                color: color.withOpacity(0.45),
+                                color: color.withValues(alpha:0.45),
                                 blurRadius: 10,
                                 spreadRadius: 1,
                               ),
@@ -1507,7 +1507,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
                             Text(
                               subtitle,
                               style: TextStyle(
-                                color: color.withOpacity(0.6),
+                                color: color.withValues(alpha:0.6),
                                 fontSize: 9,
                                 letterSpacing: 0.5,
                               ),
@@ -1528,7 +1528,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
                             gradient: gradient,
                             boxShadow: [
                               BoxShadow(
-                                color: color.withOpacity(0.5),
+                                color: color.withValues(alpha:0.5),
                                 blurRadius: 14,
                                 spreadRadius: 2,
                               ),
@@ -1553,7 +1553,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
                             Text(
                               subtitle,
                               style: TextStyle(
-                                color: color.withOpacity(0.6),
+                                color: color.withValues(alpha:0.6),
                                 fontSize: 10,
                                 letterSpacing: 0.5,
                               ),
@@ -1722,9 +1722,9 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
         width: 32,
         height: 32,
         decoration: BoxDecoration(
-          color: const Color(0xFF00D9FF).withOpacity(0.1),
+          color: const Color(0xFF00D9FF).withValues(alpha:0.1),
           shape: BoxShape.circle,
-          border: Border.all(color: const Color(0xFF00D9FF).withOpacity(0.4)),
+          border: Border.all(color: const Color(0xFF00D9FF).withValues(alpha:0.4)),
         ),
         child: Icon(icon, color: const Color(0xFF00D9FF), size: 18),
       ),
@@ -1783,8 +1783,8 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
                     decoration: BoxDecoration(
                       color:
                           isSelected
-                              ? const Color(0xFF00D9FF).withOpacity(0.20)
-                              : Colors.black.withOpacity(0.28),
+                              ? const Color(0xFF00D9FF).withValues(alpha:0.20)
+                              : Colors.black.withValues(alpha:0.28),
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
                         color:
@@ -1799,7 +1799,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
                                 BoxShadow(
                                   color: const Color(
                                     0xFF00D9FF,
-                                  ).withOpacity(0.35),
+                                  ).withValues(alpha:0.35),
                                   blurRadius: 12,
                                   spreadRadius: 1,
                                 ),
@@ -1843,7 +1843,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
                           style: TextStyle(
                             color:
                                 isSelected
-                                    ? const Color(0xFF00D9FF).withOpacity(0.8)
+                                    ? const Color(0xFF00D9FF).withValues(alpha:0.8)
                                     : const Color(0xFFBBDEFF),
                             fontSize: 9,
                             letterSpacing: 0.3,
@@ -1862,7 +1862,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
                                       ? const Color(0xFF00D9FF)
                                       : const Color(
                                         0xFF00D9FF,
-                                      ).withOpacity(0.6),
+                                      ).withValues(alpha:0.6),
                             ),
                           ),
                         ],
@@ -2036,9 +2036,9 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
           filter: ui.ImageFilter.blur(sigmaX: 6, sigmaY: 6),
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.4),
+              color: Colors.black.withValues(alpha:0.4),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: accentColor.withOpacity(0.2), width: 1),
+              border: Border.all(color: accentColor.withValues(alpha:0.2), width: 1),
             ),
             child: Row(
               children: [
@@ -2054,7 +2054,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: accentColor.withOpacity(0.5),
+                        color: accentColor.withValues(alpha:0.5),
                         blurRadius: 6,
                         spreadRadius: 1,
                       ),
@@ -2091,10 +2091,10 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: subtitleColor.withOpacity(0.12),
+                                  color: subtitleColor.withValues(alpha:0.12),
                                   borderRadius: BorderRadius.circular(4),
                                   border: Border.all(
-                                    color: subtitleColor.withOpacity(0.4),
+                                    color: subtitleColor.withValues(alpha:0.4),
                                     width: 0.8,
                                   ),
                                 ),

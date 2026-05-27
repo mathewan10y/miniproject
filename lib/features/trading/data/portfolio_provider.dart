@@ -4,6 +4,7 @@ import '../domain/models/trade_history_item.dart';
 import 'market_service.dart';
 import '../../../core/providers/refinery_provider.dart';
 import '../../../core/database/database.dart';
+import 'package:flutter/foundation.dart';
 
 /// Holds active positions, closed-trade history, and balance events.
 class PortfolioState {
@@ -55,7 +56,7 @@ class PortfolioNotifier extends AsyncNotifier<PortfolioState> {
       );
     } catch (e) {
       // On fetch failure, start with empty state rather than crashing.
-      print('[PortfolioNotifier] build() fetch failed: $e');
+      debugPrint('[PortfolioNotifier] build() fetch failed: $e');
       return const PortfolioState();
     }
   }
@@ -71,7 +72,7 @@ class PortfolioNotifier extends AsyncNotifier<PortfolioState> {
     try {
       await _db.addOpenPosition(position);
     } catch (e) {
-      print('[PortfolioNotifier] openPosition Supabase insert failed: $e');
+      debugPrint('[PortfolioNotifier] openPosition Supabase insert failed: $e');
       // Proceed with local update even if remote fails (best-effort)
     }
     final current = _current;
@@ -124,7 +125,7 @@ class PortfolioNotifier extends AsyncNotifier<PortfolioState> {
         _db.addTradeHistory(historyItem),
       ]);
     } catch (e) {
-      print('[PortfolioNotifier] closePosition Supabase ops failed: $e');
+      debugPrint('[PortfolioNotifier] closePosition Supabase ops failed: $e');
     }
 
     final updatedPositions = [...current.positions]..removeAt(index);
@@ -155,7 +156,7 @@ class PortfolioNotifier extends AsyncNotifier<PortfolioState> {
         _db.clearAllTradeHistory(),
       ]);
     } catch (e) {
-      print('[PortfolioNotifier] resetPortfolio Supabase ops failed: $e');
+      debugPrint('[PortfolioNotifier] resetPortfolio Supabase ops failed: $e');
     }
 
     state = const AsyncData(PortfolioState());

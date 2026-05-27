@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/refinery_system.dart';
+import 'package:flutter/foundation.dart';
 
 const _kRefineryKey = 'refinery_state';
 
@@ -23,7 +24,7 @@ class RefineryNotifier extends AsyncNotifier<RefinerySystem> {
 
   @override
   Future<RefinerySystem> build() async {
-    print('REFINERY: Loading saved state...');
+    debugPrint('REFINERY: Loading saved state...');
     final completer = Completer<void>();
     _initialLoad = completer.future;
     
@@ -35,11 +36,11 @@ class RefineryNotifier extends AsyncNotifier<RefinerySystem> {
       final next = _snapshot(result);
       state = AsyncData(next);
       await _save(next);
-      print('REFINERY: Auto-injected $oreToAdd Ore on startup');
+      debugPrint('REFINERY: Auto-injected $oreToAdd Ore on startup');
     }
     
     completer.complete(); // signal that load is done
-    print('REFINERY: Loaded ore=${result.rawOre} fuel=${result.refinedFuel}');
+    debugPrint('REFINERY: Loaded ore=${result.rawOre} fuel=${result.refinedFuel}');
     return result;
   }
 
@@ -80,7 +81,7 @@ class RefineryNotifier extends AsyncNotifier<RefinerySystem> {
         'lastAutoInjectTimeMs': s.lastAutoInjectTimeMs,
       }),
     );
-    print('REFINERY: Saved ore=${s.rawOre} fuel=${s.refinedFuel}');
+    debugPrint('REFINERY: Saved ore=${s.rawOre} fuel=${s.refinedFuel}');
   }
 
   // ── Helpers to snapshot state immutably ──────────────────────────────────
@@ -102,9 +103,9 @@ class RefineryNotifier extends AsyncNotifier<RefinerySystem> {
   // ── Public API ────────────────────────────────────────────────────────────
 
   Future<void> processIncome(double amount) async {
-    print('REFINERY: processIncome called with $amount');
+    debugPrint('REFINERY: processIncome called with $amount');
     await _initialLoad; // wait for SharedPreferences load to finish
-    print('REFINERY: load completed, modifying state for income');
+    debugPrint('REFINERY: load completed, modifying state for income');
 
     final s = _current;
     s.processIncomeTransaction(amount);
@@ -114,7 +115,7 @@ class RefineryNotifier extends AsyncNotifier<RefinerySystem> {
   }
 
   Future<void> processExpense(double amount) async {
-    print('REFINERY: processExpense called with $amount');
+    debugPrint('REFINERY: processExpense called with $amount');
     await _initialLoad; // wait for SharedPreferences load to finish
 
     final s = _current;

@@ -11,12 +11,12 @@ class CreditVault extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.secondary.withOpacity(0.1),
+        color: theme.colorScheme.secondary.withValues(alpha:0.1),
         borderRadius: BorderRadius.circular(15),
         border: Border.all(color: theme.colorScheme.secondary, width: 1),
         boxShadow: [
           BoxShadow(
-            color: theme.colorScheme.secondary.withOpacity(0.5),
+            color: theme.colorScheme.secondary.withValues(alpha:0.5),
             blurRadius: 10,
             spreadRadius: 2,
           ),
@@ -42,7 +42,7 @@ class CreditVault extends StatelessWidget {
               fontWeight: FontWeight.bold,
               shadows: [
                 Shadow(
-                  color: theme.colorScheme.primary.withOpacity(0.7),
+                  color: theme.colorScheme.primary.withValues(alpha:0.7),
                   blurRadius: 15,
                 ),
               ],

@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import '../domain/models/market_asset.dart';
+import 'package:flutter/foundation.dart';
 
 // Provider definition
 final marketServiceProvider = Provider<MarketRepository>((ref) {
@@ -178,7 +179,7 @@ class MixedMarketService implements MarketRepository {
               break;
             }
           }
-          print('[MarketService] USD/INR rate: $_usdToInr');
+          debugPrint('[MarketService] USD/INR rate: $_usdToInr');
 
           // --- Pass 2: build assets ---
           for (final item in results) {
@@ -208,12 +209,12 @@ class MixedMarketService implements MarketRepository {
         }
       }
     } catch (e) {
-      print('[MarketService] Yahoo Finance fetch failed: $e');
+      debugPrint('[MarketService] Yahoo Finance fetch failed: $e');
     }
 
     // Fallback: use mock data if Yahoo call failed or returned empty
     if (!yahooSuccess) {
-      print('[MarketService] Using mock fallback for stocks/indices/commodities.');
+      debugPrint('[MarketService] Using mock fallback for stocks/indices/commodities.');
       assets.addAll(_getMockSectorB_Thrusters());
       assets.addAll(_getMockSectorB_Fleets());
       assets.add(_getMockSectorA('gold', 'Gold', 2030.50, 2));
@@ -238,7 +239,7 @@ class MixedMarketService implements MarketRepository {
         final candles = await _fetchYahooChart(assetId, yahooSymbol, interval, range);
         if (candles.isNotEmpty) return candles;
       } catch (e) {
-        print('[MarketService] Yahoo chart fetch failed for $assetId: $e');
+        debugPrint('[MarketService] Yahoo chart fetch failed for $assetId: $e');
       }
     }
 

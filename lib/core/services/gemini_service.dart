@@ -1,6 +1,7 @@
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../features/gamification/presentation/providers/bot_chat_provider.dart';
+import 'package:flutter/foundation.dart';
 
 class GeminiService {
   late final GenerativeModel _model;
@@ -51,11 +52,11 @@ Instruction: Drop one specific roast about the previous advice or user. Be quick
     final apiKey = dotenv.env['GEMINI_API_KEY'];
 
     if (apiKey == null || apiKey.isEmpty) {
-      print("[GeminiService] API Key not found");
+      debugPrint("[GeminiService] API Key not found");
       return;
     }
 
-    print(
+    debugPrint(
       "[GeminiService] Loaded API Key: ${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}",
     );
 
@@ -68,7 +69,7 @@ Instruction: Drop one specific roast about the previous advice or user. Be quick
 
     // DEBUG: List available models
     try {
-      print("[GeminiService] Fetching available models...");
+      debugPrint("[GeminiService] Fetching available models...");
       // We can't easily list models with the Dart SDK directly via a simple method on GenerativeModel,
       // strictly speaking the SDK doesn't expose listModels in the main GenerativeModel class in all versions.
       // But typically we debug this by trying a known working model.
@@ -79,7 +80,7 @@ Instruction: Drop one specific roast about the previous advice or user. Be quick
       // Let's try to infer if it's a paid vs free key issue.
       // For now, I will keep 1.5-flash but strip any prefixes/suffixes if present (code is clean).
     } catch (e) {
-      print("[GeminiService] List Check Error: $e");
+      debugPrint("[GeminiService] List Check Error: $e");
     }
   }
 
@@ -96,7 +97,7 @@ Instruction: Drop one specific roast about the previous advice or user. Be quick
       final response = await _model.generateContent(content);
       return response.text ?? "...";
     } catch (e) {
-      print("[GeminiService] Error: $e");
+      debugPrint("[GeminiService] Error: $e");
       return "Critical Failure in Logic Core: $e";
     }
   }

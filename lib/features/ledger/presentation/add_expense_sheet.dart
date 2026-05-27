@@ -112,7 +112,7 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     filled: true,
-                    fillColor: Colors.black.withOpacity(0.3),
+                    fillColor: Colors.black.withValues(alpha:0.3),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -157,7 +157,7 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet> {
                               _selectedCategory = category;
                             });
                           },
-                          backgroundColor: Colors.black.withOpacity(0.3),
+                          backgroundColor: Colors.black.withValues(alpha:0.3),
                           selectedColor: const Color(0xFF00D9FF),
                           side: BorderSide(
                             color:
@@ -172,7 +172,7 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet> {
                 // Want/Need toggle
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.3),
+                    color: Colors.black.withValues(alpha:0.3),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: Colors.white24),
                   ),

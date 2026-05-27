@@ -27,7 +27,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   void _checkAndShowTutorial(int pageIndex) {
     // Add a small delay to allow the swipe animation to visually settle
     Future.delayed(const Duration(milliseconds: 300), () {
-      if (!mounted) return;
+      if (!context.mounted) return;
       
       final engine = ref.read(tutorialEngineProvider);
       List<DialogNode>? script;

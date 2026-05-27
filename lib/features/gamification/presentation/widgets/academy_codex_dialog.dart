@@ -142,8 +142,8 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
           decoration: BoxDecoration(
             color: const Color(0xFF080C13),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFF00D9FF).withOpacity(0.25), width: 1.5),
-            boxShadow: [BoxShadow(color: const Color(0xFF00D9FF).withOpacity(0.08), blurRadius: 60, spreadRadius: 4)],
+            border: Border.all(color: const Color(0xFF00D9FF).withValues(alpha:0.25), width: 1.5),
+            boxShadow: [BoxShadow(color: const Color(0xFF00D9FF).withValues(alpha:0.08), blurRadius: 60, spreadRadius: 4)],
           ),
           child: Column(children: [
             _header(context, isDev, narrow),
@@ -174,10 +174,10 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [const Color(0xFF0D1520), meta.accent.withOpacity(0.06), const Color(0xFF0D1520)],
+          colors: [const Color(0xFF0D1520), meta.accent.withValues(alpha:0.06), const Color(0xFF0D1520)],
           stops: const [0, 0.5, 1],
         ),
-        border: Border(bottom: BorderSide(color: meta.accent.withOpacity(0.2), width: 1)),
+        border: Border(bottom: BorderSide(color: meta.accent.withValues(alpha:0.2), width: 1)),
       ),
       child: Row(children: [
         // Hamburger
@@ -210,9 +210,9 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
     child: Container(
       width: 32, height: 32,
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: color.withValues(alpha:0.08),
         borderRadius: BorderRadius.circular(7),
-        border: Border.all(color: color.withOpacity(0.25)),
+        border: Border.all(color: color.withValues(alpha:0.25)),
       ),
       child: Icon(icon, color: color, size: 16),
     ),
@@ -221,8 +221,8 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
   Widget _badge(String label, Color c, IconData icon, {double iconSize = 12}) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3), // Reduced padding
     decoration: BoxDecoration(
-      color: c.withOpacity(0.08),
-      border: Border.all(color: c.withOpacity(0.4)),
+      color: c.withValues(alpha:0.08),
+      border: Border.all(color: c.withValues(alpha:0.4)),
       borderRadius: BorderRadius.circular(5),
     ),
     child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -245,8 +245,8 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
             child: Container(
               decoration: BoxDecoration(
                 color: const Color(0xFF060A10),
-                border: Border(right: BorderSide(color: const Color(0xFF00D9FF).withOpacity(0.1))),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.4), blurRadius: 20)],
+                border: Border(right: BorderSide(color: const Color(0xFF00D9FF).withValues(alpha:0.1))),
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha:0.4), blurRadius: 20)],
               ),
               child: Column(children: [
                 Padding(
@@ -255,14 +255,14 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
                     Text('MISSION LEVELS', style: GoogleFonts.orbitron(color: Colors.white24, fontSize: 7, letterSpacing: 1.5)),
                   ]),
                 ),
-                Container(height: 1, color: Colors.white.withOpacity(0.06)),
+                Container(height: 1, color: Colors.white.withValues(alpha:0.06)),
                 Expanded(
                   child: ListView(
                     padding: const EdgeInsets.symmetric(vertical: 6),
                     children: _levels.map((l) => _navItem(l, maxLvl, narrow)).toList(),
                   ),
                 ),
-                Container(height: 1, color: Colors.white.withOpacity(0.04)),
+                Container(height: 1, color: Colors.white.withValues(alpha:0.04)),
                 Padding(
                   padding: const EdgeInsets.all(12),
                   child: Text('U.G.F. OPERATIONS MANUAL v7.0',
@@ -310,7 +310,7 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
             margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             decoration: BoxDecoration(
-              color: sel ? m.accent.withOpacity(0.1) : Colors.transparent,
+              color: sel ? m.accent.withValues(alpha:0.1) : Colors.transparent,
               borderRadius: BorderRadius.circular(8),
               border: Border(left: BorderSide(color: sel ? m.accent : Colors.transparent, width: 3)),
             ),
@@ -319,13 +319,13 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
                 Container(
                   width: 28, height: 28,
                   decoration: BoxDecoration(
-                    color: locked ? Colors.white.withOpacity(0.03) : m.accent.withOpacity(sel ? 0.18 : 0.06),
-                    border: Border.all(color: locked ? Colors.white12 : m.accent.withOpacity(sel ? 0.6 : 0.18)),
+                    color: locked ? Colors.white.withValues(alpha:0.03) : m.accent.withValues(alpha:sel ? 0.18 : 0.06),
+                    border: Border.all(color: locked ? Colors.white12 : m.accent.withValues(alpha:sel ? 0.6 : 0.18)),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: locked
                       ? const Icon(Icons.lock, color: Colors.white24, size: 12)
-                      : Center(child: Icon(m.icon, color: m.accent.withOpacity(sel ? 1 : 0.5), size: 13)),
+                      : Center(child: Icon(m.icon, color: m.accent.withValues(alpha:sel ? 1 : 0.5), size: 13)),
                 ),
                 const SizedBox(width: 10),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -346,7 +346,7 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
                 Container(
                   height: 6,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
+                    color: Colors.white.withValues(alpha:0.1),
                     borderRadius: BorderRadius.circular(3),
                   ),
                   child: FractionallySizedBox(
@@ -384,7 +384,7 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
       children: [
         SizedBox(width: 32, height: 32, child: CircularProgressIndicator(color: accent, strokeWidth: 2)),
         const SizedBox(height: 14),
-        Text('LOADING TRANSMISSION...', style: GoogleFonts.orbitron(color: accent.withOpacity(0.6), fontSize: 11, letterSpacing: 2)),
+        Text('LOADING TRANSMISSION...', style: GoogleFonts.orbitron(color: accent.withValues(alpha:0.6), fontSize: 11, letterSpacing: 2)),
       ],
     ),
   );
@@ -402,9 +402,9 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
         SliverFillRemaining(child: Center(child: _lockScreen()))
       else if (raw.isEmpty)
         SliverFillRemaining(child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(Icons.hourglass_empty_outlined, color: meta.accent.withOpacity(0.4), size: 40),
+          Icon(Icons.hourglass_empty_outlined, color: meta.accent.withValues(alpha:0.4), size: 40),
           const SizedBox(height: 12),
-          Text('TRANSMISSION IN PROGRESS', style: GoogleFonts.orbitron(color: meta.accent.withOpacity(0.5), fontSize: 12, letterSpacing: 2)),
+          Text('TRANSMISSION IN PROGRESS', style: GoogleFonts.orbitron(color: meta.accent.withValues(alpha:0.5), fontSize: 12, letterSpacing: 2)),
         ])))
       else
         SliverPadding(
@@ -420,17 +420,17 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft, end: Alignment.bottomRight,
-          colors: [meta.accent.withOpacity(0.12), Colors.transparent],
+          colors: [meta.accent.withValues(alpha:0.12), Colors.transparent],
         ),
-        border: Border(bottom: BorderSide(color: meta.accent.withOpacity(0.15))),
+        border: Border(bottom: BorderSide(color: meta.accent.withValues(alpha:0.15))),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: meta.accent.withOpacity(0.12),
-              border: Border.all(color: meta.accent.withOpacity(0.5)),
+              color: meta.accent.withValues(alpha:0.12),
+              border: Border.all(color: meta.accent.withValues(alpha:0.5)),
               borderRadius: BorderRadius.circular(5),
             ),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -465,7 +465,7 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
     const SizedBox(height: 8),
     Text('Complete your current level to unlock', style: GoogleFonts.shareTechMono(color: Colors.white24, fontSize: 12)),
     const SizedBox(height: 4),
-    Text('Enable DEV MODE to bypass lock', style: GoogleFonts.shareTechMono(color: Colors.amber.withOpacity(0.4), fontSize: 11)),
+    Text('Enable DEV MODE to bypass lock', style: GoogleFonts.shareTechMono(color: Colors.amber.withValues(alpha:0.4), fontSize: 11)),
   ]);
 
   // ── Text parser ─────────────────────────────────────────────────
@@ -510,12 +510,12 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            isCompleted ? const Color(0xFF4CAF50).withOpacity(0.1) : const Color(0xFF2196F3).withOpacity(0.1),
-            isCompleted ? const Color(0xFF4CAF50).withOpacity(0.05) : const Color(0xFF2196F3).withOpacity(0.05),
+            isCompleted ? const Color(0xFF4CAF50).withValues(alpha:0.1) : const Color(0xFF2196F3).withValues(alpha:0.1),
+            isCompleted ? const Color(0xFF4CAF50).withValues(alpha:0.05) : const Color(0xFF2196F3).withValues(alpha:0.05),
           ],
         ),
         border: Border.all(
-          color: isCompleted ? const Color(0xFF4CAF50).withOpacity(0.3) : const Color(0xFF2196F3).withOpacity(0.3),
+          color: isCompleted ? const Color(0xFF4CAF50).withValues(alpha:0.3) : const Color(0xFF2196F3).withValues(alpha:0.3),
         ),
         borderRadius: BorderRadius.circular(12),
       ),
@@ -558,7 +558,7 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFF2196F3).withOpacity(0.1),
+                color: const Color(0xFF2196F3).withValues(alpha:0.1),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
@@ -684,16 +684,16 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
           maxLines: 1,
         ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: isCompleted ? Colors.green.withOpacity(0.2) : 
-                         isFailed ? Colors.red.withOpacity(0.2) : 
-                         accent.withOpacity(0.1),
+          backgroundColor: isCompleted ? Colors.green.withValues(alpha:0.2) : 
+                         isFailed ? Colors.red.withValues(alpha:0.2) : 
+                         accent.withValues(alpha:0.1),
           foregroundColor: isCompleted ? Colors.green : 
                          isFailed ? Colors.red : 
                          accent,
           side: BorderSide(
-            color: isCompleted ? Colors.green.withOpacity(0.5) : 
-                   isFailed ? Colors.red.withOpacity(0.5) : 
-                   accent.withOpacity(0.5)
+            color: isCompleted ? Colors.green.withValues(alpha:0.5) : 
+                   isFailed ? Colors.red.withValues(alpha:0.5) : 
+                   accent.withValues(alpha:0.5)
           ),
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           alignment: Alignment.centerLeft,
@@ -717,10 +717,10 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 24),
           decoration: BoxDecoration(
-            color: isUnlocked ? Colors.redAccent.withOpacity(0.15) : Colors.white10.withOpacity(0.05),
+            color: isUnlocked ? Colors.redAccent.withValues(alpha:0.15) : Colors.white10.withValues(alpha:0.05),
             border: Border.all(color: isUnlocked ? Colors.redAccent : Colors.white24, width: 2),
             borderRadius: BorderRadius.circular(12),
-            boxShadow: isUnlocked ? [BoxShadow(color: Colors.redAccent.withOpacity(0.2), blurRadius: 20)] : [],
+            boxShadow: isUnlocked ? [BoxShadow(color: Colors.redAccent.withValues(alpha:0.2), blurRadius: 20)] : [],
           ),
           child: Column(
             children: [
@@ -738,7 +738,7 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
               const SizedBox(height: 6),
               Text(
                 isUnlocked ? "WARNING: POTENTIALLY FATAL TO FUEL RESERVES" : "Pass all diagnostics to unlock",
-                style: GoogleFonts.shareTechMono(color: isUnlocked ? Colors.redAccent.withOpacity(0.7) : Colors.white24, fontSize: 12),
+                style: GoogleFonts.shareTechMono(color: isUnlocked ? Colors.redAccent.withValues(alpha:0.7) : Colors.white24, fontSize: 12),
               ),
             ],
           ),
@@ -776,7 +776,7 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
       return Padding(
         padding: const EdgeInsets.only(bottom: 5),
         child: RichText(text: TextSpan(children: [
-          TextSpan(text: '${kv.group(1)}: ', style: GoogleFonts.shareTechMono(color: accent.withOpacity(0.8), fontSize: 12, fontWeight: FontWeight.bold, height: 1.6)),
+          TextSpan(text: '${kv.group(1)}: ', style: GoogleFonts.shareTechMono(color: accent.withValues(alpha:0.8), fontSize: 12, fontWeight: FontWeight.bold, height: 1.6)),
           TextSpan(text: kv.group(2)!, style: GoogleFonts.shareTechMono(color: Colors.white60, fontSize: 12, height: 1.6)),
         ])),
       );
@@ -792,7 +792,7 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
           codeblockDecoration: BoxDecoration(
             color: Colors.black26,
             borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: accent.withOpacity(0.3)),
+            border: Border.all(color: accent.withValues(alpha:0.3)),
           ),
         ),
       ),
@@ -806,9 +806,9 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
     final isGoal    = text.startsWith('🚀') || text.startsWith('⚔️') || text.startsWith('🎓');
 
     Color bgColor = Colors.transparent;
-    if (isWarning) bgColor = const Color(0xFFFF5252).withOpacity(0.1);
-    if (isSuccess) bgColor = const Color(0xFF4CAF50).withOpacity(0.1);
-    if (isGoal)    bgColor = const Color(0xFF2196F3).withOpacity(0.1);
+    if (isWarning) bgColor = const Color(0xFFFF5252).withValues(alpha:0.1);
+    if (isSuccess) bgColor = const Color(0xFF4CAF50).withValues(alpha:0.1);
+    if (isGoal)    bgColor = const Color(0xFF2196F3).withValues(alpha:0.1);
 
     return Container(
       width: double.infinity,
@@ -816,7 +816,7 @@ class _AcademyCodexDialogState extends ConsumerState<AcademyCodexDialog>
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: bgColor,
-        border: Border.all(color: accent.withOpacity(0.3)),
+        border: Border.all(color: accent.withValues(alpha:0.3)),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(text, style: GoogleFonts.shareTechMono(color: Colors.white70, fontSize: 11, height: 1.4)),

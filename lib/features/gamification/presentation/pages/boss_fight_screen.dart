@@ -204,7 +204,7 @@ class _BossFightScreenState extends ConsumerState<BossFightScreen> with SingleTi
                             height: 12,
                             decoration: BoxDecoration(
                               color: idx < _bossHp ? Colors.redAccent : Colors.white12,
-                              border: Border.all(color: Colors.redAccent.withOpacity(0.5)),
+                              border: Border.all(color: Colors.redAccent.withValues(alpha:0.5)),
                               borderRadius: BorderRadius.circular(2),
                             ),
                           )),
@@ -229,12 +229,12 @@ class _BossFightScreenState extends ConsumerState<BossFightScreen> with SingleTi
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           boxShadow: [
-                            BoxShadow(color: Colors.redAccent.withOpacity(0.2), blurRadius: 100, spreadRadius: 20),
+                            BoxShadow(color: Colors.redAccent.withValues(alpha:0.2), blurRadius: 100, spreadRadius: 20),
                           ],
                         ),
                       ),
                       // Mock Image / Graphic
-                      Icon(Icons.warning_amber_rounded, size: 140, color: Colors.redAccent.withOpacity(0.8)),
+                      Icon(Icons.warning_amber_rounded, size: 140, color: Colors.redAccent.withValues(alpha:0.8)),
                     ],
                   ),
                 ),
@@ -249,7 +249,7 @@ class _BossFightScreenState extends ConsumerState<BossFightScreen> with SingleTi
                   decoration: BoxDecoration(
                     color: const Color(0xFF0B121C),
                     border: const Border(top: BorderSide(color: Colors.redAccent, width: 2)),
-                    boxShadow: [BoxShadow(color: Colors.redAccent.withOpacity(0.1), blurRadius: 40, offset: const Offset(0, -10))],
+                    boxShadow: [BoxShadow(color: Colors.redAccent.withValues(alpha:0.1), blurRadius: 40, offset: const Offset(0, -10))],
                   ),
                   child: Column(
                     children: [
@@ -284,12 +284,12 @@ class _BossFightScreenState extends ConsumerState<BossFightScreen> with SingleTi
 
                               if (_hasAnswered) {
                                 if (isCorrect) {
-                                  borderColor = Colors.greenAccent; bgColor = Colors.greenAccent.withOpacity(0.2);
+                                  borderColor = Colors.greenAccent; bgColor = Colors.greenAccent.withValues(alpha:0.2);
                                 } else if (isSelected) {
-                                  borderColor = Colors.redAccent; bgColor = Colors.redAccent.withOpacity(0.2);
+                                  borderColor = Colors.redAccent; bgColor = Colors.redAccent.withValues(alpha:0.2);
                                 }
                               } else if (isSelected) {
-                                borderColor = const Color(0xFF00D9FF); bgColor = const Color(0xFF00D9FF).withOpacity(0.1);
+                                borderColor = const Color(0xFF00D9FF); bgColor = const Color(0xFF00D9FF).withValues(alpha:0.1);
                               }
 
                               return Padding(
