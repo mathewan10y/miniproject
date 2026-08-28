@@ -11,6 +11,14 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
+.vscode/
+
+full_analyze*.txt
+analysis*.txt
+analyze*.txt
+machine_out*.txt
+log.txt
+potential_bugs.txt
 
 # IntelliJ related
 *.iml
