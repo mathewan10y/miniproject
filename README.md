@@ -2,15 +2,19 @@
 
 A gamified financial literacy and trading simulation mobile application designed to make learning market mechanics interactive and engaging.
 
+**🚀 [Live Demo](https://miniproject-mathew15.vercel.app/)**
+
+*The web application is deployed and hosted on **Vercel**, with backend services, database, and authentication powered by **Supabase**.*
+
 ## 📸 Application Overview
 
-| Market Dashboard | Trading Simulation |
-| :---: | :---: |
-| <div align="center"><img src="assets/placeholder1.png" alt="Market Dashboard" width="100%"></div> | <div align="center"><img src="assets/placeholder2.png" alt="Trading Simulation" width="100%"></div> |
-| **Portfolio Analysis** | **Financial Literacy Modules** |
-| <div align="center"><img src="assets/placeholder3.png" alt="Portfolio Analysis" width="100%"></div> | <div align="center"><img src="assets/placeholder4.png" alt="Literacy Modules" width="100%"></div> |
+| Dashboard | Market Simulation | Expense Analytics |
+| :---: | :---: | :---: |
+| <div align="center"><img src="assets/audio/screenshots/dashboard.png" alt="Dashboard" width="250"></div> | <div align="center"><img src="assets/audio/screenshots/market.png" alt="Market Simulation" width="250"></div> | <div align="center"><img src="assets/audio/screenshots/income.png" alt="Expense Analytics" width="250"></div> |
 
----
+| AI Chatbots | Financial Literacy | Gamified Boss Fights |
+| :---: | :---: | :---: |
+| <div align="center"><img src="assets/audio/screenshots/ai.png" alt="Aura Chatbot" width="250"></div> | <div align="center"><img src="assets/audio/screenshots/levels.png" alt="The Academy" width="250"></div> | <div align="center"><img src="assets/audio/screenshots/boss.png" alt="Boss Fight" width="250"></div> |
 
 
 
@@ -64,9 +68,11 @@ Create a .env file in the root directory to securely store your Supabase credent
 ```plaintext
 SUPABASE_URL=your_supabase_project_url
 SUPABASE_ANON_KEY=your_supabase_anon_key
+GEMINI_API_KEY=your_gemini_api_key
 ```
 ### 4. Run the Application
 Start the application on a connected device or emulator:
 ```bash
 flutter run
+flutter run -d chrome # to run it in chrome
 ```
