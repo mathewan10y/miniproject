@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:flutter/foundation.dart';
 
 // ─── Data Models ─────────────────────────────────────────────────────────────
 
@@ -215,7 +216,7 @@ The "score" field must be an integer from 0 to 10.
     final response = await model.generateContent([Content.text(prompt)]);
     final text = response.text ?? '';
 
-    print('[GeminiRaw] $text');
+    debugPrint('[GeminiRaw] $text');
 
     // Strip markdown code fences if Gemini sneaks them in
     String cleaned = text.trim();
@@ -227,7 +228,7 @@ The "score" field must be an integer from 0 to 10.
               .trim();
     }
 
-    print('[GeminiCleaned] $cleaned');
+    debugPrint('[GeminiCleaned] $cleaned');
 
     final Map<String, dynamic> json = jsonDecode(cleaned);
     return StockAnalysisResult.fromJson(json);

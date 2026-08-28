@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../ledger/expense_provider.dart';
 
-enum TimeFrame { Daily, Weekly, Yearly }
+enum TimeFrame { daily, weekly, yearly }
 
 class AnalysisTab extends ConsumerStatefulWidget {
   const AnalysisTab({super.key});
@@ -13,7 +13,7 @@ class AnalysisTab extends ConsumerStatefulWidget {
 }
 
 class _AnalysisTabState extends ConsumerState<AnalysisTab> {
-  TimeFrame _selectedTimeFrame = TimeFrame.Daily;
+  TimeFrame _selectedTimeFrame = TimeFrame.daily;
 
   @override
   Widget build(BuildContext context) {
@@ -33,9 +33,9 @@ class _AnalysisTabState extends ConsumerState<AnalysisTab> {
                   });
                 },
                 children: const [
-                  Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('Daily')),
-                  Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('Weekly')),
-                  Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('Yearly')),
+                  Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('daily')),
+                  Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('weekly')),
+                  Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('yearly')),
                 ],
               ),
             ),

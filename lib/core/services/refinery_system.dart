@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 
 class RefineryResult {
   final double fuelAdded;
@@ -181,7 +182,7 @@ class RefinerySystem {
     // NOTE: This uses the exact same algorithm as income (calculateOreFromIncome) 
     // to ensure symmetry, as requested.
     final oreToReduce = calculateOreFromIncome(amount);
-    print('DEBUG: Processing Expense: $amount. Reducing Ore by: $oreToReduce. Current Ore: $rawOre');
+    debugPrint('DEBUG: Processing Expense: $amount. Reducing Ore by: $oreToReduce. Current Ore: $rawOre');
     rawOre = (rawOre - oreToReduce).clamp(0, rawOre); // Don't go negative
   }
 

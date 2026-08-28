@@ -1,5 +1,6 @@
 import os
 import re
+import 'package:flutter/foundation.dart';
 
 def find_container_errors(root_dir):
     pattern = re.compile(r'Container\s*\((.*?)\)', re.DOTALL)
@@ -30,9 +31,9 @@ def find_container_errors(root_dir):
                             
                             # A direct argument is usually at the start of a line or after a comma, 
                             # and not deeper in nesting.
-                            print(f"Potential conflict in {path}:")
-                            print(match.group(0))
-                            print("-" * 20)
+                            debugPrint(f"Potential conflict in {path}:")
+                            debugPrint(match.group(0))
+                            debugPrint("-" * 20)
 
 if __name__ == "__main__":
     find_container_errors('lib')

@@ -1,6 +1,7 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/settings_provider.dart';
+import 'package:flutter/foundation.dart';
 
 class AudioService {
   final Ref _ref;
@@ -39,7 +40,7 @@ class AudioService {
         await _bgmPlayer.play(AssetSource('audio/background.mp3'));
         _isBgmPlaying = true;
       } catch (e) {
-        print('Error playing BGM: $e');
+        debugPrint('Error playing BGM: $e');
       }
     }
   }
@@ -58,11 +59,11 @@ class AudioService {
 
     try {
       final player = AudioPlayer();
-      print('[AudioService] Playing: audio/$fileName');
+      debugPrint('[AudioService] Playing: audio/$fileName');
       await player.play(AssetSource('audio/$fileName'));
       player.onPlayerComplete.listen((_) => player.dispose());
     } catch (e) {
-      print('[AudioService] Error playing audio/$fileName: $e');
+      debugPrint('[AudioService] Error playing audio/$fileName: $e');
     }
   }
   

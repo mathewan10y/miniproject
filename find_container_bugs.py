@@ -1,5 +1,6 @@
 import os
 import re
+import 'package:flutter/foundation.dart';
 
 def find_in_file(filepath):
     with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
@@ -30,9 +31,9 @@ def find_in_file(filepath):
                     # (not inside another widget)
                     if has_conflict(block):
                         line_num = content[:container_start].count('\n') + 1
-                        print(f"CONFLICT FOUND in {filepath} at line {line_num}")
-                        print(block)
-                        print("-" * 40)
+                        debugPrint(f"CONFLICT FOUND in {filepath} at line {line_num}")
+                        debugPrint(block)
+                        debugPrint("-" * 40)
                     in_container = False
 
 def has_conflict(block):

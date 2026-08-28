@@ -147,7 +147,7 @@ class SettingsPage extends ConsumerWidget {
       child: Text(
         title,
         style: GoogleFonts.orbitron(
-          color: Colors.cyan.withOpacity(0.8),
+          color: Colors.cyan.withValues(alpha:0.8),
           fontSize: 12,
           fontWeight: FontWeight.bold,
           letterSpacing: 2,
@@ -159,8 +159,8 @@ class SettingsPage extends ConsumerWidget {
   Widget _buildCard({required Widget child}) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        border: Border.all(color: Colors.cyan.withOpacity(0.3)),
+        color: Colors.white.withValues(alpha:0.05),
+        border: Border.all(color: Colors.cyan.withValues(alpha:0.3)),
         borderRadius: BorderRadius.circular(8),
       ),
       child: child,
@@ -173,9 +173,9 @@ class SettingsPage extends ConsumerWidget {
       height: 50,
       child: ElevatedButton.icon(
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.redAccent.withOpacity(0.1),
+          backgroundColor: Colors.redAccent.withValues(alpha:0.1),
           foregroundColor: Colors.redAccent,
-          side: BorderSide(color: Colors.redAccent.withOpacity(0.5)),
+          side: BorderSide(color: Colors.redAccent.withValues(alpha:0.5)),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
         icon: const Icon(Icons.power_settings_new),

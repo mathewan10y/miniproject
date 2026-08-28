@@ -42,8 +42,8 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
   bool _isRefining = false;
   bool _isCriticalHit = false;
   bool _isDisposed = false;
-  List<Particle> _particles = [];
-  List<CriticalText> _criticalTexts = [];
+  final List<Particle> _particles = [];
+  final List<CriticalText> _criticalTexts = [];
   
   // Animation state
   double _pendingFuel = 0.0;
@@ -110,7 +110,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
                 // Background image
                 Image.asset('lib/assets/bg_center.jpg', fit: BoxFit.cover),
                 // Dark overlay for readability
-                Container(color: Colors.black.withOpacity(0.5)),
+                Container(color: Colors.black.withValues(alpha:0.5)),
                 // Main content - centered layout with SafeArea to prevent overflow
                 SafeArea(
                   child: Column(
@@ -135,7 +135,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
                                         borderRadius: BorderRadius.circular(8),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: const Color(0xFF00D9FF).withOpacity(0.3),
+                                            color: const Color(0xFF00D9FF).withValues(alpha:0.3),
                                             blurRadius: 8,
                                             offset: const Offset(0, 2),
                                           ),
@@ -330,7 +330,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
       fit: StackFit.expand,
       children: [
         Image.asset('lib/assets/bg_center.jpg', fit: BoxFit.cover),
-        Container(color: Colors.black.withOpacity(0.5)),
+        Container(color: Colors.black.withValues(alpha:0.5)),
         const Center(
           child: CircularProgressIndicator(
             valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00D9FF)),
@@ -345,7 +345,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
       fit: StackFit.expand,
       children: [
         Image.asset('lib/assets/bg_center.jpg', fit: BoxFit.cover),
-        Container(color: Colors.black.withOpacity(0.5)),
+        Container(color: Colors.black.withValues(alpha:0.5)),
         Center(
           child: Text(
             'Error: $error',
@@ -413,7 +413,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
         // Update visual ore level to match actual state
         final currentState = ref.read(refineryProvider).valueOrNull;
         setState(() {
-          _visualOreLevel = currentState?.rawOre?.toDouble() ?? _visualOreLevel;
+          _visualOreLevel = currentState?.rawOre.toDouble() ?? _visualOreLevel;
         });
         
         // Spawn particles at each frame for continuous visual feedback
@@ -487,7 +487,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
         Particle(
           position: reactorPosition,
           velocity: Offset(velocityX, velocityY),
-          color: isCritical ? Colors.yellow : Colors.cyan.withOpacity(0.8),
+          color: isCritical ? Colors.yellow : Colors.cyan.withValues(alpha:0.8),
           size:
               isCritical
                   ? 12.0
@@ -508,7 +508,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
           Particle(
             position: reactorPosition,
             velocity: Offset(velocityX, velocityY),
-            color: Colors.grey.withOpacity(0.4),
+            color: Colors.grey.withValues(alpha:0.4),
             size: 15.0, // Bigger smoke
             lifetime: 2.0, // Reduced lifetime for smoke particles
           ),
@@ -565,7 +565,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
         _isCriticalHit ? Colors.yellow : const Color(0xFFFF9800);
     final idleColor = const Color(0xFF00D9FF);
     final borderColor = _isRefining ? activeColor : idleColor;
-    final glowColor = borderColor.withOpacity(0.35);
+    final glowColor = borderColor.withValues(alpha:0.35);
 
     return GestureDetector(
       onTap: _processSingleTap,
@@ -585,16 +585,16 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
               decoration: BoxDecoration(
                 color:
                     _isRefining
-                        ? activeColor.withOpacity(0.15)
-                        : idleColor.withOpacity(0.10),
+                        ? activeColor.withValues(alpha:0.15)
+                        : idleColor.withValues(alpha:0.10),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: borderColor.withOpacity(0.45),
+                  color: borderColor.withValues(alpha:0.45),
                   width: 1.4,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: glowColor.withOpacity(0.22),
+                    color: glowColor.withValues(alpha:0.22),
                     blurRadius: 18,
                     spreadRadius: 1,
                     offset: const Offset(0, 4),
@@ -616,7 +616,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
                         gradient: _isRefining ? activeGradient : idleGradient,
                         boxShadow: [
                           BoxShadow(
-                            color: borderColor.withOpacity(0.50),
+                            color: borderColor.withValues(alpha:0.50),
                             blurRadius: 14,
                             spreadRadius: 2,
                           ),
@@ -655,7 +655,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
                         Text(
                           '1000 Ore per tap',
                           style: TextStyle(
-                            color: borderColor.withOpacity(0.6),
+                            color: borderColor.withValues(alpha:0.6),
                             fontSize: 10,
                             letterSpacing: 0.5,
                           ),
@@ -687,7 +687,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
     final activeColor = const Color(0xFFFF5252);
     final idleColor = const Color(0xFFFF0000);
     final borderColor = idleColor;
-    final glowColor = borderColor.withOpacity(0.35);
+    final glowColor = borderColor.withValues(alpha:0.35);
 
     return GestureDetector(
       onTap: () async {
@@ -796,15 +796,15 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
               duration: const Duration(milliseconds: 250),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: idleColor.withOpacity(0.10),
+                color: idleColor.withValues(alpha:0.10),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: borderColor.withOpacity(0.45),
+                  color: borderColor.withValues(alpha:0.45),
                   width: 1.4,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: glowColor.withOpacity(0.22),
+                    color: glowColor.withValues(alpha:0.22),
                     blurRadius: 18,
                     spreadRadius: 1,
                     offset: const Offset(0, 4),
@@ -826,7 +826,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
                         gradient: idleGradient,
                         boxShadow: [
                           BoxShadow(
-                            color: borderColor.withOpacity(0.50),
+                            color: borderColor.withValues(alpha:0.50),
                             blurRadius: 14,
                             spreadRadius: 2,
                           ),

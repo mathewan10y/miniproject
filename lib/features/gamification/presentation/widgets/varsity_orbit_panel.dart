@@ -34,11 +34,11 @@ class _VarsityOrbitPanelState extends ConsumerState<VarsityOrbitPanel> {
       width: MediaQuery.of(context).size.width * 0.3, // 30% width, mirrored
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFF0F1115).withOpacity(0.95),
+          color: const Color(0xFF0F1115).withValues(alpha:0.95),
           border: const Border(right: BorderSide(color: Colors.cyan, width: 2)), // Right border for Left panel
           boxShadow: [
             BoxShadow(
-              color: Colors.cyan.withOpacity(0.3),
+              color: Colors.cyan.withValues(alpha:0.3),
               blurRadius: 20,
               spreadRadius: 2,
             )
@@ -50,8 +50,8 @@ class _VarsityOrbitPanelState extends ConsumerState<VarsityOrbitPanel> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.cyan.withOpacity(0.1),
-                border: Border(bottom: BorderSide(color: Colors.cyan.withOpacity(0.3))),
+                color: Colors.cyan.withValues(alpha:0.1),
+                border: Border(bottom: BorderSide(color: Colors.cyan.withValues(alpha:0.3))),
               ),
               child: Row(
                 children: [
@@ -137,7 +137,7 @@ class _VarsityOrbitPanelState extends ConsumerState<VarsityOrbitPanel> {
                            icon: const Icon(Icons.shield, size: 16),
                            label: const Text("AURA"),
                            style: ElevatedButton.styleFrom(
-                             backgroundColor: Colors.cyan.withOpacity(0.2),
+                             backgroundColor: Colors.cyan.withValues(alpha:0.2),
                              foregroundColor: Colors.cyan,
                            ),
                          ),
@@ -151,7 +151,7 @@ class _VarsityOrbitPanelState extends ConsumerState<VarsityOrbitPanel> {
                            icon: const Icon(Icons.warning, size: 16),
                            label: const Text("CRASH"),
                            style: ElevatedButton.styleFrom(
-                             backgroundColor: Colors.orange.withOpacity(0.2),
+                             backgroundColor: Colors.orange.withValues(alpha:0.2),
                              foregroundColor: Colors.orange,
                            ),
                          ),
@@ -193,9 +193,9 @@ class _VarsityOrbitPanelState extends ConsumerState<VarsityOrbitPanel> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: isExpanded ? Colors.cyan.withOpacity(0.05) : Colors.white.withOpacity(0.02),
+        color: isExpanded ? Colors.cyan.withValues(alpha:0.05) : Colors.white.withValues(alpha:0.02),
         border: Border.all(
-          color: isExpanded ? Colors.cyan.withOpacity(0.5) : Colors.white10,
+          color: isExpanded ? Colors.cyan.withValues(alpha:0.5) : Colors.white10,
         ),
         borderRadius: BorderRadius.circular(8),
       ),

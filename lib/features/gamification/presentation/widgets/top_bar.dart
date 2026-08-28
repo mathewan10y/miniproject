@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:stardust/core/providers/refinery_provider.dart';
 import '../providers/bot_chat_provider.dart';
 import 'academy_codex_dialog.dart';
-import '../../user_stats_provider.dart';
 import '../../services/tutorial_keys.dart';
 import '../../../settings/presentation/settings_page.dart';
 import '../../../../core/services/audio_service.dart';
@@ -149,8 +148,8 @@ class TopBar extends ConsumerWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), // Reduced padding to fix overflow
                       decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.1),
-                        border: Border.all(color: Colors.green.withOpacity(0.5)),
+                        color: Colors.green.withValues(alpha:0.1),
+                        border: Border.all(color: Colors.green.withValues(alpha:0.5)),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Row(
@@ -302,12 +301,12 @@ class _BotChatPanelState extends ConsumerState<BotChatPanel> {
         color: Colors.transparent,
         child: Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF0F1115).withOpacity(0.95),
+            color: const Color(0xFF0F1115).withValues(alpha:0.95),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: themeColor, width: 2),
             boxShadow: [
               BoxShadow(
-                color: themeColor.withOpacity(0.3),
+                color: themeColor.withValues(alpha:0.3),
                 blurRadius: 20,
                 spreadRadius: 2,
               ),
@@ -319,13 +318,13 @@ class _BotChatPanelState extends ConsumerState<BotChatPanel> {
               Container(
                 padding: EdgeInsets.all(headerPadding),
                 decoration: BoxDecoration(
-                  color: themeColor.withOpacity(0.1),
+                  color: themeColor.withValues(alpha:0.1),
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(14),
                     topRight: Radius.circular(14),
                   ),
                   border: Border(
-                    bottom: BorderSide(color: themeColor.withOpacity(0.3)),
+                    bottom: BorderSide(color: themeColor.withValues(alpha:0.3)),
                   ),
                 ),
                 child: Row(
@@ -455,8 +454,8 @@ class _BotChatPanelState extends ConsumerState<BotChatPanel> {
           margin: EdgeInsets.only(bottom: bubbleMargin, left: sideMargin),
           padding: EdgeInsets.all(bubblePadding),
           decoration: BoxDecoration(
-            color: themeColor.withOpacity(0.15),
-            border: Border.all(color: themeColor.withOpacity(0.3)),
+            color: themeColor.withValues(alpha:0.15),
+            border: Border.all(color: themeColor.withValues(alpha:0.3)),
             borderRadius: BorderRadius.only(
               topLeft: Radius.circular(8),
               topRight: Radius.circular(2),
@@ -485,7 +484,7 @@ class _BotChatPanelState extends ConsumerState<BotChatPanel> {
               vertical: isMobile ? 3 : 4,
             ),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
+              color: Colors.white.withValues(alpha:0.05),
               borderRadius: BorderRadius.circular(4),
               border: Border.all(color: Colors.white10),
             ),
@@ -518,7 +517,7 @@ class _BotChatPanelState extends ConsumerState<BotChatPanel> {
                 margin: EdgeInsets.only(top: isMobile ? 2 : 4),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: color.withOpacity(0.5)),
+                  border: Border.all(color: color.withValues(alpha:0.5)),
                   image: DecorationImage(
                     image: AssetImage(
                       isCrash ? 'lib/assets/tars.png' : 'lib/assets/case.png',
@@ -544,7 +543,7 @@ class _BotChatPanelState extends ConsumerState<BotChatPanel> {
                     Container(
                       padding: EdgeInsets.all(isMobile ? 8 : 10),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.05),
+                        color: Colors.white.withValues(alpha:0.05),
                         borderRadius: BorderRadius.only(
                           topLeft: Radius.circular(2),
                           topRight: Radius.circular(8),
@@ -589,9 +588,9 @@ class _SettingsButton extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.04),
+          color: Colors.white.withValues(alpha:0.04),
           border: Border.all(
-            color: Colors.white.withOpacity(0.15),
+            color: Colors.white.withValues(alpha:0.15),
             width: 1,
           ),
           borderRadius: BorderRadius.circular(6),

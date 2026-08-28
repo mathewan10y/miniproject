@@ -109,7 +109,7 @@ class _AddIncomeSheetState extends ConsumerState<AddIncomeSheet> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     filled: true,
-                    fillColor: Colors.black.withOpacity(0.3),
+                    fillColor: Colors.black.withValues(alpha:0.3),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -158,7 +158,7 @@ class _AddIncomeSheetState extends ConsumerState<AddIncomeSheet> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     filled: true,
-                    fillColor: Colors.black.withOpacity(0.3),
+                    fillColor: Colors.black.withValues(alpha:0.3),
                   ),
                 ),
                 const SizedBox(height: 24),

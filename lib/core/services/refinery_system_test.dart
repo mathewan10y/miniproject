@@ -1,29 +1,30 @@
 import '../services/refinery_system.dart';
+import 'package:flutter/foundation.dart';
 
 void main() {
   final refinery = RefinerySystem();
 
-  print('=== Refinery System Test ===\n');
+  debugPrint('=== Refinery System Test ===\n');
 
   // Test 1: Tiered Mining Algorithm
-  print('Test 1: Tiered Mining Algorithm');
-  print('Saving \$500 should give 500 ore: ${refinery.calculateOreFromIncome(500)}');
-  print('Saving \$2500 should give 1500 ore: ${refinery.calculateOreFromIncome(2500)}');
-  print('Saving \$3000 should give 1550 ore: ${refinery.calculateOreFromIncome(3000)}');
-  print('Saving \$10000 should give 1800 ore: ${refinery.calculateOreFromIncome(10000)}');
-  print('');
+  debugPrint('Test 1: Tiered Mining Algorithm');
+  debugPrint('Saving \$500 should give 500 ore: ${refinery.calculateOreFromIncome(500)}');
+  debugPrint('Saving \$2500 should give 1500 ore: ${refinery.calculateOreFromIncome(2500)}');
+  debugPrint('Saving \$3000 should give 1550 ore: ${refinery.calculateOreFromIncome(3000)}');
+  debugPrint('Saving \$10000 should give 1800 ore: ${refinery.calculateOreFromIncome(10000)}');
+  debugPrint('');
 
   // Test 2: Income Processing
-  print('Test 2: Income Processing');
+  debugPrint('Test 2: Income Processing');
   refinery.processIncomeTransaction(3000);
-  print('After \$3000 income:');
-  print('  Total Savings: \$${refinery.totalSavings}');
-  print('  Raw Ore: ${refinery.rawOre}');
-  print('  Refined Fuel: ${refinery.refinedFuel}');
-  print('');
+  debugPrint('After \$3000 income:');
+  debugPrint('  Total Savings: \$${refinery.totalSavings}');
+  debugPrint('  Raw Ore: ${refinery.rawOre}');
+  debugPrint('  Refined Fuel: ${refinery.refinedFuel}');
+  debugPrint('');
 
   // Test 3: Refinery Process
-  print('Test 3: Refinery Process (multiple ticks)');
+  debugPrint('Test 3: Refinery Process (multiple ticks)');
   int ticks = 0;
   int criticalHits = 0;
   
@@ -32,14 +33,14 @@ void main() {
     ticks++;
     if (result.isCritical) criticalHits++;
     
-    print('Tick $ticks: +${result.fuelAdded.toStringAsFixed(1)} fuel '
+    debugPrint('Tick $ticks: +${result.fuelAdded.toStringAsFixed(1)} fuel '
           '${result.isCritical ? '(CRITICAL!)' : '(waste: ${result.waste})'}');
   }
   
-  print('');
-  print('Final State:');
-  print('  Total Savings: \$${refinery.totalSavings}');
-  print('  Raw Ore: ${refinery.rawOre}');
-  print('  Refined Fuel: ${refinery.refinedFuel.toStringAsFixed(1)}');
-  print('  Critical Hits: $criticalHits out of $ticks ticks');
+  debugPrint('');
+  debugPrint('Final State:');
+  debugPrint('  Total Savings: \$${refinery.totalSavings}');
+  debugPrint('  Raw Ore: ${refinery.rawOre}');
+  debugPrint('  Refined Fuel: ${refinery.refinedFuel.toStringAsFixed(1)}');
+  debugPrint('  Critical Hits: $criticalHits out of $ticks ticks');
 }

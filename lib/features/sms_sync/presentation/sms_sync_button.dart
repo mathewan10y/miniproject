@@ -206,10 +206,10 @@ class _SmsSyncButtonState extends ConsumerState<SmsSyncButton> {
                   : const Icon(Icons.sms_outlined, size: 22),
           color: const Color(0xFF00D9FF), // cyan — matches app theme
           style: IconButton.styleFrom(
-            backgroundColor: const Color(0xFF00D9FF).withOpacity(0.12),
+            backgroundColor: const Color(0xFF00D9FF).withValues(alpha:0.12),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
-              side: BorderSide(color: const Color(0xFF00D9FF).withOpacity(0.4)),
+              side: BorderSide(color: const Color(0xFF00D9FF).withValues(alpha:0.4)),
             ),
           ),
         ),

@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/tutorial_keys.dart';
 import '../../services/tutorial_engine_service.dart';
 import '../widgets/tutorial_overlay_widget.dart';
-
 class Phase1Onboarding {
   static void start(BuildContext context, WidgetRef ref) {
     if (!context.mounted) return;
