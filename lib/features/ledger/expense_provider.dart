@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/database/database.dart';
+import '../../core/providers/auth_provider.dart';
 import '../../core/providers/refinery_provider.dart';
 
 class ExpenseNotifier extends AsyncNotifier<List<Expense>> {
@@ -10,7 +13,27 @@ class ExpenseNotifier extends AsyncNotifier<List<Expense>> {
   @override
   Future<List<Expense>> build() async {
     _db = AppDatabase();
-    return await _db.getAllExpenses();
+
+    // 1. Watch auth state changes so this provider automatically rebuilds when the user logs in / session restores.
+    final authStateAsync = ref.watch(authStateChangesProvider);
+
+    // 2. Resolve user from auth stream event or directly from Supabase client
+    final session = authStateAsync.valueOrNull?.session ?? Supabase.instance.client.auth.currentSession;
+    final user = session?.user ?? Supabase.instance.client.auth.currentUser;
+
+    // 3. If user is null (session not yet resolved or logged out), return an empty list without querying Supabase.
+    if (user == null) {
+      debugPrint('[ExpenseNotifier] User is null / session not ready. Returning empty list.');
+      return const [];
+    }
+
+    // 4. Safely query Supabase with confirmed user session.
+    try {
+      return await _db.getAllExpenses();
+    } catch (e) {
+      debugPrint('[ExpenseNotifier] Error fetching expenses: $e');
+      return const [];
+    }
   }
 
   /// Adds an expense, persists to Supabase, then appends directly to state —

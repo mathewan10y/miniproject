@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'dart:ui' as ui;
 import 'package:fl_chart/fl_chart.dart';
@@ -123,13 +124,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
                               ),
                             ),
                           ),
-                      error:
-                          (err, stack) => Center(
-                            child: Text(
-                              'Error: $err',
-                              style: const TextStyle(color: Colors.red),
-                            ),
-                          ),
+                      error: (err, stack) => _buildErrorState(err.toString()),
                     );
                   },
                   loading:
@@ -140,13 +135,7 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
                           ),
                         ),
                       ),
-                  error:
-                      (err, stack) => Center(
-                        child: Text(
-                          'Error: $err',
-                          style: const TextStyle(color: Colors.red),
-                        ),
-                      ),
+                  error: (err, stack) => _buildErrorState(err.toString()),
                 ),
               ),
             ],
@@ -156,6 +145,81 @@ class _LogisticsPageState extends ConsumerState<LogisticsPage> {
         // Chat Overlay
         const BotChatPanel(),
       ],
+    );
+  }
+
+  Widget _buildErrorState(String err) {
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 24),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1F3A).withValues(alpha: 0.9),
+          border: Border.all(color: const Color(0xFFFF4757), width: 1.5),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFF4757).withValues(alpha: 0.2),
+              blurRadius: 15,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.warning_amber_rounded,
+              color: Color(0xFFFF4757),
+              size: 36,
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'LOGISTICS LINK OFFLINE',
+              style: GoogleFonts.orbitron(
+                color: const Color(0xFFFF4757),
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 2,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              err,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.roboto(
+                color: Colors.white70,
+                fontSize: 12,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () {
+                ref.invalidate(incomeProvider);
+                ref.invalidate(expenseProvider);
+              },
+              icon: const Icon(Icons.refresh, size: 16, color: Color(0xFF00D9FF)),
+              label: Text(
+                'RETRY SYNC',
+                style: GoogleFonts.orbitron(
+                  color: const Color(0xFF00D9FF),
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF0A0E27),
+                side: const BorderSide(color: Color(0xFF00D9FF), width: 1),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

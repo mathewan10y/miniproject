@@ -330,7 +330,7 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
       fit: StackFit.expand,
       children: [
         Image.asset('lib/assets/bg_center.jpg', fit: BoxFit.cover),
-        Container(color: Colors.black.withValues(alpha:0.5)),
+        Container(color: Colors.black.withValues(alpha: 0.5)),
         const Center(
           child: CircularProgressIndicator(
             valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00D9FF)),
@@ -345,11 +345,77 @@ class _ReactorCorePageState extends ConsumerState<ReactorCorePage>
       fit: StackFit.expand,
       children: [
         Image.asset('lib/assets/bg_center.jpg', fit: BoxFit.cover),
-        Container(color: Colors.black.withValues(alpha:0.5)),
+        Container(color: Colors.black.withValues(alpha: 0.7)),
         Center(
-          child: Text(
-            'Error: $error',
-            style: const TextStyle(color: Colors.red),
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 24),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A1F3A).withValues(alpha: 0.9),
+              border: Border.all(color: const Color(0xFFFF4757), width: 1.5),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFFF4757).withValues(alpha: 0.2),
+                  blurRadius: 15,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.warning_amber_rounded,
+                  color: Color(0xFFFF4757),
+                  size: 40,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'TELEMETRY LINK OFFLINE',
+                  style: GoogleFonts.orbitron(
+                    color: const Color(0xFFFF4757),
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 2,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  error,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.roboto(
+                    color: Colors.white70,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    ref.invalidate(incomeProvider);
+                    ref.invalidate(expenseProvider);
+                  },
+                  icon: const Icon(Icons.refresh, size: 18, color: Color(0xFF00D9FF)),
+                  label: Text(
+                    'RECONNECT SENSORS',
+                    style: GoogleFonts.orbitron(
+                      color: const Color(0xFF00D9FF),
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0A0E27),
+                    side: const BorderSide(color: Color(0xFF00D9FF), width: 1),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ],

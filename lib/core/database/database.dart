@@ -118,7 +118,10 @@ class AppDatabase {
 
   Future<void> addExpense(Expense expense) async {
     try {
-      final userId = Supabase.instance.client.auth.currentUser!.id;
+      final userId = Supabase.instance.client.auth.currentUser?.id;
+      if (userId == null) {
+        throw Exception('User is not authenticated');
+      }
       final json = expense.toJson()..['user_id'] = userId;
       await _client.from('expenses').insert(json);
     } catch (e) {
@@ -128,6 +131,11 @@ class AppDatabase {
 
   Future<List<Expense>> getAllExpenses() async {
     try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) {
+        debugPrint('[AppDatabase] getAllExpenses: auth session pending / user null');
+        return [];
+      }
       final rows = await _client
           .from('expenses')
           .select()
@@ -152,7 +160,10 @@ class AppDatabase {
 
   Future<void> updateExpense(Expense expense) async {
     try {
-      final userId = Supabase.instance.client.auth.currentUser!.id;
+      final userId = Supabase.instance.client.auth.currentUser?.id;
+      if (userId == null) {
+        throw Exception('User is not authenticated');
+      }
       final json = expense.toJson()..['user_id'] = userId;
       await _client
           .from('expenses')
@@ -201,7 +212,10 @@ class AppDatabase {
 
   Future<void> addIncome(Income income) async {
     try {
-      final userId = Supabase.instance.client.auth.currentUser!.id;
+      final userId = Supabase.instance.client.auth.currentUser?.id;
+      if (userId == null) {
+        throw Exception('User is not authenticated');
+      }
       final json = income.toJson()..['user_id'] = userId;
       await _client.from('incomes').insert(json);
     } catch (e) {
@@ -211,6 +225,11 @@ class AppDatabase {
 
   Future<List<Income>> getAllIncomes() async {
     try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) {
+        debugPrint('[AppDatabase] getAllIncomes: auth session pending / user null');
+        return [];
+      }
       final rows = await _client
           .from('incomes')
           .select()
@@ -219,7 +238,9 @@ class AppDatabase {
           .map((r) => Income.fromJson(r as Map<String, dynamic>))
           .toList();
     } catch (e) {
-      throw Exception('Failed to load incomes: $e');
+      // On web or startup race, log and return empty list rather than throwing unhandled error.
+      debugPrint('[AppDatabase] getAllIncomes failed: $e');
+      return [];
     }
   }
 
@@ -233,7 +254,10 @@ class AppDatabase {
 
   Future<void> updateIncome(Income income) async {
     try {
-      final userId = Supabase.instance.client.auth.currentUser!.id;
+      final userId = Supabase.instance.client.auth.currentUser?.id;
+      if (userId == null) {
+        throw Exception('User is not authenticated');
+      }
       final json = income.toJson()..['user_id'] = userId;
       await _client.from('incomes').update(json).eq('id', income.id);
     } catch (e) {
